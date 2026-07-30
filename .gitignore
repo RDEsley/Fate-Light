@@ -1,0 +1,93 @@
+# Dependencies and package-manager state
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/cache/
+.yarn/install-state.gz
+
+# Framework and build output
+.next/
+out/
+dist/
+build/
+.vercel/
+
+# Test and coverage output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+
+# TypeScript, lint and tool caches
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+.turbo/
+.cache/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.secrets.*
+credentials.json
+secrets.json
+
+# Supabase local state and database exports
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/functions/.env*
+*.dump
+*.backup
+*.sql.gz
+
+# Private business data, imports and exports
+private/
+imports/
+exports/
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+*.ods
+*.csv
+
+# Local connector configuration
+.mcp.json
+.mcp.*.json
+
+# Logs and temporary artifacts
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Local editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Keep these project artifacts versioned:
+# - .env.example
+# - AGENTS.md
+# - documentation
+# - lockfiles
+# - Supabase migrations and fictitious seeds
