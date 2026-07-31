@@ -105,6 +105,7 @@ Decisões consolidadas em 2026-07-31:
 | ADR-0007 | Supabase Cron e idempotência agenda/período | Aceita | [ADR](adr/0007-recurrence-and-idempotency.md) |
 | ADR-0008 | Bootstrap explícito de identidade e isolamento RLS | Aceita | [ADR](adr/0008-identity-workspace-bootstrap-and-rls.md) |
 | ADR-0009 | Autenticação SSR, gate de conta e proteção contra abuso | Aceita | [ADR](adr/0009-ssr-authentication-and-abuse-protection.md) |
+| ADR-0010 | Cadastros operacionais arquiváveis e auditoria mínima | Aceita | [ADR](adr/0010-operational-records-and-audit.md) |
 
 ## Outras decisões consolidadas
 
