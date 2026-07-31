@@ -5,6 +5,7 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { requireAccountPage } from "@/lib/auth/page-guard";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+import { LifecycleRequestPanel } from "./lifecycle-request-panel";
 import { ProfileForm } from "./profile-form";
 
 export const metadata: Metadata = { title: "Perfil" };
@@ -16,21 +17,38 @@ type ProfilePageProps = {
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const userId = await requireAccountPage("active");
   const supabase = await createServerSupabaseClient();
-  const [{ data: claimsData }, { data: profile, error }] = await Promise.all([
+  const [
+    { data: claimsData },
+    { data: profile, error },
+    { data: lifecycleRequests, error: lifecycleError },
+  ] = await Promise.all([
     supabase.auth.getClaims(),
     supabase
       .from("profiles")
       .select("full_name, phone, locale, timezone, theme")
       .eq("id", userId)
       .single(),
+    supabase.rpc("get_current_account_lifecycle_requests"),
   ]);
 
-  if (error || !profile) {
+  if (error || lifecycleError || !profile) {
     redirect("/auth/error");
   }
 
   const { status } = await searchParams;
   const email = typeof claimsData?.claims?.email === "string" ? claimsData.claims.email : "";
+  const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: profile.timezone,
+  });
+  const requests = lifecycleRequests.map((request) => ({
+    requestId: request.request_id,
+    requestedAt: request.requested_at,
+    requestedAtLabel: dateFormatter.format(new Date(request.requested_at)),
+    requestType: request.request_type === "deletion" ? ("deletion" as const) : ("export" as const),
+    status: request.status,
+  }));
 
   return (
     <AccountShell
@@ -64,14 +82,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               A sessão usa cookies SSR e pode ser encerrada pelo botão “Sair”.
             </p>
           </section>
-          <section className="border-line bg-surface rounded-2xl border p-5">
-            <h2 className="font-semibold">Seus dados</h2>
-            <p className="text-muted mt-2 text-sm leading-6">
-              Exportação e solicitação de exclusão serão estruturadas na etapa de hardening, sem
-              exclusão irreversível automática.
-            </p>
-          </section>
         </aside>
+      </div>
+
+      <div className="mt-6">
+        <LifecycleRequestPanel requests={requests} />
       </div>
     </AccountShell>
   );

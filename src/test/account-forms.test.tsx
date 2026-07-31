@@ -12,6 +12,10 @@ vi.mock("@/app/onboarding/actions", () => ({
 vi.mock("@/app/perfil/actions", () => ({
   updateProfile: vi.fn(async (state: unknown) => state),
 }));
+vi.mock("@/app/perfil/lifecycle-actions", () => ({
+  requestAccountDeletion: vi.fn(async (state: unknown) => state),
+  requestDataExport: vi.fn(async (state: unknown) => state),
+}));
 vi.mock("@/app/configuracoes/empresa/actions", () => ({
   updateWorkspaceConfiguration: vi.fn(async (state: unknown) => state),
 }));
@@ -19,6 +23,7 @@ vi.mock("@/app/configuracoes/empresa/actions", () => ({
 import { WorkspaceForm } from "@/app/configuracoes/empresa/workspace-form";
 import { OnboardingForm } from "@/app/onboarding/onboarding-form";
 import { ProfileForm } from "@/app/perfil/profile-form";
+import { LifecycleRequestPanel } from "@/app/perfil/lifecycle-request-panel";
 import { AccountTheme } from "@/app/_components/account-theme";
 
 describe("account forms", () => {
@@ -96,5 +101,15 @@ describe("account forms", () => {
   it("aplica a preferência de tema armazenada para a área autenticada", () => {
     render(<AccountTheme theme="dark" />);
     expect(accountFormMocks.setTheme).toHaveBeenCalledWith("dark");
+  });
+
+  it("explica os limites e exige confirmação reforçada para exclusão", () => {
+    render(<LifecycleRequestPanel requests={[]} />);
+
+    expect(screen.getByRole("button", { name: /solicitar exportação/i })).toBeVisible();
+    expect(screen.getByLabelText(/digite excluir minha conta/i)).toBeRequired();
+    expect(screen.getByRole("checkbox", { name: /registra o pedido/i })).toBeRequired();
+    expect(screen.getByText(/não apaga dados/i)).toBeVisible();
+    expect(screen.getByText(/nenhuma solicitação registrada/i)).toBeVisible();
   });
 });

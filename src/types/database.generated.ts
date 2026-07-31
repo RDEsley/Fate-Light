@@ -311,6 +311,29 @@ export type Database = {
           workspace_status: string
         }[]
       }
+      get_current_account_lifecycle_requests: {
+        Args: never
+        Returns: {
+          artifact_expires_at: string
+          completed_at: string
+          request_id: string
+          request_type: string
+          requested_at: string
+          scheduled_for: string
+          status: string
+          verified_at: string
+        }[]
+      }
+      request_current_account_lifecycle: {
+        Args: { p_request_type: string }
+        Returns: {
+          request_created: boolean
+          request_id: string
+          request_type: string
+          requested_at: string
+          status: string
+        }[]
+      }
       update_current_workspace_configuration: {
         Args: {
           p_accounting_basis: string

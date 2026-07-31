@@ -1,6 +1,6 @@
 {
   "name": "fate-eight-finance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "packageManager": "npm@11.16.0",
@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:auth": "node scripts/run-auth-e2e.mjs",
     "security:check": "node scripts/check-repository-safety.mjs",
     "db:test": "supabase test db --local supabase/tests",
     "db:types": "node scripts/generate-database-types.mjs",

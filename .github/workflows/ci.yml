@@ -100,7 +100,7 @@ jobs:
         run: npm run build
 
   e2e:
-    name: Browser smoke test
+    name: Authenticated browser flow
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: quality
@@ -118,8 +118,36 @@ jobs:
       - name: Install exact dependencies
         run: npm ci
 
+      - name: Start local Supabase without printing local credentials
+        run: npx supabase start >"$RUNNER_TEMP/supabase-start.log" 2>&1
+
+      - name: Reset local authentication and database
+        run: npx supabase db reset --local
+
+      - name: Configure the public local test boundary
+        shell: bash
+        run: |
+          npx supabase status -o env >"$RUNNER_TEMP/supabase-status.env" 2>/dev/null || true
+          set -a
+          source "$RUNNER_TEMP/supabase-status.env"
+          set +a
+          test -n "$API_URL"
+          test -n "$PUBLISHABLE_KEY"
+          {
+            echo "NEXT_PUBLIC_APP_URL=http://localhost:3000"
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "AUTH_E2E_ENABLED=true"
+            echo "MAILPIT_URL=http://127.0.0.1:54324"
+          } >>"$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/supabase-status.env"
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run smoke and accessibility tests
+      - name: Run smoke, accessibility and authenticated journey tests
         run: npm run test:e2e
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx supabase stop --no-backup
