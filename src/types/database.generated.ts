@@ -311,6 +311,28 @@ export type Database = {
           workspace_status: string
         }[]
       }
+      update_current_workspace_configuration: {
+        Args: {
+          p_accounting_basis: string
+          p_address_city: string
+          p_address_district: string
+          p_address_line1: string
+          p_address_line2: string
+          p_address_region: string
+          p_country_code: string
+          p_date_format: string
+          p_default_alert_offsets: number[]
+          p_legal_name: string
+          p_postal_code: string
+          p_tax_id: string
+          p_timezone: string
+          p_trade_name: string
+          p_workspace_name: string
+        }
+        Returns: {
+          workspace_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

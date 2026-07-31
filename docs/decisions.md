@@ -75,6 +75,12 @@ Decisões consolidadas em 2026-07-31:
   provedor. Limites de envio e verificação permanecem centralizados no Supabase Auth.
 - Templates locais de confirmação e magic link reproduzem o fluxo SSR. A configuração equivalente
   no projeto hospedado deve ser revisada e testada antes de publicação.
+- O onboarding relê no servidor o conjunto legal vigente e chama o bootstrap já aprovado; perfil,
+  workspace, membership, settings e aceites continuam em uma única transação idempotente.
+- Perfil altera somente nome, telefone, idioma, timezone e tema pelas colunas concedidas ao próprio
+  usuário. A interface usa iniciais e não cria avatar, bucket ou upload.
+- Identidade, endereço e preferências do workspace são atualizados por uma RPC atômica derivada de
+  `auth.uid()`. Moeda permanece somente leitura; timezone informa o impacto sobre “hoje” e agendas.
 - Detalhes e alternativas estão no [ADR 0009](adr/0009-ssr-authentication-and-abuse-protection.md).
 
 ## Decisões aceitas

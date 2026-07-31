@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 import { publicEnvironment } from "@/config/env/public";
+import { SubmitButton } from "@/app/_components/submit-button";
 
 import { requestMagicLink } from "../actions";
-import { PendingSubmitButton } from "./pending-submit-button";
 import { TurnstileField } from "./turnstile-field";
 
 type MagicLinkFormProps = {
@@ -66,7 +66,10 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
         </div>
 
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
-        <PendingSubmitButton idleLabel={isLogin ? "Receber link de acesso" : "Criar minha conta"} />
+        <SubmitButton
+          idleLabel={isLogin ? "Receber link de acesso" : "Criar minha conta"}
+          pendingLabel="Enviando link…"
+        />
       </form>
 
       <p className="text-muted mt-6 text-center text-sm leading-6">
