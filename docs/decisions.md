@@ -57,6 +57,10 @@ Decisões consolidadas em 2026-07-31:
   da FK em `legal_acceptances` e o lookup da auditoria privada por workspace. Eles permanecem porque
   evitam varredura/bloqueio na integridade referencial e suportam investigação por tenant; o índice
   isolado de `workspaces.status` foi removido por baixa seletividade e ausência de consulta atual.
+- A estrutura de ciclo de conta acrescenta dois avisos equivalentes após reset: o índice parcial de
+  `workspace_id` protege operações sobre a FK e o índice parcial de `scheduled_for` corresponde ao
+  modelo aprovado para os jobs da Fase 11. Ambos permanecem pequenos e seletivos; serão medidos
+  novamente quando o processamento administrativo for implementado.
 
 ## Limite de autenticação da Fase 3B
 
@@ -81,6 +85,11 @@ Decisões consolidadas em 2026-07-31:
   usuário. A interface usa iniciais e não cria avatar, bucket ou upload.
 - Identidade, endereço e preferências do workspace são atualizados por uma RPC atômica derivada de
   `auth.uid()`. Moeda permanece somente leitura; timezone informa o impacto sobre “hoje” e agendas.
+- Exportação e exclusão criam somente pedidos idempotentes no schema privado, derivados do usuário
+  e workspace ativos. A leitura pública é sanitizada; exclusão exige frase explícita e autenticação
+  recente. Nenhum job, artefato, URL, suspensão ou apagamento foi habilitado.
+- Retenção, verificação administrativa, agendamento, geração de arquivo e exclusão efetiva continuam
+  reservados à Fase 11 e dependem da política de retenção ainda não resolvida.
 - Detalhes e alternativas estão no [ADR 0009](adr/0009-ssr-authentication-and-abuse-protection.md).
 
 ## Decisões aceitas

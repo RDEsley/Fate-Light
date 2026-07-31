@@ -77,6 +77,11 @@ Gate: reset e seed reproduzíveis, testes pgTAP, tipos atualizados, advisors e g
 - Nenhum avatar ou upload é criado enquanto o risco temporário de imagens estiver vigente.
 - `date`/timezone e cookies passam testes.
 
+Entrega concluída em 2026-07-31: o gate cobre a jornada autenticada real pelo Mailpit e Supabase
+local, incluindo cadastro, confirmação, onboarding, perfil, solicitações seguras, logout e login.
+Os pedidos de ciclo de conta não executam jobs nem exclusão; retenção e operação administrativa
+permanecem explicitamente adiadas para a Fase 11.
+
 ## Fase 4 - Cadastros operacionais
 
 ### Tarefas
