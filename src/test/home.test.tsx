@@ -14,7 +14,7 @@ vi.mock("next-themes", () => ({
 }));
 
 describe("Home", () => {
-  it("apresenta a fundação técnica sem simular funcionalidades de negócio", () => {
+  it("apresenta acesso seguro para login e cadastro", () => {
     render(
       <ThemeProvider>
         <Home />
@@ -24,12 +24,11 @@ describe("Home", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /uma base segura para o financeiro crescer sem atalhos/i,
+        name: /clareza financeira começa por um acesso seguro/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/login, cadastro, perfil e regras financeiras/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("complementary", { name: /escopo desta fundação/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /criar conta/i })).toHaveAttribute("href", "/cadastro");
+    expect(screen.getByRole("link", { name: /^entrar$/i })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("complementary", { name: /proteções do acesso/i })).toBeInTheDocument();
   });
 });

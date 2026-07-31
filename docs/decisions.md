@@ -58,6 +58,25 @@ Decisões consolidadas em 2026-07-31:
   evitam varredura/bloqueio na integridade referencial e suportam investigação por tenant; o índice
   isolado de `workspaces.status` foi removido por baixa seletividade e ausência de consulta atual.
 
+## Limite de autenticação da Fase 3B
+
+Decisões consolidadas em 2026-07-31:
+
+- Magic link usa confirmação SSR por `token_hash`, sessão em cookies e claims verificadas no
+  servidor. O proxy renova a sessão, mas não substitui autorização nas páginas, rotas ou ações.
+- Login nunca cria usuário implicitamente; somente o cadastro explícito usa
+  `shouldCreateUser: true`. As respostas não distinguem existência, suspensão, rate limit ou falha
+  de entrega do e-mail.
+- Redirecionamentos aceitam apenas caminhos internos validados. Após a confirmação, uma RPC mínima
+  derivada de `auth.uid()` decide entre onboarding, conta ativa e conta/workspace suspenso sem abrir
+  leitura das linhas bloqueadas por RLS.
+- Turnstile é opcional no desenvolvimento e obrigatório como gate conjunto de implantação em
+  produção. A aplicação expõe apenas a site key e envia o token ao Supabase Auth; o secret fica no
+  provedor. Limites de envio e verificação permanecem centralizados no Supabase Auth.
+- Templates locais de confirmação e magic link reproduzem o fluxo SSR. A configuração equivalente
+  no projeto hospedado deve ser revisada e testada antes de publicação.
+- Detalhes e alternativas estão no [ADR 0009](adr/0009-ssr-authentication-and-abuse-protection.md).
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |
@@ -70,6 +89,7 @@ Decisões consolidadas em 2026-07-31:
 | ADR-0006 | `date` civil, `timestamptz` UTC e timezone por workspace | Aceita | [ADR](adr/0006-dates-and-timezone.md) |
 | ADR-0007 | Supabase Cron e idempotência agenda/período | Aceita | [ADR](adr/0007-recurrence-and-idempotency.md) |
 | ADR-0008 | Bootstrap explícito de identidade e isolamento RLS | Aceita | [ADR](adr/0008-identity-workspace-bootstrap-and-rls.md) |
+| ADR-0009 | Autenticação SSR, gate de conta e proteção contra abuso | Aceita | [ADR](adr/0009-ssr-authentication-and-abuse-protection.md) |
 
 ## Outras decisões consolidadas
 

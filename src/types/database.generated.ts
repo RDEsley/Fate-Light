@@ -302,6 +302,15 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      get_current_account_gate: {
+        Args: never
+        Returns: {
+          account_status: string
+          has_profile: boolean
+          has_workspace: boolean
+          workspace_status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

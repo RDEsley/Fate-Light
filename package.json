@@ -32,6 +32,7 @@
     "supabase:status": "supabase status"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "1.5.4",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.111.0",
     "next": "16.2.12",
