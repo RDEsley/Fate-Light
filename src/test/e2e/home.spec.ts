@@ -28,3 +28,12 @@ for (const route of ["/login", "/cadastro"] as const) {
     expect(accessibilityResults.violations).toEqual([]);
   });
 }
+
+for (const protectedRoute of ["/onboarding", "/perfil", "/configuracoes/empresa"] as const) {
+  test(`${protectedRoute} rejeita sessão ausente`, async ({ page }) => {
+    await page.goto(protectedRoute);
+
+    await expect(page).toHaveURL(/\/login\?next=/);
+    await expect(page.getByRole("heading", { name: /entre para cuidar/i })).toBeVisible();
+  });
+}
