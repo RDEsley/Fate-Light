@@ -29,7 +29,13 @@ for (const route of ["/login", "/cadastro"] as const) {
   });
 }
 
-for (const protectedRoute of ["/onboarding", "/perfil", "/configuracoes/empresa"] as const) {
+for (const protectedRoute of [
+  "/onboarding",
+  "/perfil",
+  "/configuracoes/empresa",
+  "/clientes",
+  "/clientes/novo",
+] as const) {
   test(`${protectedRoute} rejeita sessão ausente`, async ({ page }) => {
     await page.goto(protectedRoute);
 

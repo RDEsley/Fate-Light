@@ -35,6 +35,7 @@ const testResult = spawnSync(testCommand, testArguments, {
     NEXT_PUBLIC_APP_URL: "http://localhost:3000",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: localStatus.PUBLISHABLE_KEY,
     NEXT_PUBLIC_SUPABASE_URL: localStatus.API_URL,
+    PLAYWRIGHT_REUSE_SERVER: "false",
   },
   shell: false,
   stdio: "inherit",
