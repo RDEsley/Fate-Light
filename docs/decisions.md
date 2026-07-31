@@ -32,6 +32,32 @@ Decisões consolidadas e revisadas em 2026-07-30:
 - `AGENTS.md` é a fonte operacional canônica. Nenhuma credencial ou configuração local privada deve
   ser versionada.
 
+## Identidade e isolamento da Fase 3A
+
+Decisões consolidadas em 2026-07-31:
+
+- `workspace_members` é a fonte de autorização do tenant e somente `owner` é funcional no MVP.
+- Constraints únicas limitam cada usuário a um workspace e cada workspace a um owner ativo; a
+  existência do owner é completada pela mesma transação que cria o workspace.
+- O onboarding futuro chamará uma RPC transacional e idempotente. A função elevadora fica no schema
+  `private`, deriva identidade apenas de `auth.uid()`, usa `search_path` vazio, grants mínimos e
+  auditoria. O schema público expõe somente um wrapper `SECURITY INVOKER` sem parâmetro `user_id`.
+- RLS e grants são defesas complementares. `anon` não recebe acesso às tabelas desta fase e o cliente
+  não recebe escrita direta em membership, ownership, status administrativo ou histórico legal.
+- Documentos legais de desenvolvimento são placeholders fictícios, versionados e verificados por
+  hash. Aceites preservam a FK e a versão; IP e user-agent não são coletados nesta fase.
+- Não existe trigger de domínio em `auth.users`; o bootstrap ocorre explicitamente após autenticação
+  e aceite legal.
+- Avatar permanece adiado por causa do advisory alto de `sharp < 0.35.0`. Não há bucket, upload,
+  processamento ou imagem controlada pelo usuário; a interface futura deve usar iniciais ou
+  placeholder até nova reavaliação.
+- Os tipos TypeScript são gerados do Supabase local por `npm run db:types`; a CI usa
+  `npm run db:types:check` para detectar divergência.
+- Após reset limpo, o advisor de performance pode informar como ainda não usados o índice composto
+  da FK em `legal_acceptances` e o lookup da auditoria privada por workspace. Eles permanecem porque
+  evitam varredura/bloqueio na integridade referencial e suportam investigação por tenant; o índice
+  isolado de `workspaces.status` foi removido por baixa seletividade e ausência de consulta atual.
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |
@@ -43,6 +69,7 @@ Decisões consolidadas e revisadas em 2026-07-30:
 | ADR-0005 | `numeric(15,2)`, decimal string e arredondamento por linha | Aceita | [ADR](adr/0005-money-and-rounding.md) |
 | ADR-0006 | `date` civil, `timestamptz` UTC e timezone por workspace | Aceita | [ADR](adr/0006-dates-and-timezone.md) |
 | ADR-0007 | Supabase Cron e idempotência agenda/período | Aceita | [ADR](adr/0007-recurrence-and-idempotency.md) |
+| ADR-0008 | Bootstrap explícito de identidade e isolamento RLS | Aceita | [ADR](adr/0008-identity-workspace-bootstrap-and-rls.md) |
 
 ## Outras decisões consolidadas
 
@@ -58,7 +85,7 @@ Decisões consolidadas e revisadas em 2026-07-30:
 - Custos diretos entram na margem; overhead operacional entra no resultado, não na margem direta.
 - Dashboard e relatórios são consultas derivadas, não tabelas de totais.
 - Alertas internos entram no MVP; e-mail/push ficam para depois.
-- Arquivos de documentos e avatar ficam privados.
+- Arquivos de documentos serão privados; avatar está temporariamente adiado pelo risco conhecido de `sharp`.
 - Administração global básica entra no MVP, sem impersonation.
 - Importação é transacional, idempotente e orientada por cabeçalhos.
 - Contabilidade formal, emissão fiscal, OFX, convites e monetização estão fora do MVP.

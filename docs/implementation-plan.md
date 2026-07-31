@@ -49,21 +49,32 @@
 
 ## Fase 3 - Autenticação, cadastro, perfil e workspace
 
+### Fase 3A - Identidade, workspace, documentos legais e isolamento RLS
+
+1. Migrations de `profiles`, `workspaces`, `workspace_members`, `workspace_settings`, documentos e
+   aceites legais.
+2. Bootstrap explícito, atômico e idempotente, sem trigger em `auth.users`.
+3. RLS, grants mínimos e testes PostgreSQL de usuário A x usuário B, anon e suspensão.
+4. Seed exclusivamente fictício e tipos TypeScript gerados do banco local.
+5. Avatar e Storage permanecem proibidos até reavaliação do advisory de `sharp`.
+
+Gate: reset e seed reproduzíveis, testes pgTAP, tipos atualizados, advisors e gates da aplicação.
+
+### Fase 3B - Autenticação e experiência de conta
+
 ### Tarefas
 
-1. Migrations de `profiles`, `workspaces`, `workspace_memberships`, documentos/aceites legais.
-2. RLS e testes usuário A x usuário B.
-3. Magic link, confirmação SSR, cadastro, logout e conta suspensa.
-4. CAPTCHA, rate limit e mensagens antienumeração.
-5. Onboarding atômico com owner único.
-6. Perfil, avatar privado, preferências e configurações do workspace.
-7. Estrutura de exportação/exclusão sem executar exclusão irreversível.
+1. Magic link, confirmação SSR, cadastro, logout e conta suspensa.
+2. CAPTCHA, rate limit e mensagens antienumeração.
+3. Onboarding visual que chama a RPC aprovada após aceite legal explícito.
+4. Perfil textual, preferências e configurações do workspace, usando iniciais/placeholder.
+5. Estrutura de exportação/exclusão sem executar exclusão irreversível.
 
 ### Testes/gate
 
 - E2E cadastro -> confirmação -> onboarding -> perfil -> logout/login.
 - RLS nega leitura/escrita cruzada.
-- Avatar de outro usuário é inacessível.
+- Nenhum avatar ou upload é criado enquanto o risco temporário de imagens estiver vigente.
 - `date`/timezone e cookies passam testes.
 
 ## Fase 4 - Cadastros operacionais

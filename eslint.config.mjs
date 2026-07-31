@@ -10,6 +10,7 @@ export default defineConfig([
     ".npm-cache/**",
     "coverage/**",
     "playwright-report/**",
+    "supabase/.temp/**",
     "test-results/**",
     "next-env.d.ts",
   ]),

@@ -21,6 +21,48 @@ env:
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
 
 jobs:
+  database:
+    name: Database isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Start local Supabase without printing local credentials
+        run: npx supabase start >"$RUNNER_TEMP/supabase-start.log" 2>&1
+
+      - name: Reset migrations and seed
+        run: npx supabase db reset --local
+
+      - name: Test database isolation
+        run: npm run db:test
+
+      - name: Check generated database types
+        run: npm run db:types:check
+
+      - name: Lint database functions
+        run: npm run db:lint
+
+      - name: Run local database advisors
+        run: |
+          npm run db:advisors:security
+          npm run db:advisors:performance
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx supabase stop --no-backup
+
   quality:
     name: Quality gates
     runs-on: ubuntu-latest
