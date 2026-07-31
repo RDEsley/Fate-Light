@@ -1,0 +1,9 @@
+.next
+.npm-cache
+coverage
+node_modules
+playwright-report
+test-results
+package-lock.json
+PLAN.md
+docs/**/*.md
