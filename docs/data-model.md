@@ -79,60 +79,72 @@ Uma linha possui exatamente uma natureza. Não existe linha “mista”.
 | Aspecto | Definição |
 |---|---|
 | Finalidade | Preferências e dados de apresentação do usuário autenticado. |
-| Campos | `id uuid` (= usuário Auth), `display_name text`, `phone text null`, `avatar_path text null`, `locale text`, `theme text`, `timezone text`, `created_at`, `updated_at`. |
-| FKs/constraints | `id` vinculado a `auth.users`; timezone IANA válida; `theme` em valores aceitos. |
+| Campos | `id uuid` (= usuário Auth), `full_name text`, `phone text null`, `locale text`, `timezone text`, `theme text`, `account_status text`, `last_seen_at timestamptz null`, `created_at`, `updated_at`. |
+| FKs/constraints | `id` vinculado a `auth.users`; timezone IANA válida; `theme` e `account_status` em valores aceitos. |
 | Índices | PK `id`; nenhum índice pessoal adicional no MVP. |
 | Arquivamento/histórico | Sem `archived_at`; remoção segue ciclo de conta. Alterações relevantes em auditoria. |
-| Workspace/RLS | Não tem `workspace_id`; usuário lê/edita somente o próprio perfil. Administrador global recebe apenas metadados mínimos por visão privada. |
-| Derivado/não armazenar | E-mail e sessão vêm do Auth; não armazenar senha, claims, tokens ou lista de workspaces. |
+| Workspace/RLS | Não tem `workspace_id`; usuário ativo lê somente o próprio perfil e atualiza apenas campos permitidos por grants de coluna. Suspensão bloqueia acesso. |
+| Derivado/não armazenar | E-mail e sessão vêm do Auth; não armazenar senha, claims, tokens, avatar nesta fase ou lista de workspaces. |
 
 ### `workspaces`
 
 | Aspecto | Definição |
 |---|---|
-| Finalidade | Limite de tenant e configurações da empresa. |
-| Campos | `id`, `name`, `legal_name null`, `tax_id null`, `address_json null`, `logo_path null`, `currency`, `timezone`, `date_format`, `status`, `default_alert_offsets int[]`, auditoria. |
-| FKs/constraints | Nome obrigatório; moeda ISO de três letras; timezone IANA; `status` em `active/suspended/deletion_pending/deleted`; offsets não negativos e únicos. |
-| Índices | `(status)`, e PK. Acesso por membership usa índices na tabela de memberships. |
+| Finalidade | Limite de tenant; configurações empresariais ficam em `workspace_settings`. |
+| Campos | `id`, `name`, `status`, `currency`, `timezone`, `created_by`, `created_at`, `updated_at`, `archived_at null`. |
+| FKs/constraints | Nome obrigatório; moeda de três letras maiúsculas; timezone IANA; status válido; `unique(created_by)` materializa um workspace por usuário no MVP. |
+| Índices | PK e unicidade de `created_by`. Acesso usa índices em `workspace_members`; status isolado não recebe índice de baixa seletividade. |
 | Arquivamento/histórico | Ciclo por status; sem exclusão direta. Mudança de moeda bloqueada após primeiro movimento. |
 | Workspace/RLS | `id` é o limite do tenant; a tabela não repete `workspace_id`. Owner ativo lê/edita. Suspensão bloqueia operações. |
 | Derivado/não armazenar | Não armazenar saldo, receita, lucro, número de clientes ou “plano”. Tudo é consulta derivada. |
 
-### `workspace_memberships`
+### `workspace_members`
 
 | Aspecto | Definição |
 |---|---|
 | Finalidade | Fonte de autorização entre usuário e workspace. |
-| Campos | `id`, `workspace_id`, `user_id`, `role`, `status`, `joined_at`, `created_at`, `updated_at`. |
-| FKs/constraints | FKs para workspace/Auth; `unique(workspace_id,user_id)`; no MVP `role = 'owner'` e `status` em `active/suspended`. Um workspace exige um owner ativo. |
-| Índices | `(user_id,status)`, `(workspace_id,user_id,status)`. |
+| Campos | `workspace_id`, `user_id`, `role`, `status`, `joined_at`, `created_at`, `updated_at`. |
+| FKs/constraints | PK `(workspace_id,user_id)`; `unique(user_id)`; no MVP `role = 'owner'`; índice único parcial limita um owner ativo. A criação transacional garante sua existência. |
+| Índices | PK composta, usuário único e lookup parcial de owner ativo. |
 | Arquivamento/histórico | Não arquivar; alterar status e auditar. Convites não existem no MVP. |
 | Workspace/RLS | Usuário lê sua membership; criação inicial por caso de uso atômico; nenhuma tela de administração de membros. |
 | Derivado/não armazenar | Não armazenar permissões granulares. |
+
+### `workspace_settings`
+
+| Aspecto | Definição |
+|---|---|
+| Finalidade | Preferências empresariais ligadas um-para-um ao workspace. |
+| Campos | `workspace_id`, `legal_name`, `trade_name null`, `tax_id null`, endereço em colunas estruturadas, `country_code`, `date_format`, `accounting_basis`, `default_alert_offsets smallint[]`, `general_settings jsonb`, timestamps. |
+| FKs/constraints | PK/FK para workspace; CPF/CNPJ canônico opcional; formatos e base contábil em allowlist; offsets únicos entre 0 e 365; JSON deve ser objeto limitado a 8 KiB. |
+| Índices | PK `workspace_id`, suficiente para FK e policies desta fase. |
+| Arquivamento/histórico | Segue o ciclo do workspace; campos de ownership são imutáveis pelo cliente. |
+| Workspace/RLS | Owner ativo lê e atualiza somente colunas empresariais concedidas. Suspensão de usuário, membership ou workspace bloqueia acesso. |
+| Derivado/não armazenar | Moeda e timezone canônicos permanecem no workspace; JSON não armazena autorização nem campos consultados com frequência. |
 
 ### `legal_documents`
 
 | Aspecto | Definição |
 |---|---|
 | Finalidade | Versionar Termos e Política de Privacidade. |
-| Campos | `id`, `document_type`, `version`, `content_hash`, `published_at`, `retired_at null`, `public_url`, `created_at`. |
-| FKs/constraints | `unique(document_type,version)`; hash obrigatório; documento publicado é imutável. |
-| Índices | `(document_type,published_at desc)`. |
+| Campos | `id`, `document_type`, `version`, `content_markdown`, `content_hash`, `published_at`, `effective_at`, `retired_at null`, `status`, `is_required`, timestamps. |
+| FKs/constraints | `unique(document_type,version)`; um publicado por tipo; SHA-256 deve corresponder ao conteúdo; estado e datas coerentes. |
+| Índices | Versão única, um publicado por tipo e lookup parcial de documento obrigatório vigente. |
 | Arquivamento/histórico | Versões nunca sobrescritas; `retired_at` encerra vigência. |
-| Workspace/RLS | Sem workspace; leitura pública apenas das versões publicadas; escrita só por processo administrativo controlado. |
-| Derivado/não armazenar | Não duplicar o conteúdo completo se o artefato público versionado for a fonte; não armazenar aceite aqui. |
+| Workspace/RLS | Sem workspace; nesta fase somente usuário autenticado não suspenso lê versões publicadas e vigentes. `anon` não recebe grant. |
+| Derivado/não armazenar | O seed contém apenas placeholders fictícios; conteúdo legal definitivo exige revisão e nova versão. |
 
 ### `legal_acceptances`
 
 | Aspecto | Definição |
 |---|---|
 | Finalidade | Provar qual versão foi aceita por qual usuário. |
-| Campos | `id`, `user_id`, `legal_document_id`, `accepted_at`, `source`, `ip_hash null`, `user_agent_summary null`. |
-| FKs/constraints | FKs; `unique(user_id,legal_document_id)`; insert-only. |
+| Campos | `id`, `user_id`, `legal_document_id`, `document_version`, `accepted_at`, `source`, `created_at`. |
+| FKs/constraints | FK composta preserva documento/versão; `unique(user_id,legal_document_id)`; insert-only para o cliente. |
 | Índices | `(user_id,accepted_at desc)`. |
 | Arquivamento/histórico | Imutável; retenção conforme obrigação legal. |
-| Workspace/RLS | Sem workspace; usuário lê os próprios aceites. |
-| Derivado/não armazenar | Não armazenar IP bruto ou user-agent completo sem necessidade legal; não armazenar checkbox como booleano mutável. |
+| Workspace/RLS | Sem workspace; usuário ativo lê os próprios aceites; inserção ocorre somente pelo bootstrap privado. |
+| Derivado/não armazenar | IP e user-agent não são coletados sem necessidade documentada; não armazenar checkbox como booleano mutável. |
 
 ### `private.platform_admins`
 

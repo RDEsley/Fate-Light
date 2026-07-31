@@ -21,6 +21,12 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "security:check": "node scripts/check-repository-safety.mjs",
+    "db:test": "supabase test db --local supabase/tests",
+    "db:types": "node scripts/generate-database-types.mjs",
+    "db:types:check": "node scripts/generate-database-types.mjs --check",
+    "db:lint": "supabase db lint --local --schema public,private --level warning --fail-on error",
+    "db:advisors:security": "supabase db advisors --local --type security --level info --fail-on error",
+    "db:advisors:performance": "supabase db advisors --local --type performance --level info --fail-on error",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status"
