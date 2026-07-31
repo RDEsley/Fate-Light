@@ -1,5 +1,6 @@
 # Dependencies and package-manager state
 node_modules/
+.npm-cache/
 .pnpm-store/
 .npm/
 .yarn/cache/
@@ -45,6 +46,7 @@ supabase/.branches/
 supabase/.temp/
 supabase/.env
 supabase/functions/.env*
+supabase/signing_keys.json
 *.dump
 *.backup
 *.sql.gz

@@ -1,5 +1,37 @@
 # Registro de decisões
 
+## Fundação técnica da Fase 2
+
+Decisões consolidadas e revisadas em 2026-07-30:
+
+- Runtime fixado em Node.js `24.18.1` LTS e npm `11.16.0`. A versão foi confirmada no índice e nos
+  arquivos de distribuição oficiais, além do manifesto consumido pelo `actions/setup-node`.
+- Os tipos do runtime usam `@types/node` `24.13.3`, na mesma linha principal do Node executado.
+- Aplicação fixada em Next.js `16.2.12` e React/React DOM `19.2.8`, releases estáveis atuais, sem
+  preview ou canary.
+- TypeScript `6.0.3`, modo `strict`, App Router, diretório `src/` e Server Components por padrão.
+  A linha 7 foi adiada até que o ecossistema de lint do Next usado pelo projeto seja compatível.
+- ESLint `9.39.5` permanece porque o `eslint-config-next` estável ainda carrega plugins cuja árvore
+  não foi atualizada de forma compatível para a correção transitiva de `minimatch`.
+- O único override mantido é PostCSS `8.5.25`: ele substitui o `8.4.31` transitivo do Next dentro da
+  mesma major e elimina os advisories `GHSA-qx2v-qp2m-jg93`, `GHSA-6g55-p6wh-862q` e
+  `GHSA-r28c-9q8g-f849`.
+- Os overrides de Sharp, minimatch e brace-expansion foram removidos na revisão corretiva porque
+  excediam os intervalos declarados pelos pacotes pais. Os advisories sem correção compatível ficam
+  registrados como riscos conhecidos em [repository-audit.md](repository-audit.md).
+- Tailwind CSS `4.3.3` concentra tokens semânticos em `globals.css`, com temas claro/escuro,
+  contraste, foco visível e redução de movimento.
+- Zod `4.4.3` valida contratos separados de ambiente público e servidor. A chave secret é opcional
+  enquanto não existe cliente privilegiado.
+- Supabase JS `2.111.0`, SSR `0.12.4` e CLI `2.110.0` fornecem somente a fundação de clientes e
+  ambiente. Proxy de sessão, autenticação, migrations, tabelas e RLS permanecem fora desta fase.
+- shadcn/ui e bibliotecas de formulário, tabela, gráfico e estado remoto foram adiados até existir
+  uso aprovado.
+- Vitest, Testing Library, Playwright e axe formam o baseline de testes. Os limites mínimos são 80%
+  para statements, lines e functions, e 75% para branches.
+- `AGENTS.md` é a fonte operacional canônica. Nenhuma credencial ou configuração local privada deve
+  ser versionada.
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |

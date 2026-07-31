@@ -100,3 +100,51 @@ Nenhum workflow foi apagado nesta fase para preservar evidência e permitir deci
 ## Resultado
 
 Não foi detectado segredo no histórico rastreado. Há arquivos privados e herdados no working tree que não devem ser adicionados sem revisão. O `.gitignore` reduz o risco de inclusão acidental, mas não substitui revisão de staging e secret scanning.
+
+## Resolução e revisão corretiva da Fase 2
+
+Em 2026-07-30, o CI legado foi substituído pelos gates do Next.js, o keep-alive inseguro foi
+removido, `AGENTS.md` foi consolidado, o contrato de ambiente foi sanitizado e um scanner local/CI
+passou a impedir arquivos proibidos e padrões de segredo sem imprimir seus valores.
+
+### Runtime e lockfile
+
+- Node.js `24.18.1` foi confirmado no índice e nos arquivos oficiais da linha 24, inclusive nos
+  artefatos Linux x64 usados pelo CI.
+- O manifesto oficial do `actions/node-versions`, consumido pelo `actions/setup-node`, classifica
+  `24.18.1` como estável/LTS e publica o respectivo artefato Linux x64.
+- npm `11.16.0` acompanha essa distribuição e foi usado para gerar o lockfile v3 e executar
+  `npm ci`.
+- Todas as dependências diretas estão fixadas sem ranges. Next.js `16.2.12` e React/React DOM
+  `19.2.8` são estáveis, sem preview ou canary.
+- `@types/node` foi corrigido da linha 26 para `24.13.3`, compatível com o runtime.
+- Os únicos scripts de instalação transitivos foram revisados e permitidos por versão exata:
+  `sharp@0.34.5` apenas verifica a disponibilidade do binário/libvips, e
+  `unrs-resolver@1.12.2` prepara o binding nativo já declarado como dependência opcional.
+
+### Revisão individual dos overrides
+
+| Dependência | Pacote pai e versão resolvida | Advisory | Decisão e compatibilidade | Alternativa pelo pai |
+|---|---|---|---|---|
+| PostCSS | Next.js `16.2.12` declara `8.4.31` | `GHSA-qx2v-qp2m-jg93` afeta `<8.5.10`; `GHSA-6g55-p6wh-862q` afeta `<=8.5.11`; `GHSA-r28c-9q8g-f849` afeta `<=8.5.17` | Mantido em `8.5.25`. É a dependência direta do projeto, permanece na major 8 e também satisfaz o `^8.5.16` do Tailwind. Continua necessário no lockfile atual. | Não há: o Next estável atual ainda fixa `8.4.31`. |
+| Sharp | Next.js `16.2.12` declara o opcional `^0.34.5` e resolvia `0.34.5` | `GHSA-f88m-g3jw-g9cj` afeta `<0.35.0` | Override `0.35.3` removido: embora corrigido, está fora de `^0.34.5`, portanto o build não prova compatibilidade contratual. | Não há versão corrigida no range e o Next estável atual ainda usa `^0.34.5`. |
+| minimatch | ESLint `9.39.5`, `@eslint/config-array` `0.21.2`, `@eslint/eslintrc` `3.3.6` e os plugins import/jsx-a11y/react declaram `^3.1.x`, resolvendo `3.1.5` | Exposto por `brace-expansion` no `GHSA-mh99-v99m-4gvg`; o audit marca `2.0.0 - 10.0.2` | Override `10.2.6` removido por exceder todos os ranges `^3.1.x`. | ESLint 10 atualiza parte da árvore, mas os plugins estáveis carregados pelo `eslint-config-next` ainda declaram `^3.1.x`. |
+| brace-expansion | Introduzido por `minimatch 3.1.5`, que declara a linha 1 e resolvia `1.1.18` | `GHSA-mh99-v99m-4gvg` afeta `<=5.0.7` | Override `5.0.9` removido: ele está fora da linha aceita e sua API não é compatível com minimatch 3. | Não há release corrigida na linha 1 nem atualização estável de todos os pais. |
+
+### Resultado do npm audit
+
+O audit online final reporta 11 ocorrências de alta severidade e nenhuma crítica, moderada ou baixa.
+Elas representam duas causas conhecidas:
+
+- Sharp `0.34.5` em `Next -> sharp`: 2 ocorrências na visão de produção. O risco está relacionado ao
+  processamento de imagens herdado do libvips. A aplicação atual não possui pipeline de imagem não
+  confiável; antes de ativar avatar ou otimização de imagem, atualizar para uma versão estável do
+  Next que aceite Sharp `>=0.35.0` ou reavaliar a mitigação.
+- brace-expansion `1.1.18` nas árvores de `minimatch 3.1.5` do ESLint: as demais 9 ocorrências.
+  Trata-se de DoS por expansão sem limite no ferramental de desenvolvimento, alimentado somente por
+  padrões controlados no repositório. Atualizar os pacotes pais assim que houver solução compatível.
+
+`npm audit fix --dry-run` não propôs mudança de versão corretiva; apenas realocação das mesmas
+versões vulneráveis. `npm audit fix --force` não foi executado. Os resultados permanecem visíveis e
+tratados como riscos conhecidos, sem overrides incompatíveis para produzir um audit artificialmente
+zerado.
