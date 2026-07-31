@@ -87,7 +87,11 @@ select results_eq(
 );
 
 select results_eq(
-  $$select count(*) from private.account_lifecycle_requests$$,
+  $$
+    select count(*)
+    from private.account_lifecycle_requests
+    where user_id = '12121212-1212-4212-8212-121212121212'::uuid
+  $$,
   array[2::bigint],
   'Somente um pedido ativo por tipo foi persistido'
 );

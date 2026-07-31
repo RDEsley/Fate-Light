@@ -45,6 +45,12 @@ export function AccountShell({ children, description, fullName, theme, title }: 
         <nav aria-label="Conta" className="border-line flex flex-wrap gap-2 border-b py-4">
           <Link
             className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
+            href="/clientes"
+          >
+            Clientes
+          </Link>
+          <Link
+            className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
             href="/perfil"
           >
             Perfil

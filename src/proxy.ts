@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { appendNextPath } from "@/lib/auth/redirects";
 import { updateSupabaseSession } from "@/lib/supabase/proxy";
 
-const protectedPrefixes = ["/onboarding", "/perfil", "/configuracoes"] as const;
+const protectedPrefixes = ["/onboarding", "/perfil", "/configuracoes", "/clientes"] as const;
 const guestOnlyPaths = new Set(["/login", "/cadastro"]);
 
 function copyCookies(source: NextResponse, target: NextResponse) {
