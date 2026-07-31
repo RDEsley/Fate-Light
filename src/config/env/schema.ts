@@ -4,6 +4,10 @@ const publicEnvironmentShape = {
   NEXT_PUBLIC_APP_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(16),
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).optional(),
+  ),
 } satisfies z.ZodRawShape;
 
 const optionalSecretKey = z.preprocess(

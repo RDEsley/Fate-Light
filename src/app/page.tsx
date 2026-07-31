@@ -1,17 +1,19 @@
+import Link from "next/link";
+
 import { ThemeSelect } from "@/components/ui/theme-select";
 
-const foundationItems = [
+const accessHighlights = [
   {
-    title: "Base web",
-    description: "Next.js com App Router, Server Components por padrão e TypeScript estrito.",
+    title: "Sem senha reutilizada",
+    description: "O link temporário chega diretamente ao seu e-mail.",
   },
   {
-    title: "Dados preparados",
-    description: "Clientes Supabase separados por ambiente, sem tabelas ou regras de negócio.",
+    title: "Dados isolados",
+    description: "Cada workspace possui autorização própria aplicada no banco.",
   },
   {
-    title: "Qualidade contínua",
-    description: "Lint, testes, cobertura, acessibilidade e build reproduzível desde o início.",
+    title: "Acesso verificável",
+    description: "Sessão, estado da conta e destino são validados no servidor.",
   },
 ] as const;
 
@@ -29,36 +31,49 @@ export default function Home() {
             </span>
             <div>
               <p className="font-semibold tracking-tight">Fate Eight Finance</p>
-              <p className="text-muted text-xs">Fundação técnica</p>
+              <p className="text-muted text-xs">Gestão financeira com contexto</p>
             </div>
           </div>
           <ThemeSelect />
         </header>
 
-        <section className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.35fr_1fr] lg:py-24">
+        <section className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.25fr_1fr] lg:py-24">
           <div>
             <p className="border-brand/25 bg-brand-soft text-brand-strong mb-5 inline-flex rounded-full border px-3 py-1 text-sm font-semibold">
-              Fase 2 em execução
+              Acesso passwordless
             </p>
             <h1 className="max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-6xl">
-              Uma base segura para o financeiro crescer sem atalhos.
+              Clareza financeira começa por um acesso seguro.
             </h1>
             <p className="text-muted mt-6 max-w-2xl text-lg leading-8">
-              Esta entrega estabelece aplicação, ambiente, integração técnica e gates de qualidade.
-              Login, cadastro, perfil e regras financeiras entram somente nas próximas fases
-              aprovadas.
+              Entre por magic link para configurar seu workspace e manter as decisões da empresa em
+              um ambiente isolado.
             </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                className="bg-brand text-brand-contrast min-h-11 rounded-xl px-5 py-3 text-center font-semibold"
+                href="/cadastro"
+              >
+                Criar conta
+              </Link>
+              <Link
+                className="border-line bg-surface hover:bg-brand-soft min-h-11 rounded-xl border px-5 py-3 text-center font-semibold transition-colors"
+                href="/login"
+              >
+                Entrar
+              </Link>
+            </div>
           </div>
 
           <aside
-            aria-label="Escopo desta fundação"
+            aria-label="Proteções do acesso"
             className="border-line bg-surface shadow-panel rounded-2xl border p-6 sm:p-8"
           >
             <p className="text-brand-strong text-sm font-semibold tracking-[0.14em] uppercase">
-              Escopo controlado
+              Segurança por padrão
             </p>
             <ul className="mt-6 space-y-6">
-              {foundationItems.map((item, index) => (
+              {accessHighlights.map((item, index) => (
                 <li className="grid grid-cols-[2rem_1fr] gap-3" key={item.title}>
                   <span
                     aria-hidden="true"
@@ -78,7 +93,7 @@ export default function Home() {
 
         <footer className="border-line text-muted flex flex-col gap-2 border-t py-5 text-sm sm:flex-row sm:items-center sm:justify-between">
           <p>Fate Eight Tech</p>
-          <p>Infraestrutura antes do domínio.</p>
+          <p>Autenticação segura, workspace isolado.</p>
         </footer>
       </div>
     </main>

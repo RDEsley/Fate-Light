@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     default: "Fate Eight Finance",
     template: "%s | Fate Eight Finance",
   },
-  description: "Fundação técnica do sistema financeiro da Fate Eight Tech.",
+  description: "Gestão financeira segura e contextual para a Fate Eight Tech.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

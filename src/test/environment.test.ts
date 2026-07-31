@@ -15,6 +15,21 @@ describe("environment validation", () => {
     expect(parsePublicEnvironment(validPublicEnvironment)).toEqual(validPublicEnvironment);
   });
 
+  it("normaliza CAPTCHA vazio e aceita uma site key pública", () => {
+    expect(
+      parsePublicEnvironment({
+        ...validPublicEnvironment,
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
+      }),
+    ).toEqual(validPublicEnvironment);
+    expect(
+      parsePublicEnvironment({
+        ...validPublicEnvironment,
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "turnstile-site-key",
+      }),
+    ).toMatchObject({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "turnstile-site-key" });
+  });
+
   it("falha cedo e informa somente a chave pública inválida", () => {
     expect(() =>
       parsePublicEnvironment({
@@ -35,6 +50,12 @@ describe("environment validation", () => {
 
   it("mantém a chave secreta opcional enquanto nenhum cliente privilegiado existe", () => {
     expect(parseServerEnvironment(validPublicEnvironment)).toEqual(validPublicEnvironment);
+    expect(
+      parseServerEnvironment({
+        ...validPublicEnvironment,
+        SUPABASE_SECRET_KEY: "",
+      }),
+    ).toEqual(validPublicEnvironment);
     expect(
       parseServerEnvironment({
         ...validPublicEnvironment,
