@@ -29,7 +29,7 @@ export default async function OnboardingPage() {
       <div className="mx-auto w-full max-w-5xl px-6 py-6 sm:px-10 lg:px-12">
         <header className="border-line flex items-center justify-between gap-4 border-b pb-5">
           <div>
-            <p className="font-semibold tracking-tight">Fate Eight Finance</p>
+            <p className="font-semibold tracking-tight">Fate Eight</p>
             <p className="text-muted text-xs">Configuração inicial protegida</p>
           </div>
           <ThemeSelect />

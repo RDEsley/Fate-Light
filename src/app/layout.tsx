@@ -9,10 +9,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnvironment.NEXT_PUBLIC_APP_URL),
   title: {
-    default: "Fate Eight Finance",
-    template: "%s | Fate Eight Finance",
+    default: "Fate Eight",
+    template: "%s | Fate Eight",
   },
-  description: "Gestão financeira segura e contextual para a Fate Eight Tech.",
+  description: "Gestão financeira operacional para empresas e prestadores de serviços.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
