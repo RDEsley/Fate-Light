@@ -1,6 +1,6 @@
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
 
-export function sanitizeNextPath(value: string | null | undefined, fallback = "/perfil") {
+export function sanitizeNextPath(value: string | null | undefined, fallback = "/dashboard") {
   if (
     !value ||
     !value.startsWith("/") ||

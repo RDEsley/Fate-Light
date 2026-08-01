@@ -43,7 +43,7 @@ export function resolveAccountDestination(
   }
 
   const nextPath = sanitizeNextPath(requestedPath);
-  const safePath = nextPath.startsWith("/auth/") ? "/perfil" : nextPath;
+  const safePath = nextPath.startsWith("/auth/") ? "/dashboard" : nextPath;
   return { kind: "active", path: safePath };
 }
 

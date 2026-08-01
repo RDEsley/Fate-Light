@@ -5,30 +5,28 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { parseClientForm, parseContactForm } from "@/features/clients/schemas";
+import { parseClientForm } from "@/features/clients/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 const identifierSchema = z.string().uuid();
+const clientStatusSchema = z.enum(["active", "inactive"]);
 
 function statusRedirect(path: string, status: string): never {
-  const separator = path.includes("?") ? "&" : "?";
-  redirect(`${path}${separator}status=${status}` as Route);
+  redirect(`${path}${path.includes("?") ? "&" : "?"}status=${status}` as Route);
 }
 
 export async function createClient(formData: FormData) {
   const values = parseClientForm(formData);
   if (!values) statusRedirect("/clientes/novo", "invalid");
-
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("clients")
     .insert({ ...values, workspace_id: workspaceId })
     .select("id")
     .single();
-
   if (error || !data) statusRedirect("/clientes/novo", "error");
-
   revalidatePath("/clientes");
+  revalidatePath("/dashboard");
   statusRedirect(`/clientes/${data.id}`, "created");
 }
 
@@ -37,122 +35,38 @@ export async function updateClient(formData: FormData) {
   const values = parseClientForm(formData);
   if (!clientId.success) statusRedirect("/clientes", "error");
   if (!values) statusRedirect(`/clientes/${clientId.data}/editar`, "invalid");
-
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("clients")
     .update(values)
-    .eq("id", clientId.data)
-    .eq("workspace_id", workspaceId)
-    .select("id")
-    .single();
-
-  if (error || !data) statusRedirect(`/clientes/${clientId.data}/editar`, "error");
-
-  revalidatePath("/clientes");
-  revalidatePath(`/clientes/${clientId.data}`);
-  statusRedirect(`/clientes/${clientId.data}`, "updated");
-}
-
-export async function archiveClient(formData: FormData) {
-  const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  if (!clientId.success) statusRedirect("/clientes", "error");
-
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
-    .from("clients")
-    .update({ archived_at: new Date().toISOString(), commercial_status: "archived" })
     .eq("id", clientId.data)
     .eq("workspace_id", workspaceId)
     .is("archived_at", null)
     .select("id")
     .single();
-
-  if (error || !data) statusRedirect(`/clientes/${clientId.data}`, "error");
-
+  if (error || !data) statusRedirect(`/clientes/${clientId.data}/editar`, "error");
   revalidatePath("/clientes");
-  statusRedirect("/clientes", "archived");
+  revalidatePath(`/clientes/${clientId.data}`);
+  revalidatePath("/dashboard");
+  statusRedirect(`/clientes/${clientId.data}`, "updated");
 }
 
-export async function restoreClient(formData: FormData) {
+export async function setClientStatus(formData: FormData) {
   const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  if (!clientId.success) statusRedirect("/clientes", "error");
-
+  const status = clientStatusSchema.safeParse(formData.get("clientStatus"));
+  if (!clientId.success || !status.success) statusRedirect("/clientes", "error");
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("clients")
-    .update({ archived_at: null, commercial_status: "active" })
+    .update({ commercial_status: status.data })
     .eq("id", clientId.data)
     .eq("workspace_id", workspaceId)
-    .not("archived_at", "is", null)
+    .is("archived_at", null)
     .select("id")
     .single();
-
-  if (error || !data) statusRedirect("/clientes?view=archived", "error");
-
+  if (error || !data) statusRedirect("/clientes", "error");
   revalidatePath("/clientes");
-  statusRedirect(`/clientes/${clientId.data}`, "restored");
-}
-
-export async function createContact(formData: FormData) {
-  const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const values = parseContactForm(formData);
-  if (!clientId.success) statusRedirect("/clientes", "error");
-  if (!values) statusRedirect(`/clientes/${clientId.data}`, "contact-invalid");
-
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { error } = await supabase.from("client_contacts").insert({
-    ...values,
-    client_id: clientId.data,
-    workspace_id: workspaceId,
-  });
-
-  if (error) statusRedirect(`/clientes/${clientId.data}`, "contact-error");
-
   revalidatePath(`/clientes/${clientId.data}`);
-  statusRedirect(`/clientes/${clientId.data}`, "contact-created");
-}
-
-export async function updateContact(formData: FormData) {
-  const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const contactId = identifierSchema.safeParse(formData.get("contactId"));
-  const values = parseContactForm(formData);
-  if (!clientId.success || !contactId.success) statusRedirect("/clientes", "error");
-  if (!values) statusRedirect(`/clientes/${clientId.data}`, "contact-invalid");
-
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
-    .from("client_contacts")
-    .update(values)
-    .eq("id", contactId.data)
-    .eq("client_id", clientId.data)
-    .eq("workspace_id", workspaceId)
-    .select("id")
-    .single();
-
-  if (error || !data) statusRedirect(`/clientes/${clientId.data}`, "contact-error");
-
-  revalidatePath(`/clientes/${clientId.data}`);
-  statusRedirect(`/clientes/${clientId.data}`, "contact-updated");
-}
-
-export async function archiveContact(formData: FormData) {
-  const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const contactId = identifierSchema.safeParse(formData.get("contactId"));
-  if (!clientId.success || !contactId.success) statusRedirect("/clientes", "error");
-
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
-    .from("client_contacts")
-    .update({ archived_at: new Date().toISOString(), is_primary: false })
-    .eq("id", contactId.data)
-    .eq("client_id", clientId.data)
-    .eq("workspace_id", workspaceId)
-    .select("id")
-    .single();
-
-  if (error || !data) statusRedirect(`/clientes/${clientId.data}`, "contact-error");
-
-  revalidatePath(`/clientes/${clientId.data}`);
-  statusRedirect(`/clientes/${clientId.data}`, "contact-archived");
+  revalidatePath("/dashboard");
+  statusRedirect("/clientes", status.data === "active" ? "activated" : "inactivated");
 }

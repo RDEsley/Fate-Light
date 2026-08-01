@@ -50,11 +50,11 @@ describe("account destination", () => {
     });
     expect(resolveAccountDestination(activeGate, "https://malicious.example")).toEqual({
       kind: "active",
-      path: "/perfil",
+      path: "/dashboard",
     });
     expect(resolveAccountDestination(activeGate, "/auth/continue")).toEqual({
       kind: "active",
-      path: "/perfil",
+      path: "/dashboard",
     });
   });
 

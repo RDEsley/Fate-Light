@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { AccountShell } from "@/app/_components/account-shell";
-import { parseClientAddress } from "@/features/clients/address";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { updateClient } from "../../actions";
@@ -29,9 +28,7 @@ export default async function EditClientPage({ params, searchParams }: EditClien
 
   const { data: client, error } = await context.supabase
     .from("clients")
-    .select(
-      "id, kind, name, trade_name, tax_id, address_json, commercial_status, notes, tags, responsible_name, archived_at",
-    )
+    .select("id, name, trade_name, email, phone, commercial_status, notes, archived_at")
     .eq("id", clientId.data)
     .eq("workspace_id", context.workspaceId)
     .single();
@@ -54,15 +51,12 @@ export default async function EditClientPage({ params, searchParams }: EditClien
           clientId={client.id}
           submitLabel="Salvar cliente"
           values={{
-            address: parseClientAddress(client.address_json),
-            commercialStatus: client.commercial_status,
-            kind: client.kind,
+            companyName: client.trade_name,
+            email: client.email,
             name: client.name,
             notes: client.notes,
-            responsibleName: client.responsible_name,
-            tags: client.tags,
-            taxId: client.tax_id,
-            tradeName: client.trade_name,
+            phone: client.phone,
+            status: client.commercial_status,
           }}
         />
       </section>

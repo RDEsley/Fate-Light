@@ -1,14 +1,13 @@
 const messages: Record<string, string> = {
-  archived: "Cliente arquivado sem apagar o histórico.",
-  "contact-archived": "Contato arquivado.",
-  "contact-created": "Contato adicionado.",
-  "contact-error": "Não foi possível salvar o contato.",
-  "contact-invalid": "Revise o contato e informe ao menos e-mail ou telefone.",
-  "contact-updated": "Contato atualizado.",
+  activated: "Cliente ativado.",
   created: "Cliente criado com segurança.",
   error: "Não foi possível concluir a operação.",
   invalid: "Revise os campos informados.",
-  restored: "Cliente restaurado como ativo.",
+  inactivated: "Cliente inativado.",
+  "service-created": "Serviço adicionado ao cliente.",
+  "service-ended": "Serviço encerrado.",
+  "service-error": "Não foi possível salvar o serviço.",
+  "service-invalid": "Revise os dados do serviço.",
   updated: "Cliente atualizado.",
 };
 
