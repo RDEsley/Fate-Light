@@ -1,91 +1,49 @@
-import { formatClientAddress, parseClientAddress } from "@/features/clients/address";
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
-import { parseClientForm, parseContactForm } from "@/features/clients/schemas";
+import { parseClientForm } from "@/features/clients/schemas";
 
 function clientForm(overrides: Record<string, string> = {}) {
+  const formData = new FormData();
   const values = {
-    addressCity: "Recife",
-    addressCountryCode: "br",
-    addressDistrict: "Centro",
-    addressLine1: "Rua Fictícia, 8",
-    addressLine2: "",
-    addressPostalCode: "50000-000",
-    addressRegion: "pe",
-    commercialStatus: "active",
-    kind: "company",
+    companyName: "Fate Cliente",
+    email: " CLIENTE@EXAMPLE.TEST ",
     name: "Cliente Exemplo",
-    notes: "Somente dados fictícios.",
-    responsibleName: "Pessoa Responsável",
-    tags: "Mensal, prioridade, MENSAL",
-    taxId: "12.345.678/0001-95",
-    tradeName: "Marca Exemplo",
+    notes: "Uso operacional.",
+    phone: "81999999999",
+    status: "active",
     ...overrides,
   };
-  const formData = new FormData();
   Object.entries(values).forEach(([key, value]) => formData.set(key, value));
   return formData;
 }
 
 describe("client domain boundaries", () => {
-  it("normaliza documento, tags e endereço antes da persistência", () => {
+  it("normaliza o cadastro mínimo do cliente", () => {
     expect(parseClientForm(clientForm())).toEqual({
-      address_json: {
-        city: "Recife",
-        country_code: "BR",
-        district: "Centro",
-        line1: "Rua Fictícia, 8",
-        postal_code: "50000-000",
-        region: "PE",
-      },
+      address_json: null,
       commercial_status: "active",
+      email: "cliente@example.test",
       kind: "company",
       name: "Cliente Exemplo",
-      notes: "Somente dados fictícios.",
-      responsible_name: "Pessoa Responsável",
-      tags: ["mensal", "prioridade"],
-      tax_id: "12345678000195",
-      trade_name: "Marca Exemplo",
+      notes: "Uso operacional.",
+      phone: "81999999999",
+      responsible_name: null,
+      tags: [],
+      tax_id: null,
+      trade_name: "Fate Cliente",
     });
   });
 
-  it("rejeita documento com comprimento fora do contrato", () => {
-    expect(parseClientForm(clientForm({ taxId: "123" }))).toBeNull();
-  });
-
-  it("exige um canal e normaliza e-mail de contato", () => {
-    const valid = new FormData();
-    valid.set("name", "Contato Exemplo");
-    valid.set("email", " CONTATO@EXAMPLE.TEST ");
-    valid.set("phone", "");
-    valid.set("role", "Financeiro");
-    valid.set("isPrimary", "on");
-    expect(parseContactForm(valid)).toMatchObject({
-      email: "contato@example.test",
-      is_primary: true,
-    });
-
-    valid.set("email", "");
-    expect(parseContactForm(valid)).toBeNull();
-  });
-
-  it("trata JSON de endereço como dado não confiável", () => {
-    const address = parseClientAddress({
-      city: "Recife",
-      ignored: ["não deve escapar"],
-      line1: "Rua Exemplo",
-    });
-
-    expect(address).toEqual({ city: "Recife", line1: "Rua Exemplo" });
-    expect(formatClientAddress(address)).toEqual(["Rua Exemplo", "Recife"]);
+  it("rejeita telefone curto", () => {
+    expect(parseClientForm(clientForm({ phone: "123" }))).toBeNull();
   });
 
   it("limita e preserva filtros válidos na paginação", () => {
-    const query = parseClientQuery({ page: "2", q: "  exemplo ", status: "active" });
-    expect(query).toEqual({ page: 2, q: "exemplo", status: "active", view: "active" });
-    expect(clientListHref(query, 3)).toBe("/clientes?q=exemplo&status=active&page=3");
-    expect(parseClientQuery({ page: "inválida", status: "forjado" })).toMatchObject({
+    const query = parseClientQuery({ page: "2", q: "  exemplo ", state: "active" });
+    expect(query).toEqual({ page: 2, q: "exemplo", state: "active" });
+    expect(clientListHref(query, 3)).toBe("/clientes?q=exemplo&state=active&page=3");
+    expect(parseClientQuery({ page: "inválida", state: "forjado" })).toMatchObject({
       page: 1,
-      status: "all",
+      state: "all",
     });
   });
 });

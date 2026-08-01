@@ -58,6 +58,14 @@ Rejeitada: não protege contra consulta incorreta, cliente modificado ou acesso 
   histórico desta fase. Eles correspondem às consultas aprovadas e permanecem até existirem dados
   representativos; a medição será repetida após as telas e novamente antes da publicação.
 
+## Revisão para o MVP operacional
+
+O escopo imediato passou a priorizar uso diário. `client_services`, `charges`, `expenses` e
+`domains` repetem o isolamento por workspace e as FKs compostas. Receita própria, verba de mídia e
+adicionais são armazenados separadamente; atraso é derivado de `due_date`, sem Cron. Essas quatro
+tabelas mantêm autoria e timestamps, sem ampliar a auditoria completa neste MVP. Os cadastros
+genéricos anteriores permanecem no schema por compatibilidade, mas não são expostos no fluxo atual.
+
 ## Verificação
 
 - Testes pgTAP cobrem CRUD permitido, negação de DELETE, adulteração de workspace, FKs compostas,

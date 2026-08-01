@@ -63,6 +63,91 @@ export type Database = {
           },
         ]
       }
+      charges: {
+        Row: {
+          additional_fee: number
+          client_id: string
+          client_service_id: string | null
+          company_revenue: number
+          created_at: string
+          created_by: string
+          description: string
+          due_date: string
+          gross_total: number | null
+          id: string
+          media_budget: number
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          additional_fee?: number
+          client_id: string
+          client_service_id?: string | null
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          description: string
+          due_date: string
+          gross_total?: number | null
+          id?: string
+          media_budget?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          additional_fee?: number
+          client_id?: string
+          client_service_id?: string | null
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          description?: string
+          due_date?: string
+          gross_total?: number | null
+          id?: string
+          media_budget?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "charges_service_fk"
+            columns: ["workspace_id", "client_id", "client_service_id"]
+            isOneToOne: false
+            referencedRelation: "client_services"
+            referencedColumns: ["workspace_id", "client_id", "id"]
+          },
+          {
+            foreignKeyName: "charges_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contacts: {
         Row: {
           archived_at: string | null
@@ -126,6 +211,81 @@ export type Database = {
           },
         ]
       }
+      client_services: {
+        Row: {
+          additional_fee: number
+          billing_type: string
+          client_id: string
+          company_revenue: number
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          media_budget: number
+          name: string
+          next_due_date: string | null
+          notes: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          additional_fee?: number
+          billing_type?: string
+          client_id: string
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          media_budget?: number
+          name: string
+          next_due_date?: string | null
+          notes?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          additional_fee?: number
+          billing_type?: string
+          client_id?: string
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          media_budget?: number
+          name?: string
+          next_due_date?: string | null
+          notes?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_services_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_services_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address_json: Json | null
@@ -133,10 +293,12 @@ export type Database = {
           commercial_status: string
           created_at: string
           created_by: string
+          email: string | null
           id: string
           kind: string
           name: string
           notes: string | null
+          phone: string | null
           responsible_name: string | null
           tags: string[]
           tax_id: string | null
@@ -151,10 +313,12 @@ export type Database = {
           commercial_status?: string
           created_at?: string
           created_by?: string
+          email?: string | null
           id?: string
           kind: string
           name: string
           notes?: string | null
+          phone?: string | null
           responsible_name?: string | null
           tags?: string[]
           tax_id?: string | null
@@ -169,10 +333,12 @@ export type Database = {
           commercial_status?: string
           created_at?: string
           created_by?: string
+          email?: string | null
           id?: string
           kind?: string
           name?: string
           notes?: string | null
+          phone?: string | null
           responsible_name?: string | null
           tags?: string[]
           tax_id?: string | null
@@ -184,6 +350,75 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "clients_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      domains: {
+        Row: {
+          auto_renew: boolean
+          client_id: string
+          cost: number | null
+          created_at: string
+          created_by: string
+          domain: string
+          expires_on: string
+          id: string
+          notes: string | null
+          payment_responsibility: string
+          registrar: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          auto_renew?: boolean
+          client_id: string
+          cost?: number | null
+          created_at?: string
+          created_by?: string
+          domain: string
+          expires_on: string
+          id?: string
+          notes?: string | null
+          payment_responsibility: string
+          registrar?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          auto_renew?: boolean
+          client_id?: string
+          cost?: number | null
+          created_at?: string
+          created_by?: string
+          domain?: string
+          expires_on?: string
+          id?: string
+          notes?: string | null
+          payment_responsibility?: string
+          registrar?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domains_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "domains_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -234,6 +469,75 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "expense_categories_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          client_id: string | null
+          created_at: string
+          created_by: string
+          description: string
+          due_date: string
+          expense_type: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description: string
+          due_date: string
+          expense_type: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          due_date?: string
+          expense_type?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -610,7 +914,97 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      charges_overview: {
+        Row: {
+          additional_fee: number | null
+          client_id: string | null
+          client_service_id: string | null
+          company_result_value: number | null
+          company_revenue: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          effective_status: string | null
+          gross_total: number | null
+          id: string | null
+          media_budget: number | null
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string | null
+          updated_by: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          additional_fee?: number | null
+          client_id?: string | null
+          client_service_id?: string | null
+          company_result_value?: never
+          company_revenue?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          effective_status?: never
+          gross_total?: number | null
+          id?: string | null
+          media_budget?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          additional_fee?: number | null
+          client_id?: string | null
+          client_service_id?: string | null
+          company_result_value?: never
+          company_revenue?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          effective_status?: never
+          gross_total?: number | null
+          id?: string | null
+          media_budget?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "charges_service_fk"
+            columns: ["workspace_id", "client_id", "client_service_id"]
+            isOneToOne: false
+            referencedRelation: "client_services"
+            referencedColumns: ["workspace_id", "client_id", "id"]
+          },
+          {
+            foreignKeyName: "charges_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       bootstrap_identity_workspace: {

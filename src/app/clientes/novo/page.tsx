@@ -21,7 +21,7 @@ export default async function NewClientPage({
 
   return (
     <AccountShell
-      description="Cadastre somente os dados necessários. Informações financeiras serão derivadas de movimentos futuros."
+      description="Cadastre os dados essenciais para iniciar o atendimento e as cobranças."
       fullName={fullName}
       theme={theme}
       title="Novo cliente"

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   if (error || typeof data?.claims?.sub !== "string") {
     return NextResponse.redirect(
       new URL(
-        appendNextPath("/login", request.nextUrl.searchParams.get("next") ?? "/perfil"),
+        appendNextPath("/login", request.nextUrl.searchParams.get("next") ?? "/dashboard"),
         request.url,
       ),
     );

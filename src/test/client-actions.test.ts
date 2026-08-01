@@ -23,26 +23,17 @@ vi.mock("@/lib/auth/workspace-context", () => ({
   })),
 }));
 
-import { archiveClient, createClient } from "@/app/clientes/actions";
+import { createClient, setClientStatus } from "@/app/clientes/actions";
 
 function validClientForm() {
   const formData = new FormData();
   const values = {
-    addressCity: "",
-    addressCountryCode: "BR",
-    addressDistrict: "",
-    addressLine1: "",
-    addressLine2: "",
-    addressPostalCode: "",
-    addressRegion: "",
-    commercialStatus: "lead",
-    kind: "company",
+    companyName: "Empresa Segura",
+    email: "cliente@example.test",
     name: "Cliente Seguro",
     notes: "",
-    responsibleName: "",
-    tags: "",
-    taxId: "",
-    tradeName: "",
+    phone: "81999999999",
+    status: "active",
   };
   Object.entries(values).forEach(([key, value]) => formData.set(key, value));
   formData.set("workspaceId", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
@@ -85,16 +76,16 @@ describe("client actions", () => {
     );
   });
 
-  it("arquiva por update limitado ao workspace em vez de excluir", async () => {
+  it("inativa por update limitado ao workspace em vez de excluir", async () => {
     const formData = new FormData();
     formData.set("clientId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+    formData.set("clientStatus", "inactive");
 
-    await expect(archiveClient(formData)).rejects.toThrow("REDIRECT:/clientes?status=archived");
+    await expect(setClientStatus(formData)).rejects.toThrow(
+      "REDIRECT:/clientes?status=inactivated",
+    );
 
-    expect(clientActionMocks.update).toHaveBeenCalledWith({
-      archived_at: expect.any(String),
-      commercial_status: "archived",
-    });
+    expect(clientActionMocks.update).toHaveBeenCalledWith({ commercial_status: "inactive" });
     expect(clientActionMocks.eq).toHaveBeenCalledWith(
       "workspace_id",
       "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",

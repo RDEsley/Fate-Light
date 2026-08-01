@@ -21,14 +21,14 @@ export function AccountShell({ children, description, fullName, theme, title }: 
       <AccountTheme theme={theme} />
       <div className="mx-auto w-full max-w-6xl px-6 py-6 sm:px-10 lg:px-12">
         <header className="border-line flex flex-wrap items-center justify-between gap-4 border-b pb-5">
-          <Link className="flex items-center gap-3" href="/perfil">
+          <Link className="flex items-center gap-3" href="/dashboard">
             <span
               aria-hidden="true"
               className="bg-brand text-brand-contrast grid size-10 place-items-center rounded-xl font-bold"
             >
               8
             </span>
-            <span className="font-semibold tracking-tight">Fate Eight Finance</span>
+            <span className="font-semibold tracking-tight">Fate Eight</span>
           </Link>
           <div className="flex items-center gap-3">
             <ThemeSelect />
@@ -45,9 +45,33 @@ export function AccountShell({ children, description, fullName, theme, title }: 
         <nav aria-label="Conta" className="border-line flex flex-wrap gap-2 border-b py-4">
           <Link
             className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
+            href="/dashboard"
+          >
+            Dashboard
+          </Link>
+          <Link
+            className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
             href="/clientes"
           >
             Clientes
+          </Link>
+          <Link
+            className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
+            href="/cobrancas"
+          >
+            Cobranças
+          </Link>
+          <Link
+            className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
+            href="/despesas"
+          >
+            Despesas
+          </Link>
+          <Link
+            className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
+            href="/dominios"
+          >
+            Domínios
           </Link>
           <Link
             className="hover:bg-brand-soft rounded-lg px-3 py-2 text-sm font-semibold"
