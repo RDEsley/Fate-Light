@@ -78,7 +78,7 @@ A navegação de plataforma usa shell, cores de contexto e autorização separad
 
 - Campo de e-mail.
 - CAPTCHA conforme política antiabuso.
-- Botão “Enviar link de acesso”.
+- Login padrão por e-mail e senha, com botão para escolher o magic link.
 - Mensagem genérica de sucesso, independentemente de a conta existir.
 - Estados: enviando, enviado, limite atingido, indisponível e link expirado.
 - Link para cadastro e documentos legais.

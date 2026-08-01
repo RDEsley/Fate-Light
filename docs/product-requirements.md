@@ -50,7 +50,7 @@ Critério de aceite: um novo usuário confirma o e-mail, conclui onboarding e en
 
 ### RF-02 - Login e sessão
 
-- Login passwordless por magic link.
+- Login por e-mail e senha, com magic link como alternativa.
 - Confirmação em rota server-side, sessão por cookies e redirecionamento seguro.
 - Reenvio limitado, mensagens genéricas e tratamento de link expirado.
 - Encerrar sessão atual; visualizar e revogar sessões quando a API permitir com segurança.

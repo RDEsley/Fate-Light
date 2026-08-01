@@ -16,13 +16,13 @@ test("abre o acesso seguro sem violações automáticas de acessibilidade", asyn
 });
 
 for (const route of ["/login", "/cadastro"] as const) {
-  test(`${route} oferece magic link com acessibilidade automática`, async ({ page }) => {
+  test(`${route} oferece senha e escolha de magic link com acessibilidade`, async ({ page }) => {
     await page.goto(route);
 
     await expect(page.getByLabel("E-mail")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /link de acesso|criar minha conta/i }),
-    ).toBeVisible();
+    await expect(page.getByLabel(/^Senha/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /entrar|criar conta/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /magic link/i })).toBeVisible();
 
     const accessibilityResults = await new AxeBuilder({ page }).analyze();
     expect(accessibilityResults.violations).toEqual([]);
@@ -33,8 +33,12 @@ for (const protectedRoute of [
   "/onboarding",
   "/perfil",
   "/configuracoes/empresa",
+  "/dashboard",
   "/clientes",
   "/clientes/novo",
+  "/cobrancas",
+  "/despesas",
+  "/dominios",
 ] as const) {
   test(`${protectedRoute} rejeita sessão ausente`, async ({ page }) => {
     await page.goto(protectedRoute);

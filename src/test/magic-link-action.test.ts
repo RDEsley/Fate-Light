@@ -10,6 +10,9 @@ const authMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({ redirect: authMocks.redirect }));
+vi.mock("@/lib/auth/account-gate", () => ({
+  getAccountDestination: vi.fn(),
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createServerSupabaseClient: vi.fn(async () => ({
     auth: {
@@ -48,7 +51,9 @@ describe("magic link action", () => {
   });
 
   it("não cria conta durante o fluxo de login", async () => {
-    await expect(requestMagicLink(magicLinkForm())).rejects.toThrow("REDIRECT:/login?status=sent");
+    await expect(requestMagicLink(magicLinkForm())).rejects.toThrow(
+      "REDIRECT:/login?status=sent&method=magic-link",
+    );
 
     expect(authMocks.signInWithOtp).toHaveBeenCalledWith({
       email: "pessoa@example.test",
@@ -62,7 +67,7 @@ describe("magic link action", () => {
   it("permite criação somente no cadastro explícito", async () => {
     await expect(
       requestMagicLink(magicLinkForm({ mode: "signup", next: "/onboarding" })),
-    ).rejects.toThrow("REDIRECT:/cadastro?status=sent");
+    ).rejects.toThrow("REDIRECT:/cadastro?status=sent&method=magic-link");
 
     expect(authMocks.signInWithOtp).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -77,19 +82,21 @@ describe("magic link action", () => {
       error: new Error("user not found"),
     });
 
-    await expect(requestMagicLink(magicLinkForm())).rejects.toThrow("REDIRECT:/login?status=sent");
+    await expect(requestMagicLink(magicLinkForm())).rejects.toThrow(
+      "REDIRECT:/login?status=sent&method=magic-link",
+    );
   });
 
   it("descarta honeypot sem chamar o provedor", async () => {
     await expect(requestMagicLink(magicLinkForm({ website: "bot.example" }))).rejects.toThrow(
-      "REDIRECT:/login?status=sent",
+      "REDIRECT:/login?status=sent&method=magic-link",
     );
     expect(authMocks.signInWithOtp).not.toHaveBeenCalled();
   });
 
   it("rejeita e-mail inválido antes de chamar o provedor", async () => {
     await expect(requestMagicLink(magicLinkForm({ email: "not-an-email" }))).rejects.toThrow(
-      "REDIRECT:/login?status=invalid",
+      "REDIRECT:/login?status=invalid&method=magic-link",
     );
     expect(authMocks.signInWithOtp).not.toHaveBeenCalled();
   });
