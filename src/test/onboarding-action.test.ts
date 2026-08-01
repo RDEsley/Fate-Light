@@ -80,7 +80,7 @@ describe("onboarding action", () => {
 
   it("confere as versões legais no servidor e chama o bootstrap aprovado", async () => {
     await expect(bootstrapAccount(initialActionState, onboardingForm())).rejects.toThrow(
-      "REDIRECT:/perfil?status=workspace-created",
+      "REDIRECT:/dashboard",
     );
 
     expect(onboardingMocks.rpc).toHaveBeenCalledWith(

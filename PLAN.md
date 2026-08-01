@@ -32,7 +32,7 @@ As decisões detalhadas estão em [docs/decisions.md](docs/decisions.md) e nos A
 ### Acesso, conta e produto público
 
 - Landing page pública.
-- Cadastro público passwordless, confirmação por e-mail e proteção contra abuso.
+- Cadastro público por senha ou magic link, confirmação por e-mail e proteção contra abuso.
 - Login por magic link, encerramento de sessão e tratamento de conta suspensa.
 - Aceite versionado dos Termos de Uso e da Política de Privacidade.
 - Onboarding para criar o workspace inicial.

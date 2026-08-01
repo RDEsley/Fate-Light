@@ -115,5 +115,5 @@ export async function bootstrapAccount(
     };
   }
 
-  redirect("/perfil?status=workspace-created");
+  redirect("/dashboard");
 }

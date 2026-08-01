@@ -12,7 +12,7 @@ protegidas por RLS. Formulários públicos de autenticação também precisam de
 
 ## Decisão
 
-- O Supabase Auth passwordless envia magic link com `signInWithOtp`; login usa
+- O Supabase Auth aceita e-mail e senha com `signInWithPassword` e mantém o magic link com `signInWithOtp`; login usa
   `shouldCreateUser: false` e cadastro permite a criação explícita.
 - `/auth/confirm` troca somente `token_hash` e tipo aceitos por uma sessão em cookie. Identidade é
   obtida de claims verificadas; e-mail, tokens e erros internos nunca são registrados.

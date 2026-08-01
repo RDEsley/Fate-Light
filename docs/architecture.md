@@ -118,7 +118,7 @@ Operações compostas, como pagamento + alocações, importação e geração re
 
 ## 6. Autenticação e cadastro
 
-- Supabase Auth passwordless com magic link.
+- Supabase Auth com e-mail e senha ou magic link.
 - Cliente SSR com cookies; confirmação troca `token_hash` por sessão em `/auth/confirm`.
 - Identidade é obtida de claims verificadas pelo servidor, nunca de parâmetros do cliente.
 - Mensagens de login/cadastro não confirmam existência de e-mail.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { publicEnvironment } from "@/config/env/public";
 import { SubmitButton } from "@/app/_components/submit-button";
@@ -22,6 +23,8 @@ const statusMessages: Record<string, string> = {
 export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
   const isLogin = mode === "login";
   const message = status ? statusMessages[status] : undefined;
+  const passwordHref =
+    `${isLogin ? "/login" : "/cadastro"}?next=${encodeURIComponent(nextPath ?? (isLogin ? "/dashboard" : "/onboarding"))}` as Route;
 
   return (
     <>
@@ -71,6 +74,18 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
           pendingLabel="Enviando link…"
         />
       </form>
+
+      <div className="my-6 flex items-center gap-3" aria-hidden="true">
+        <span className="border-line h-px flex-1 border-t" />
+        <span className="text-muted text-xs uppercase">ou</span>
+        <span className="border-line h-px flex-1 border-t" />
+      </div>
+      <Link
+        className="border-line hover:bg-brand-soft block min-h-11 rounded-xl border px-5 py-3 text-center font-semibold"
+        href={passwordHref}
+      >
+        {isLogin ? "Entrar com e-mail e senha" : "Criar conta com e-mail e senha"}
+      </Link>
 
       <p className="text-muted mt-6 text-center text-sm leading-6">
         {isLogin ? "Ainda não tem uma conta?" : "Já possui uma conta?"}{" "}
