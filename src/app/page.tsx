@@ -4,8 +4,8 @@ import { ThemeSelect } from "@/components/ui/theme-select";
 
 const accessHighlights = [
   {
-    title: "Sem senha reutilizada",
-    description: "O link temporário chega diretamente ao seu e-mail.",
+    title: "Acesso flexível",
+    description: "Entre com senha ou escolha receber um magic link no seu e-mail.",
   },
   {
     title: "Dados isolados",
@@ -30,7 +30,7 @@ export default function Home() {
               8
             </span>
             <div>
-              <p className="font-semibold tracking-tight">Fate Eight Finance</p>
+              <p className="font-semibold tracking-tight">Fate Eight</p>
               <p className="text-muted text-xs">Gestão financeira com contexto</p>
             </div>
           </div>
@@ -40,14 +40,14 @@ export default function Home() {
         <section className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.25fr_1fr] lg:py-24">
           <div>
             <p className="border-brand/25 bg-brand-soft text-brand-strong mb-5 inline-flex rounded-full border px-3 py-1 text-sm font-semibold">
-              Acesso passwordless
+              Gestão financeira operacional
             </p>
             <h1 className="max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-6xl">
               Clareza financeira começa por um acesso seguro.
             </h1>
             <p className="text-muted mt-6 max-w-2xl text-lg leading-8">
-              Entre por magic link para configurar seu workspace e manter as decisões da empresa em
-              um ambiente isolado.
+              Use e-mail e senha ou magic link para acessar um workspace isolado e organizar sua
+              operação financeira.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -92,7 +92,7 @@ export default function Home() {
         </section>
 
         <footer className="border-line text-muted flex flex-col gap-2 border-t py-5 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <p>Fate Eight Tech</p>
+          <p>Desenvolvido pela Fate Eight Tech</p>
           <p>Autenticação segura, workspace isolado.</p>
         </footer>
       </div>

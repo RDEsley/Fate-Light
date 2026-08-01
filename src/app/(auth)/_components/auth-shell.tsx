@@ -22,7 +22,7 @@ export function AuthShell({ children, description, eyebrow, title }: AuthShellPr
             >
               8
             </span>
-            <span className="font-semibold tracking-tight">Fate Eight Finance</span>
+            <span className="font-semibold tracking-tight">Fate Eight</span>
           </Link>
           <ThemeSelect />
         </header>
