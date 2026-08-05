@@ -1,4 +1,4 @@
-// Arquivo gerado por `npm run db:types:linked`. Não edite manualmente.
+// Arquivo gerado automaticamente por scripts/generate-database-types.mjs. Não edite manualmente.
 export type Json =
   | string
   | number
