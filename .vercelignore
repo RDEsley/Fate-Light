@@ -1,0 +1,26 @@
+# Secrets and environment state
+.env
+.env.*
+!.env.example
+.vercel/
+
+# Local and generated artifacts
+.next/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Private business data and local tooling
+private/
+imports/
+exports/
+.mcp.json
+.mcp.*.json
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+*.ods
+/*.csv

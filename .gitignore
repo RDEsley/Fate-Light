@@ -12,6 +12,8 @@ out/
 dist/
 build/
 .vercel/
+.PLAN.md
+PLAN.md
 
 # Test and coverage output
 coverage/
@@ -93,3 +95,6 @@ Desktop.ini
 # - documentation
 # - lockfiles
 # - Supabase migrations and fictitious seeds
+
+.vercel
+.env*
