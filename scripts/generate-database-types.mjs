@@ -21,9 +21,16 @@ if (generation.status !== 0) {
   process.exit(generation.status ?? 1);
 }
 
+function normalizeGeneratedTypes(output) {
+  return output.replace(
+    /  \/\/ Allows to automatically instantiate createClient[\s\S]*?  __InternalSupabase: \{\r?\n    PostgrestVersion: "[^"]+"\r?\n  \}\r?\n/,
+    "",
+  );
+}
+
 const generated = [
   "// Arquivo gerado automaticamente por scripts/generate-database-types.mjs. Não edite manualmente.",
-  generation.stdout.trim(),
+  normalizeGeneratedTypes(generation.stdout).trim(),
   "",
 ].join("\n");
 
