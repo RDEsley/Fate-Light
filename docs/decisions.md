@@ -92,6 +92,18 @@ Decisões consolidadas em 2026-07-31:
   reservados à Fase 11 e dependem da política de retenção ainda não resolvida.
 - Detalhes e alternativas estão no [ADR 0009](adr/0009-ssr-authentication-and-abuse-protection.md).
 
+## Exceção temporária de confirmação de e-mail
+
+Consolidada em 2026-08-05:
+
+- Enquanto o cadastro por senha for usado apenas em testes internos, a confirmação de e-mail fica
+  desligada manualmente no painel do projeto Supabase hospedado ("Fate Light"), não por
+  `supabase config push`. Nenhuma mudança de código foi necessária: `authenticateWithPassword` já
+  seguia direto quando `signUp` devolve sessão.
+- O magic link continua exigindo e-mail real, como fluxo alternativo.
+- A confirmação deve ser reativada antes da Fase 12 (hardening e publicação). Detalhes no
+  [ADR 0014](adr/0014-temporary-email-confirmation-waiver.md).
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |
@@ -109,6 +121,7 @@ Decisões consolidadas em 2026-07-31:
 | ADR-0011 | Importação de planilha em memória, idempotente e transacional | Aceita | [ADR](adr/0011-transactional-spreadsheet-import.md) |
 | ADR-0012 | Contrato de versões do runtime na Vercel | Aceita | [ADR](adr/0012-vercel-runtime-version-contract.md) |
 | ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
+| ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha | Aceita | [ADR](adr/0014-temporary-email-confirmation-waiver.md) |
 
 ## Outras decisões consolidadas
 
