@@ -22,7 +22,7 @@ if (generation.status !== 0) {
 }
 
 const generated = [
-  `// Arquivo gerado por \`${linked ? "npm run db:types:linked" : "npm run db:types"}\`. Não edite manualmente.`,
+  "// Arquivo gerado automaticamente por scripts/generate-database-types.mjs. Não edite manualmente.",
   generation.stdout.trim(),
   "",
 ].join("\n");
