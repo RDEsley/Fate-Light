@@ -47,6 +47,11 @@ async function fillDate(field: Locator, value: string) {
   await field.press("Escape");
 }
 
+async function selectClient(panel: Locator, name: string) {
+  await panel.getByRole("combobox", { name: "Cliente", exact: true }).fill(name);
+  await panel.getByRole("option").filter({ hasText: name }).click();
+}
+
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
   await panel.locator(":scope > summary").click();
@@ -116,7 +121,7 @@ test.describe("authenticated MVP journey", () => {
 
     chargePanel = page.locator("details").filter({ hasText: "Nova cobrança" });
     await chargePanel.locator("summary").click();
-    await chargePanel.locator('select[name="clientId"]').selectOption({ label: "Cliente MVP" });
+    await selectClient(chargePanel, "Cliente MVP");
     await chargePanel.getByLabel("Descrição").fill("Pendência operacional");
     await fillDate(chargePanel.getByLabel("Vencimento"), dateOffset(-1));
     await chargePanel.getByLabel("Receita própria").fill("100");
@@ -138,7 +143,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("link", { name: "Domínios" }).click();
     const domainPanel = page.locator("details").filter({ hasText: "Novo domínio" });
     await domainPanel.locator("summary").click();
-    await domainPanel.locator('select[name="clientId"]').selectOption({ label: "Cliente MVP" });
+    await selectClient(domainPanel, "Cliente MVP");
     await domainPanel.getByLabel("Domínio").fill("cliente-mvp.example");
     await fillDate(domainPanel.getByLabel("Data de expiração"), dateOffset(7));
     await domainPanel.getByRole("button", { name: "Criar domínio" }).click();
