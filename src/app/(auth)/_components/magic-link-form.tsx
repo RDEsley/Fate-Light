@@ -16,6 +16,8 @@ type MagicLinkFormProps = {
 
 const statusMessages: Record<string, string> = {
   captcha: "Conclua a verificação de segurança e tente novamente.",
+  "email-rate-limit":
+    "Muitas solicitações de e-mail foram feitas. Aguarde alguns minutos antes de tentar novamente.",
   invalid: "Revise o nome ou nome da empresa e informe um e-mail válido.",
   sent: "Se o e-mail estiver elegível, você receberá um link de acesso. Verifique também a caixa de spam.",
   "signed-out": "Sua sessão foi encerrada com segurança.",
@@ -33,7 +35,7 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
         <FeedbackBanner
           message={message}
           tone={
-            status === "invalid" || status === "captcha"
+            status === "invalid" || status === "captcha" || status === "email-rate-limit"
               ? "error"
               : status === "signed-out"
                 ? "success"

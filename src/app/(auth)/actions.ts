@@ -43,7 +43,24 @@ const passwordRequestSchema = z
   });
 
 type AuthStatus =
-  "captcha" | "confirmation-sent" | "error" | "invalid" | "invalid-credentials" | "sent";
+  | "captcha"
+  | "confirmation-sent"
+  | "email-rate-limit"
+  | "error"
+  | "invalid"
+  | "invalid-credentials"
+  | "sent";
+
+function isEmailRateLimitError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as { code?: unknown; status?: unknown };
+  return (
+    candidate.status === 429 ||
+    candidate.code === "over_email_send_rate_limit" ||
+    candidate.code === "over_request_rate_limit"
+  );
+}
 
 function statusPath(mode: "login" | "signup", status: AuthStatus, method?: "magic-link") {
   const pathname = mode === "login" ? "/login" : "/cadastro";
@@ -83,9 +100,10 @@ export async function requestMagicLink(formData: FormData) {
   const confirmationUrl = new URL("/auth/confirm", publicEnvironment.NEXT_PUBLIC_APP_URL);
   confirmationUrl.searchParams.set("next", nextPath);
 
+  let rateLimited = false;
   try {
     const supabase = await createServerSupabaseClient();
-    await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
       options: {
         captchaToken: parsed.data.captchaToken,
@@ -96,10 +114,13 @@ export async function requestMagicLink(formData: FormData) {
         shouldCreateUser: parsed.data.mode === "signup",
       },
     });
-  } catch {
+    rateLimited = isEmailRateLimitError(error);
+  } catch (error) {
+    rateLimited = isEmailRateLimitError(error);
     // A resposta permanece genérica para não revelar existência, bloqueio ou entrega do e-mail.
   }
 
+  if (rateLimited) redirect(statusPath(mode, "email-rate-limit", "magic-link"));
   redirect(statusPath(mode, "sent", "magic-link"));
 }
 
