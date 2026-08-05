@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
 const authE2eEnabled = process.env.AUTH_E2E_ENABLED === "true";
 const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
@@ -42,14 +42,18 @@ function dateOffset(days: number) {
   return `${day}/${month}/${year}`;
 }
 
+async function fillDate(field: Locator, value: string) {
+  await field.fill(value);
+  await field.press("Escape");
+}
+
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
   await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
   await panel.getByLabel("Valor cheio").fill(values.own);
   const firstDueDate = panel.getByLabel("Primeiro vencimento");
-  await firstDueDate.fill(dateOffset(7));
-  await firstDueDate.press("Escape");
+  await fillDate(firstDueDate, dateOffset(7));
   const mediaBudget = panel.getByLabel("Verba de mídia");
   await panel.getByText("Personalizar preço e agenda", { exact: true }).click();
   await expect(mediaBudget).toBeVisible();
@@ -101,7 +105,7 @@ test.describe("authenticated MVP journey", () => {
     await adsCard.getByRole("link", { name: "Criar cobrança" }).click();
     let chargePanel = page.locator("details").filter({ hasText: "Nova cobrança" });
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
-    await chargePanel.getByLabel("Vencimento").fill(dateOffset(0));
+    await fillDate(chargePanel.getByLabel("Vencimento"), dateOffset(0));
     await chargePanel.getByLabel("Receita própria").fill("500");
     await chargePanel.getByLabel("Verba de mídia").fill("1000");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
@@ -114,7 +118,7 @@ test.describe("authenticated MVP journey", () => {
     await chargePanel.locator("summary").click();
     await chargePanel.locator('select[name="clientId"]').selectOption({ label: "Cliente MVP" });
     await chargePanel.getByLabel("Descrição").fill("Pendência operacional");
-    await chargePanel.getByLabel("Vencimento").fill(dateOffset(-1));
+    await fillDate(chargePanel.getByLabel("Vencimento"), dateOffset(-1));
     await chargePanel.getByLabel("Receita própria").fill("100");
     await chargePanel.getByLabel("Verba de mídia").fill("0");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
@@ -136,7 +140,7 @@ test.describe("authenticated MVP journey", () => {
     await domainPanel.locator("summary").click();
     await domainPanel.locator('select[name="clientId"]').selectOption({ label: "Cliente MVP" });
     await domainPanel.getByLabel("Domínio").fill("cliente-mvp.example");
-    await domainPanel.getByLabel("Data de expiração").fill(dateOffset(7));
+    await fillDate(domainPanel.getByLabel("Data de expiração"), dateOffset(7));
     await domainPanel.getByRole("button", { name: "Criar domínio" }).click();
     await expect(page.getByText("Vence em até 7 dias")).toBeVisible();
 
