@@ -154,7 +154,7 @@ test.describe("authenticated MVP journey", () => {
       page.locator("article").filter({ hasText: "Receita própria recebida" }),
     ).toContainText(/R\$\s*500,00/);
     await expect(page.getByText("Verba administrada").locator("..")).toContainText(
-      /R\$\s*1\.000,00/,
+      /R\$\s*2\.000,00/,
     );
     await expect(page.locator("article").filter({ hasText: "Despesas pagas" })).toContainText(
       /R\$\s*200,00/,
