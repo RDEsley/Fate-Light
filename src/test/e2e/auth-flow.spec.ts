@@ -49,9 +49,8 @@ async function addService(page: Page, values: { name: string; own: string; media
   await panel.getByLabel("Valor cheio").fill(values.own);
   await panel.getByLabel("Primeiro vencimento").fill(dateOffset(7));
   const mediaBudget = panel.getByLabel("Verba de mídia");
-  const advancedOptions = panel.locator("details.advanced-form").filter({ has: mediaBudget });
-  await advancedOptions.locator(":scope > summary").click();
-  await expect(advancedOptions).toHaveAttribute("open", "");
+  await panel.getByText("Personalizar preço e agenda", { exact: true }).click();
+  await expect(mediaBudget).toBeVisible();
   await mediaBudget.fill(values.media);
   await panel.getByRole("button", { name: "Aplicar serviço e criar cobrança" }).click();
   await expect(page.getByText("Serviço adicionado ao cliente.")).toBeVisible();
