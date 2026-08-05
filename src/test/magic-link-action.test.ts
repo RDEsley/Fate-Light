@@ -100,6 +100,17 @@ describe("magic link action", () => {
     );
   });
 
+  it("informa quando o limite de envio de e-mails foi atingido", async () => {
+    authMocks.signInWithOtp.mockResolvedValue({
+      data: {},
+      error: { code: "over_email_send_rate_limit", status: 429 },
+    });
+
+    await expect(requestMagicLink(magicLinkForm())).rejects.toThrow(
+      "REDIRECT:/login?status=email-rate-limit&method=magic-link",
+    );
+  });
+
   it("descarta honeypot sem chamar o provedor", async () => {
     await expect(requestMagicLink(magicLinkForm({ website: "bot.example" }))).rejects.toThrow(
       "REDIRECT:/login?status=sent&method=magic-link",
