@@ -22,9 +22,9 @@ export default async function NewClientPage({
       title="Novo cliente"
     >
       <ClientStatusMessage status={status} />
-      <section className="panel-card mx-auto w-full max-w-4xl">
+      <div className="mx-auto w-full max-w-4xl">
         <ClientForm action={createClient} cancelHref="/clientes" submitLabel="Criar cliente" />
-      </section>
+      </div>
     </AccountShell>
   );
 }

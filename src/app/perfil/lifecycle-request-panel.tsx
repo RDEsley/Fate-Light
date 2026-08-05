@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
+import { DangerAction, DangerZone } from "@/components/ui/danger-zone";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { Icon } from "@/components/ui/icon";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -26,16 +28,7 @@ const statusLabels: Record<string, string> = {
   verified: "Verificada",
 };
 
-function ActionMessage({ message }: { message?: string }) {
-  return message ? (
-    <p
-      className="border-line bg-brand-soft text-brand-strong rounded-xl border px-4 py-3 text-sm"
-      role="status"
-    >
-      {message}
-    </p>
-  ) : null;
-}
+const deletionPhrase = "EXCLUIR MINHA CONTA";
 
 export function LifecycleRequestPanel({ requests }: { requests: LifecycleRequestSummary[] }) {
   const [exportState, exportAction] = useActionState(requestDataExport, initialActionState);
@@ -43,84 +36,112 @@ export function LifecycleRequestPanel({ requests }: { requests: LifecycleRequest
     requestAccountDeletion,
     initialActionState,
   );
+  const [confirmation, setConfirmation] = useState("");
+  const unlocked = confirmation.trim() === deletionPhrase;
 
   return (
-    <section className="panel-card">
-      <div className="section-heading mb-4">
-        <span className="section-heading__icon bg-violet-soft text-violet">
-          <Icon name="info" />
-        </span>
-        <div>
-          <h2>Privacidade e solicitações</h2>
-          <p>Exporte seus dados, acompanhe pedidos ou solicite a exclusão da conta.</p>
+    <>
+      <section className="panel-card">
+        <div className="section-heading mb-4">
+          <span className="section-heading__icon bg-violet-soft text-violet">
+            <Icon name="info" />
+          </span>
+          <div>
+            <h2>Privacidade</h2>
+            <p>Peça uma cópia dos seus dados e acompanhe as solicitações abertas.</p>
+          </div>
         </div>
-      </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        <section className="profile-request-card">
-          <h3 className="font-black">Exportar meus dados</h3>
-          <p className="text-muted mt-1 text-sm leading-5">
-            Registre um pedido de exportação. A geração do arquivo e o prazo de entrega serão
-            habilitados em uma fase posterior; nenhum link ou arquivo é criado agora.
-          </p>
-          <form action={exportAction} className="mt-5 space-y-4">
-            <ActionMessage message={exportState.message} />
+
+        <form action={exportAction} className="grid gap-3">
+          {exportState.message ? (
+            <FeedbackBanner
+              message={exportState.message}
+              tone={exportState.status === "error" ? "error" : "success"}
+            />
+          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-muted max-w-xl text-sm leading-5">
+              <strong className="text-foreground">Exportar meus dados.</strong> Registra o pedido
+              para análise. A geração do arquivo e o prazo de entrega serão habilitados em uma fase
+              posterior; nenhum link é criado agora.
+            </p>
             <SubmitButton idleLabel="Solicitar exportação" pendingLabel="Registrando…" />
-          </form>
-        </section>
+          </div>
+        </form>
 
-        <section className="profile-request-card profile-request-card--danger">
-          <h3 className="text-negative font-black">Excluir minha conta</h3>
-          <p className="text-muted mt-1 text-sm leading-5" id="deletion-explanation">
-            Esta ação apenas registra a solicitação para análise. Ela não apaga dados, não suspende
-            a conta e não inicia contagem de retenção. A execução e os prazos dependem da política
-            que será aprovada na fase de ciclo de conta.
-          </p>
-          <form action={deletionAction} className="mt-5 space-y-4">
-            <ActionMessage message={deletionState.message} />
-            <label className="block text-sm font-semibold">
-              Digite EXCLUIR MINHA CONTA
-              <input
-                aria-describedby="deletion-explanation"
-                autoComplete="off"
-                className="mt-2 w-full"
-                name="confirmation"
-                required
-              />
-            </label>
-            <label className="flex items-start gap-3 text-sm leading-6">
-              <input className="mt-1" name="acknowledged" required type="checkbox" />
-              Entendo que esta etapa registra o pedido, sem executar exclusão automática.
-            </label>
-            <SubmitButton idleLabel="Solicitar exclusão" pendingLabel="Registrando…" />
-          </form>
-        </section>
-
-        <section className="profile-request-card lg:col-span-2">
-          <h3 className="font-black">Acompanhamento</h3>
+        <div className="border-line mt-5 border-t pt-5">
+          <h3 className="text-sm font-black">Acompanhamento</h3>
           {requests.length ? (
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-3 grid gap-2">
               {requests.map((request) => (
-                <li className="border-line rounded-xl border p-4" key={request.requestId}>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold">
-                      {request.requestType === "export" ? "Exportação" : "Exclusão"}
-                    </span>
-                    <span className="bg-brand-soft text-brand-strong rounded-full px-3 py-1 text-xs font-semibold">
-                      {statusLabels[request.status] ?? "Em análise"}
-                    </span>
-                  </div>
-                  <p className="text-muted mt-2 text-sm">
+                <li className="lifecycle-request" key={request.requestId}>
+                  <span className="font-semibold">
+                    {request.requestType === "export" ? "Exportação" : "Exclusão"}
+                  </span>
+                  <span className="text-muted text-sm">
                     Solicitada em{" "}
                     <time dateTime={request.requestedAt}>{request.requestedAtLabel}</time>
-                  </p>
+                  </span>
+                  <span className="bg-brand-soft text-brand-strong rounded-full px-3 py-1 text-xs font-bold">
+                    {statusLabels[request.status] ?? "Em análise"}
+                  </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-muted mt-3 text-sm">Nenhuma solicitação registrada.</p>
+            <p className="text-muted mt-2 text-sm">Nenhuma solicitação registrada.</p>
           )}
-        </section>
-      </div>
-    </section>
+        </div>
+      </section>
+
+      <DangerZone
+        description="Nada aqui é executado automaticamente. A exclusão registra um pedido que passa por análise."
+        summary="Excluir minha conta"
+        title="Encerrar a conta"
+      >
+        <form action={deletionAction} className="grid gap-3">
+          {deletionState.message ? (
+            <FeedbackBanner
+              message={deletionState.message}
+              tone={deletionState.status === "error" ? "error" : "success"}
+            />
+          ) : null}
+          <DangerAction
+            description="Esta etapa apenas registra a solicitação. Ela não apaga dados, não suspende a conta e não inicia contagem de retenção."
+            title="Solicitar exclusão da conta"
+            action={
+              <SubmitButton
+                className="danger-action"
+                disabled={!unlocked}
+                idleLabel="Solicitar exclusão"
+                pendingLabel="Registrando…"
+              />
+            }
+          />
+          <label className="field">
+            <span className="field__label">
+              Digite <strong className="text-negative">{deletionPhrase}</strong> para liberar
+            </span>
+            <input
+              autoComplete="off"
+              name="confirmation"
+              onChange={(event) => setConfirmation(event.target.value)}
+              placeholder={deletionPhrase}
+              required
+              value={confirmation}
+            />
+            {confirmation && !unlocked ? (
+              <span className="field__error">
+                <Icon className="size-3.5" name="alert" /> A frase ainda não confere.
+              </span>
+            ) : null}
+          </label>
+          <label className="flex items-start gap-3 text-sm leading-6">
+            <input className="mt-1" name="acknowledged" required type="checkbox" />
+            Entendo que esta etapa registra o pedido, sem executar exclusão automática.
+          </label>
+        </form>
+      </DangerZone>
+    </>
   );
 }

@@ -95,6 +95,7 @@ export function discountedPrice(
 export const chargeSchema = z
   .object({
     additionalFee: money,
+    alreadyPaid: z.boolean(),
     clientId: identifierSchema,
     clientServiceId: z.union([z.literal(""), identifierSchema]),
     companyRevenue: money,
@@ -102,9 +103,13 @@ export const chargeSchema = z
     dueDate: z.string().date(),
     mediaBudget: money,
     notes: optionalText(5000),
+    paymentMethod: optionalText(80),
   })
   .refine((value) => value.companyRevenue + value.mediaBudget + value.additionalFee > 0, {
     path: ["companyRevenue"],
+  })
+  .refine((value) => !value.alreadyPaid || value.paymentMethod.length >= 2, {
+    path: ["paymentMethod"],
   });
 
 export const expenseSchema = z.object({
@@ -165,6 +170,25 @@ export const delayReasonSchema = z
   .refine((value) => value.code !== "other" || value.reason.length >= 4, {
     path: ["reason"],
   });
+
+export const cancellationReasons = [
+  ["client_withdrew", "Cliente desistiu"],
+  ["service_not_delivered", "Serviço não foi executado"],
+  ["duplicate_charge", "Cobrança duplicada"],
+  ["entry_error", "Erro de lançamento"],
+  ["renegotiated", "Renegociado em outra cobrança"],
+  ["other", "Outro motivo"],
+] as const;
+
+export const cancellationSchema = z
+  .object({
+    code: z.enum(cancellationReasons.map(([value]) => value) as [string, ...string[]]),
+    id: identifierSchema,
+    reason: z.string().trim().min(2).max(500),
+  })
+  .refine((value) => value.code !== "other" || value.reason.length >= 4, { path: ["reason"] });
+
+export const serviceStateSchema = z.enum(["active", "paused", "ended"]);
 
 export const serviceScheduleSchema = z.object({
   billingType: z.enum(billingFrequencyValues),

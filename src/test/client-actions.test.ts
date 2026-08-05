@@ -24,7 +24,7 @@ vi.mock("@/lib/auth/workspace-context", () => ({
   })),
 }));
 
-import { createClient, deleteClient, setClientStatus } from "@/app/clientes/actions";
+import { archiveClient, createClient, deleteClient, setClientStatus } from "@/app/clientes/actions";
 
 function validClientForm() {
   const formData = new FormData();
@@ -84,7 +84,7 @@ describe("client actions", () => {
     formData.set("clientStatus", "inactive");
 
     await expect(setClientStatus(formData)).rejects.toThrow(
-      "REDIRECT:/clientes?status=inactivated",
+      "REDIRECT:/clientes/cccccccc-cccc-4ccc-8ccc-cccccccccccc?status=status-updated",
     );
 
     expect(clientActionMocks.update).toHaveBeenCalledWith({ commercial_status: "inactive" });
@@ -92,6 +92,30 @@ describe("client actions", () => {
       "workspace_id",
       "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     );
+  });
+
+  it("arquiva preservando o histórico em vez de excluir", async () => {
+    const formData = new FormData();
+    formData.set("clientId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+
+    await expect(archiveClient(formData)).rejects.toThrow(
+      "REDIRECT:/clientes?state=archived&status=archived",
+    );
+
+    const [payload] = clientActionMocks.update.mock.calls.at(-1) as [
+      { archived_at: string; commercial_status: string },
+    ];
+    expect(payload.commercial_status).toBe("archived");
+    expect(payload.archived_at).toEqual(expect.any(String));
+  });
+
+  it("recusa situação comercial fora do contrato", async () => {
+    const formData = new FormData();
+    formData.set("clientId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+    formData.set("clientStatus", "forjado");
+
+    await expect(setClientStatus(formData)).rejects.toThrow("REDIRECT:/clientes?status=error");
+    expect(clientActionMocks.update).not.toHaveBeenCalled();
   });
 
   it("exclui pelo contrato transacional do banco", async () => {

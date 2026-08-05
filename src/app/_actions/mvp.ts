@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+  cancellationSchema,
   chargeSchema,
-  clientServiceSchema,
   delayReasonSchema,
   domainSchema,
   expenseSchema,
@@ -15,6 +15,7 @@ import {
   operationalDeletionSchema,
   paymentSchema,
   serviceScheduleSchema,
+  serviceStateSchema,
 } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
@@ -22,94 +23,61 @@ function statusRedirect(path: string, status: string): never {
   redirect(`${path}${path.includes("?") ? "&" : "?"}status=${status}` as Route);
 }
 
-export async function createClientService(formData: FormData) {
+/**
+ * Muda o estado de um serviço do cliente.
+ * - `paused` suspende alertas e novas cobranças preservando valores e ciclos consumidos;
+ * - `ended` é definitivo e exige data de encerramento;
+ * - `active` retoma a agenda de onde parou.
+ */
+export async function setClientServiceState(formData: FormData) {
   const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const values = clientServiceSchema.safeParse({
-    additionalFee: formData.get("additionalFee"),
-    adjustmentIntervalMonths: formData.get("adjustmentIntervalMonths"),
-    adjustmentRate: formData.get("adjustmentRate"),
-    billingType: formData.get("billingType"),
-    description: formData.get("description"),
-    discountType: formData.get("discountType"),
-    discountValue: formData.get("discountValue"),
-    installmentCount: formData.get("installmentCount"),
-    listPrice: formData.get("listPrice"),
-    mediaBudget: formData.get("mediaBudget"),
-    name: formData.get("name"),
-    nextDueDate: formData.get("nextDueDate"),
-    notes: formData.get("notes"),
-    promotionalCycles: formData.get("promotionalCycles"),
-    promotionalPrice: formData.get("promotionalPrice"),
-    serviceId: formData.get("serviceId"),
-    startDate: formData.get("startDate"),
-  });
-  if (!clientId.success || !values.success) statusRedirect("/clientes", "service-invalid");
+  const id = identifierSchema.safeParse(formData.get("id"));
+  const state = serviceStateSchema.safeParse(formData.get("state"));
+  if (!clientId.success || !id.success || !state.success) {
+    statusRedirect("/clientes", "service-error");
+  }
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("client_services")
+    .update({
+      ended_at: state.data === "ended" ? new Date().toISOString() : null,
+      status: state.data,
+    })
+    .eq("id", id.data)
+    .eq("client_id", clientId.data)
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .single();
+  if (error || !data) statusRedirect(`/clientes/${clientId.data}`, "service-error");
+  revalidatePath(`/clientes/${clientId.data}`);
+  revalidatePath("/cobrancas");
+  revalidatePath("/dashboard");
+  statusRedirect(
+    `/clientes/${clientId.data}`,
+    state.data === "ended"
+      ? "service-ended"
+      : state.data === "paused"
+        ? "service-paused"
+        : "service-resumed",
+  );
+}
 
+/** Remove o serviço e as cobranças ainda não pagas; qualquer pagamento confirmado bloqueia. */
+export async function deleteClientService(formData: FormData) {
+  const clientId = identifierSchema.safeParse(formData.get("clientId"));
+  const id = identifierSchema.safeParse(formData.get("id"));
+  if (!clientId.success || !id.success) statusRedirect("/clientes", "delete-error");
   const { supabase } = await requireWorkspaceContext();
-  // Function parameters can receive SQL NULL, but the generated Supabase type cannot express it.
-  const sqlNullable = <Value>(value: Value | null) => value as Value;
-  const { error } = await supabase.rpc("apply_service_to_client", {
-    p_additional_fee: values.data.additionalFee,
-    p_adjustment_interval_months: sqlNullable(values.data.adjustmentIntervalMonths),
-    p_adjustment_rate: sqlNullable(values.data.adjustmentRate),
-    p_billing_type: values.data.billingType,
-    p_client_id: clientId.data,
-    p_description: values.data.description,
-    p_discount_type: values.data.discountType,
-    p_discount_value: values.data.discountValue,
-    p_installment_count: values.data.installmentCount,
-    p_list_price: values.data.listPrice,
-    p_media_budget: values.data.mediaBudget,
-    p_name: values.data.name,
-    p_next_due_date: values.data.nextDueDate,
-    p_notes: values.data.notes,
-    p_promotional_cycles: sqlNullable(values.data.promotionalCycles),
-    p_promotional_price: sqlNullable(values.data.promotionalPrice),
-    p_service_id: sqlNullable(values.data.serviceId || null),
-    p_start_date: values.data.startDate,
+  const { data, error } = await supabase.rpc("delete_client_service_cascade", {
+    p_service_id: id.data,
   });
-  if (error) statusRedirect(`/clientes/${clientId.data}`, "service-error");
-  revalidatePath(`/clientes/${clientId.data}`);
+  const path = `/clientes/${clientId.data}`;
+  if (error || data === "not_found") statusRedirect(path, "delete-error");
+  if (data === "blocked") statusRedirect(path, "service-delete-blocked");
+  revalidatePath(path);
+  revalidatePath("/cobrancas");
   revalidatePath("/dashboard");
-  statusRedirect(`/clientes/${clientId.data}`, "service-created");
-}
-
-export async function endClientService(formData: FormData) {
-  const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const id = identifierSchema.safeParse(formData.get("id"));
-  if (!clientId.success || !id.success) statusRedirect("/clientes", "service-error");
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
-    .from("client_services")
-    .update({ ended_at: new Date().toISOString(), status: "ended" })
-    .eq("id", id.data)
-    .eq("client_id", clientId.data)
-    .eq("workspace_id", workspaceId)
-    .select("id")
-    .single();
-  if (error || !data) statusRedirect(`/clientes/${clientId.data}`, "service-error");
-  revalidatePath(`/clientes/${clientId.data}`);
-  statusRedirect(`/clientes/${clientId.data}`, "service-ended");
-}
-
-export async function reactivateClientService(formData: FormData) {
-  const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const id = identifierSchema.safeParse(formData.get("id"));
-  if (!clientId.success || !id.success) statusRedirect("/clientes", "service-error");
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
-    .from("client_services")
-    .update({ ended_at: null, status: "active" })
-    .eq("id", id.data)
-    .eq("client_id", clientId.data)
-    .eq("workspace_id", workspaceId)
-    .eq("status", "ended")
-    .select("id")
-    .single();
-  if (error || !data) statusRedirect(`/clientes/${clientId.data}`, "service-error");
-  revalidatePath(`/clientes/${clientId.data}`);
-  revalidatePath("/dashboard");
-  statusRedirect(`/clientes/${clientId.data}`, "service-reactivated");
+  statusRedirect(path, "deleted");
 }
 
 export async function updateClientServiceSchedule(formData: FormData) {
@@ -164,6 +132,7 @@ export async function deleteOperationalRecord(formData: FormData) {
 export async function createCharge(formData: FormData) {
   const values = chargeSchema.safeParse({
     additionalFee: formData.get("additionalFee"),
+    alreadyPaid: formData.get("alreadyPaid") === "on",
     clientId: formData.get("clientId"),
     clientServiceId: formData.get("clientServiceId"),
     companyRevenue: formData.get("companyRevenue"),
@@ -171,25 +140,35 @@ export async function createCharge(formData: FormData) {
     dueDate: formData.get("dueDate"),
     mediaBudget: formData.get("mediaBudget"),
     notes: formData.get("notes"),
+    paymentMethod: formData.get("paymentMethod"),
   });
   if (!values.success) statusRedirect("/cobrancas", "invalid");
   const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { error } = await supabase.from("charges").insert({
-    additional_fee: values.data.additionalFee,
-    client_id: values.data.clientId,
-    client_service_id: values.data.clientServiceId || null,
-    company_revenue: values.data.companyRevenue,
-    description: values.data.description,
-    due_date: values.data.dueDate,
-    media_budget: values.data.mediaBudget,
-    notes: optional(values.data.notes),
-    status: "pending",
-    workspace_id: workspaceId,
-  });
-  if (error) statusRedirect("/cobrancas", "error");
+  // Registrar uma cobrança passada já quitada evita ter que inventar histórico depois.
+  const settled = values.data.alreadyPaid;
+  const { data, error } = await supabase
+    .from("charges")
+    .insert({
+      additional_fee: values.data.additionalFee,
+      client_id: values.data.clientId,
+      client_service_id: values.data.clientServiceId || null,
+      company_revenue: values.data.companyRevenue,
+      description: values.data.description,
+      due_date: values.data.dueDate,
+      media_budget: values.data.mediaBudget,
+      notes: optional(values.data.notes),
+      paid_at: settled ? new Date(`${values.data.dueDate}T12:00:00.000Z`).toISOString() : null,
+      payment_method: settled ? values.data.paymentMethod : null,
+      status: settled ? "paid" : "pending",
+      workspace_id: workspaceId,
+    })
+    .select("id")
+    .single();
+  if (error || !data) statusRedirect("/cobrancas", "error");
   revalidatePath("/cobrancas");
+  revalidatePath("/historico");
   revalidatePath("/dashboard");
-  statusRedirect("/cobrancas", "created");
+  statusRedirect(`/cobrancas?focus=${data.id}`, settled ? "created-paid" : "created");
 }
 
 export async function markChargePaid(formData: FormData) {
@@ -205,8 +184,9 @@ export async function markChargePaid(formData: FormData) {
   });
   if (error) statusRedirect("/cobrancas", "error");
   revalidatePath("/cobrancas");
+  revalidatePath("/historico");
   revalidatePath("/dashboard");
-  statusRedirect("/cobrancas", "paid");
+  statusRedirect(`/cobrancas?focus=${values.data.id}`, "paid");
 }
 
 export async function recordChargeDelayReason(formData: FormData) {
@@ -236,21 +216,31 @@ export async function recordChargeDelayReason(formData: FormData) {
 }
 
 export async function cancelCharge(formData: FormData) {
-  const id = identifierSchema.safeParse(formData.get("id"));
-  if (!id.success) statusRedirect("/cobrancas", "error");
+  const values = cancellationSchema.safeParse({
+    code: formData.get("code"),
+    id: formData.get("id"),
+    reason: formData.get("reason"),
+  });
+  if (!values.success) statusRedirect("/cobrancas", "cancel-invalid");
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("charges")
-    .update({ status: "cancelled" })
-    .eq("id", id.data)
+    .update({
+      cancel_reason: values.data.reason,
+      cancel_reason_code: values.data.code,
+      cancelled_at: new Date().toISOString(),
+      status: "cancelled",
+    })
+    .eq("id", values.data.id)
     .eq("workspace_id", workspaceId)
     .eq("status", "pending")
     .select("id")
     .single();
   if (error || !data) statusRedirect("/cobrancas", "error");
   revalidatePath("/cobrancas");
+  revalidatePath("/historico");
   revalidatePath("/dashboard");
-  statusRedirect("/cobrancas", "cancelled");
+  statusRedirect(`/cobrancas?focus=${values.data.id}`, "cancelled");
 }
 
 export async function createExpense(formData: FormData) {

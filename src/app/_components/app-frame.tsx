@@ -183,8 +183,10 @@ export function AppFrame({
           </form>
           <span className="sm:hidden" />
 
-          <div className="ml-auto flex items-center gap-2">
-            <details className="group relative">
+          {/* O painel de notificações ancora na borda direita deste grupo, e não no sino,
+              para abrir sempre logo abaixo do bloco da conta. */}
+          <div className="relative ml-auto flex items-center gap-2">
+            <details className="group">
               <summary
                 aria-label={`Notificações: ${unreadCount} novas, ${attentionItems.length} abertas`}
                 className="cartoon-card relative grid size-10 cursor-pointer place-items-center"
@@ -198,7 +200,7 @@ export function AppFrame({
                   </span>
                 ) : null}
               </summary>
-              <div className="panel-card absolute top-12 right-0 w-[min(22rem,calc(100vw-2rem))] p-0!">
+              <div className="panel-card absolute top-[calc(100%+0.65rem)] right-0 z-40 w-[min(22rem,calc(100vw-2rem))] p-0!">
                 <div className="flex items-center justify-between border-b p-4">
                   <div>
                     <p className="font-black">Central de atenção</p>
@@ -260,7 +262,7 @@ export function AppFrame({
                 </span>
                 <Icon className="text-muted hidden size-4 md:block" name="chevron-down" />
               </summary>
-              <div className="panel-card absolute top-12 right-0 w-64 p-2!">
+              <div className="panel-card absolute top-[calc(100%+0.65rem)] right-0 z-40 w-64 p-2!">
                 <div className="border-b px-3 py-2">
                   <p className="truncate text-sm font-black">{fullName}</p>
                   <p className="text-muted truncate text-xs">{workspaceName}</p>

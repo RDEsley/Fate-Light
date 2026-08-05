@@ -4,6 +4,8 @@ import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FieldHint } from "@/components/ui/field-hint";
+import { SelectField } from "@/components/ui/select-field";
 import { initialActionState } from "@/lib/forms/action-state";
 
 import { updateProfile } from "./actions";
@@ -67,16 +69,23 @@ export function ProfileForm({ email, profile }: ProfileFormProps) {
             type="tel"
           />
         </label>
-        <label className="field">
-          <span className="field__label">Fuso horário</span>
-          <select className={fieldClassName} defaultValue={profile.timezone} name="timezone">
-            <option value="America/Sao_Paulo">São Paulo</option>
-            <option value="America/Recife">Recife</option>
-            <option value="America/Manaus">Manaus</option>
-            <option value="America/Rio_Branco">Rio Branco</option>
-            <option value="UTC">UTC</option>
-          </select>
-        </label>
+        <SelectField
+          defaultValue={profile.timezone}
+          hint={
+            <FieldHint>
+              Usado nas suas preferências pessoais. Datas financeiras seguem o fuso da empresa.
+            </FieldHint>
+          }
+          label="Fuso horário"
+          name="timezone"
+          options={[
+            { label: "São Paulo", value: "America/Sao_Paulo" },
+            { label: "Recife", value: "America/Recife" },
+            { label: "Manaus", value: "America/Manaus" },
+            { label: "Rio Branco", value: "America/Rio_Branco" },
+            { label: "UTC", value: "UTC" },
+          ]}
+        />
         <input name="locale" type="hidden" value={profile.locale} />
       </div>
 

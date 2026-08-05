@@ -37,6 +37,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html data-scroll-behavior="smooth" lang="pt-BR">
       <body>
         {children}
+        <div id="portal-root" />
         <MotionExperience />
         <AccessibilityMenu />
       </body>

@@ -64,6 +64,18 @@ export async function updateCatalogService(formData: FormData) {
   finish("service-updated");
 }
 
+/** Remove um serviço do catálogo; a função do banco bloqueia se algum cliente o utiliza. */
+export async function deleteCatalogService(formData: FormData) {
+  const id = identifierSchema.safeParse(formData.get("id"));
+  if (!id.success) finish("service-error");
+  const { supabase } = await requireWorkspaceContext();
+  const { data, error } = await supabase.rpc("delete_catalog_service", { p_service_id: id.data });
+  if (error || data === "not_found") finish("service-error");
+  if (data === "blocked") finish("service-delete-blocked");
+  revalidatePath("/servicos");
+  finish("service-deleted");
+}
+
 export async function toggleCatalogService(formData: FormData) {
   const id = identifierSchema.safeParse(formData.get("id"));
   const active = formData.get("active") === "true";

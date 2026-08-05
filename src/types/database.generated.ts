@@ -120,6 +120,9 @@ export type Database = {
       charges: {
         Row: {
           additional_fee: number
+          cancel_reason: string | null
+          cancel_reason_code: string | null
+          cancelled_at: string | null
           client_id: string
           client_service_id: string | null
           company_revenue: number
@@ -143,6 +146,9 @@ export type Database = {
         }
         Insert: {
           additional_fee?: number
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
           client_id: string
           client_service_id?: string | null
           company_revenue?: number
@@ -166,6 +172,9 @@ export type Database = {
         }
         Update: {
           additional_fee?: number
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
           client_id?: string
           client_service_id?: string | null
           company_revenue?: number
@@ -411,6 +420,7 @@ export type Database = {
           trade_name: string | null
           updated_at: string
           updated_by: string
+          website: string | null
           workspace_id: string
         }
         Insert: {
@@ -431,6 +441,7 @@ export type Database = {
           trade_name?: string | null
           updated_at?: string
           updated_by?: string
+          website?: string | null
           workspace_id: string
         }
         Update: {
@@ -451,6 +462,7 @@ export type Database = {
           trade_name?: string | null
           updated_at?: string
           updated_by?: string
+          website?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -1221,7 +1233,9 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      delete_catalog_service: { Args: { p_service_id: string }; Returns: string }
       delete_client_record: { Args: { p_client_id: string }; Returns: string }
+      delete_client_service_cascade: { Args: { p_service_id: string }; Returns: string }
       delete_workspace_record: {
         Args: { p_record_id: string; p_record_type: string }
         Returns: string

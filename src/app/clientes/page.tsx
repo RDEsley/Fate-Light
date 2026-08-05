@@ -4,14 +4,25 @@ import Link from "next/link";
 import { AccountShell } from "@/app/_components/account-shell";
 import { Icon } from "@/components/ui/icon";
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
-import { addDays, isoToday } from "@/features/mvp/format";
+import { clientStatusInfo } from "@/features/clients/status";
+import { addDays, formatCurrency, isoToday } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
-import { setClientStatus } from "./actions";
+import { restoreClient } from "./actions";
 import { ClientStatusMessage } from "./status-message";
 
 export const metadata: Metadata = { title: "Clientes" };
 const pageSize = 20;
+
+const stateFilters = [
+  ["all", "Todos"],
+  ["active", "Ativos"],
+  ["budget", "Orçamento"],
+  ["pending", "Pendentes"],
+  ["inactive", "Inativos"],
+  ["blacklist", "Lista negra"],
+  ["archived", "Arquivados"],
+] as const;
 
 type ClientsPageProps = {
   searchParams: Promise<{ page?: string; q?: string; state?: string; status?: string }>;
@@ -22,17 +33,22 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const query = parseClientQuery(parameters);
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const firstRow = (query.page - 1) * pageSize;
+  const showingArchived = query.state === "archived";
   let request = supabase
     .from("clients")
     .select(
-      "id, name, trade_name, email, phone, commercial_status, client_services(status, start_date, ended_at), charges(status, due_date), domains(status, expires_on)",
+      "id, name, trade_name, email, phone, website, notes, commercial_status, client_services(status, start_date, ended_at), charges(status, due_date, company_revenue), domains(status, expires_on)",
       { count: "exact" },
     )
     .eq("workspace_id", workspaceId)
-    .is("archived_at", null)
     .order("name")
     .range(firstRow, firstRow + pageSize - 1);
-  if (query.state !== "all") request = request.eq("commercial_status", query.state);
+  request = showingArchived
+    ? request.not("archived_at", "is", null)
+    : request.is("archived_at", null);
+  if (query.state !== "all" && !showingArchived) {
+    request = request.eq("commercial_status", query.state);
+  }
   if (query.q) request = request.ilike("name", `%${query.q}%`);
   const { data: clients, error, count } = await request;
   const total = count ?? 0;
@@ -61,7 +77,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
           <Icon className="size-4" name="plus" /> Novo cliente
         </Link>
       </div>
-      <form className="panel-card mb-5 grid gap-3 p-3! sm:grid-cols-[1fr_auto_auto]" method="get">
+      <form className="panel-card mb-5 grid gap-3 p-3! sm:grid-cols-[1fr_auto]" method="get">
         <label className="relative text-sm font-semibold">
           <span className="sr-only">Buscar por nome</span>
           <Icon
@@ -77,24 +93,31 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             type="search"
           />
         </label>
-        <label className="text-sm font-semibold">
-          <span className="sr-only">Status</span>
-          <select
-            className="min-h-11 w-full rounded-xl px-4 sm:w-36"
-            defaultValue={query.state}
-            name="state"
-          >
-            <option value="all">Todos</option>
-            <option value="active">Ativos</option>
-            <option value="inactive">Inativos</option>
-          </select>
-        </label>
         <button
-          className="bg-brand text-brand-contrast border-brand-strong min-h-11 self-end rounded-xl border-2 px-5 font-black"
+          className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 font-black"
           type="submit"
         >
           Filtrar
         </button>
+        <div className="client-filter-pills sm:col-span-2">
+          {stateFilters.map(([value, label]) => (
+            <Link
+              aria-current={query.state === value ? "page" : undefined}
+              href={
+                value === "all"
+                  ? ((query.q
+                      ? `/clientes?q=${encodeURIComponent(query.q)}`
+                      : "/clientes") as never)
+                  : ((query.q
+                      ? `/clientes?q=${encodeURIComponent(query.q)}&state=${value}`
+                      : `/clientes?state=${value}`) as never)
+              }
+              key={value}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
       </form>
       {error ? (
         <p className="border-line bg-surface rounded-2xl border p-6" role="alert">
@@ -103,6 +126,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ) : clients?.length ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {clients.map((client) => {
+            const status = clientStatusInfo(client.commercial_status);
             const activeServices = client.client_services.filter(
               (service) => service.status === "active",
             );
@@ -112,6 +136,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             const expiringDomains = client.domains.filter(
               (domain) => domain.status === "active" && domain.expires_on <= nextMonth,
             ).length;
+            const earned = client.charges
+              .filter((charge) => charge.status === "paid")
+              .reduce((total, charge) => total + Number(charge.company_revenue), 0);
             const firstStart = client.client_services
               .map((service) => service.start_date)
               .sort()[0];
@@ -124,10 +151,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                   <span className="bg-brand-soft text-brand-strong border-brand/20 grid size-11 place-items-center rounded-2xl border font-black">
                     {client.name.slice(0, 1).toUpperCase()}
                   </span>
-                  <span
-                    className={`${client.commercial_status === "active" ? "bg-positive-soft text-positive" : "bg-slate-100 text-slate-600"} rounded-full px-3 py-1 text-xs font-black`}
-                  >
-                    {client.commercial_status === "active" ? "Ativo" : "Inativo"}
+                  <span className={status.className}>
+                    <Icon className="size-3.5" name={status.icon} />
+                    {status.label}
                   </span>
                 </div>
                 <Link
@@ -136,9 +162,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                 >
                   {client.name}
                 </Link>
-                <p className="text-muted mt-1 text-sm">
-                  {client.trade_name ?? "Sem nome fantasia"}
-                </p>
+                {client.trade_name ? (
+                  <p className="text-muted mt-1 text-sm">{client.trade_name}</p>
+                ) : null}
                 <div className="client-card-signals" aria-label="Resumo operacional">
                   <span title={`${activeServices.length} serviço(s) ativo(s)`}>
                     <Icon name="briefcase" /> {activeServices.length}
@@ -164,32 +190,66 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                       <Icon name="history" /> {activeTimeLabel(firstStart)}
                     </span>
                   ) : null}
+                  {earned > 0 ? (
+                    <span className="is-positive" title="Total já recebido deste cliente">
+                      <Icon name="wallet" /> {formatCurrency(earned)}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="text-muted mt-4 space-y-1 text-sm">
-                  <p className="truncate">{client.email ?? "E-mail não informado"}</p>
-                  <p>{client.phone ?? "Telefone não informado"}</p>
-                </div>
-                <div className="border-line mt-auto flex items-center justify-between border-t pt-4">
+                {client.email || client.phone || client.website || client.notes ? (
+                  <div className="client-card-contact">
+                    {client.email ? (
+                      <a href={`mailto:${client.email}`} title={client.email}>
+                        <Icon className="size-3.5" name="bell" />
+                        <span className="truncate">{client.email}</span>
+                      </a>
+                    ) : null}
+                    {client.phone ? (
+                      <a href={`tel:${client.phone.replace(/[^+\d]/g, "")}`}>
+                        <Icon className="size-3.5" name="user" />
+                        <span className="truncate">{client.phone}</span>
+                      </a>
+                    ) : null}
+                    {client.website ? (
+                      <a
+                        href={`https://${client.website}`}
+                        rel="noreferrer noopener"
+                        target="_blank"
+                        title={client.website}
+                      >
+                        <Icon className="size-3.5" name="link" />
+                        <span className="truncate">{client.website}</span>
+                      </a>
+                    ) : null}
+                    {client.notes ? (
+                      <Link
+                        className="client-card-contact__note"
+                        href={`/clientes/${client.id}#observacoes`}
+                      >
+                        <Icon className="size-3.5" name="info" />
+                        <span className="truncate">Tem observações</span>
+                      </Link>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div className="border-line mt-auto flex items-center justify-between gap-3 border-t pt-4">
                   <Link
                     className="text-brand-strong text-sm font-black"
                     href={`/clientes/${client.id}`}
                   >
                     Abrir cliente →
                   </Link>
-                  <form action={setClientStatus}>
-                    <input name="clientId" type="hidden" value={client.id} />
-                    <input
-                      name="clientStatus"
-                      type="hidden"
-                      value={client.commercial_status === "active" ? "inactive" : "active"}
-                    />
-                    <button
-                      className="text-muted hover:text-foreground text-xs font-bold"
-                      type="submit"
-                    >
-                      {client.commercial_status === "active" ? "Inativar" : "Ativar"}
-                    </button>
-                  </form>
+                  {showingArchived ? (
+                    <form action={restoreClient}>
+                      <input name="clientId" type="hidden" value={client.id} />
+                      <button
+                        className="text-muted hover:text-foreground text-xs font-bold"
+                        type="submit"
+                      >
+                        Desarquivar
+                      </button>
+                    </form>
+                  ) : null}
                 </div>
               </article>
             );
@@ -198,7 +258,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ) : (
         <section className="border-line bg-surface rounded-2xl border p-8 text-center">
           <h2 className="text-xl font-semibold">Nenhum cliente encontrado</h2>
-          <p className="text-muted mt-2">Ajuste a busca ou crie o primeiro cliente.</p>
+          <p className="text-muted mt-2">
+            {showingArchived
+              ? "Nenhum cliente arquivado por aqui."
+              : "Ajuste a busca ou crie o primeiro cliente."}
+          </p>
         </section>
       )}
       {totalPages > 1 ? (

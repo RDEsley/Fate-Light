@@ -3,28 +3,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
-import {
-  deleteOperationalRecord,
-  endClientService,
-  reactivateClientService,
-  updateClientServiceSchedule,
-} from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
-import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
-import { SubmitButton } from "@/app/_components/submit-button";
-import { DateField } from "@/components/ui/form-controls";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon } from "@/components/ui/icon";
-import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
-import {
-  billingFrequencies,
-  billingFrequencyLabel,
-  type BillingFrequency,
-} from "@/features/mvp/recurrence";
+import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
+import { formatCurrency } from "@/features/mvp/format";
+import { type BillingFrequency } from "@/features/mvp/recurrence";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
-import { deleteClient } from "../actions";
+import { archiveClient, deleteClient, restoreClient } from "../actions";
 import { ClientStatusMessage } from "../status-message";
 import { ServiceApplicationForm } from "./service-application-form";
+import { ServiceCard } from "./service-card";
+import { ClientStatusSwitcher } from "./status-switcher";
 
 export const metadata: Metadata = { title: "Detalhes do cliente" };
 
@@ -61,18 +52,18 @@ export default async function ClientDetailsPage({
     { data: client, error },
     { data: services, error: servicesError },
     { data: catalog, error: catalogError },
+    { data: charges },
   ] = await Promise.all([
     context.supabase
       .from("clients")
-      .select("id, name, trade_name, email, phone, commercial_status, notes")
+      .select("id, name, trade_name, email, phone, website, commercial_status, notes, archived_at")
       .eq("id", clientId.data)
       .eq("workspace_id", context.workspaceId)
-      .is("archived_at", null)
       .single(),
     context.supabase
       .from("client_services")
       .select(
-        "id, name, description, list_price, discount_type, discount_value, company_revenue, media_budget, additional_fee, billing_type, installment_count, promotional_price, promotional_cycles, start_date, next_due_date, adjustment_interval_months, adjustment_rate, next_adjustment_date, ended_at, status, notes",
+        "id, name, description, list_price, discount_type, discount_value, company_revenue, media_budget, additional_fee, billing_type, installment_count, promotional_price, promotional_cycles, promotional_cycles_used, start_date, next_due_date, adjustment_interval_months, adjustment_rate, next_adjustment_date, ended_at, status, notes",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
@@ -86,8 +77,32 @@ export default async function ClientDetailsPage({
       .eq("active", true)
       .is("archived_at", null)
       .order("name"),
+    context.supabase
+      .from("charges")
+      .select("company_revenue, status")
+      .eq("client_id", clientId.data)
+      .eq("workspace_id", context.workspaceId),
   ]);
   if (error || servicesError || catalogError || !client) notFound();
+
+  const statusInfo = clientStatusInfo(client.archived_at ? "archived" : client.commercial_status);
+  const archived = Boolean(client.archived_at);
+  const earned = (charges ?? [])
+    .filter((charge) => charge.status === "paid")
+    .reduce((total, charge) => total + Number(charge.company_revenue), 0);
+  const pending = (charges ?? [])
+    .filter((charge) => charge.status === "pending")
+    .reduce((total, charge) => total + Number(charge.company_revenue), 0);
+  const catalogOptions = (catalog ?? []).map((service) => ({
+    adjustmentIntervalMonths: service.default_adjustment_interval_months,
+    adjustmentRate:
+      service.default_adjustment_rate === null ? null : Number(service.default_adjustment_rate),
+    billingType: service.default_billing_type as BillingFrequency,
+    defaultPrice: Number(service.default_price),
+    description: service.description,
+    id: service.id,
+    name: service.name,
+  }));
 
   return (
     <AccountShell
@@ -115,224 +130,168 @@ export default async function ClientDetailsPage({
         </div>
       </div>
 
-      <section className="border-line bg-surface rounded-2xl border p-6">
-        <h2 className="text-xl font-semibold">Dados do cliente</h2>
-        <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <dt className="text-muted text-sm">Empresa</dt>
-            <dd className="mt-1">{client.trade_name ?? "Não informada"}</dd>
+      {archived ? (
+        <section className="panel-card mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-muted text-sm">
+            <strong className="text-foreground">Cliente arquivado.</strong> O histórico está
+            preservado, mas ele não aparece na operação do dia a dia.
+          </p>
+          <form action={restoreClient}>
+            <input name="clientId" type="hidden" value={client.id} />
+            <button className="primary-action" type="submit">
+              Desarquivar cliente
+            </button>
+          </form>
+        </section>
+      ) : null}
+
+      <section className="panel-card">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="section-heading">
+            <span className="section-heading__icon bg-brand-soft text-brand-strong">
+              <Icon name="user" />
+            </span>
+            <div>
+              <h2>Dados do cliente</h2>
+              <p>{statusInfo.description}</p>
+            </div>
           </div>
+          {archived ? (
+            <span className={statusInfo.className}>
+              <Icon className="size-3.5" name={statusInfo.icon} /> {statusInfo.label}
+            </span>
+          ) : (
+            <ClientStatusSwitcher clientId={client.id} status={client.commercial_status} />
+          )}
+        </div>
+        <dl className="client-detail-grid">
+          {client.trade_name ? (
+            <div>
+              <dt>Empresa</dt>
+              <dd>{client.trade_name}</dd>
+            </div>
+          ) : null}
+          {client.email ? (
+            <div>
+              <dt>E-mail</dt>
+              <dd>
+                <a className="client-detail-link" href={`mailto:${client.email}`}>
+                  {client.email}
+                </a>
+              </dd>
+            </div>
+          ) : null}
+          {client.phone ? (
+            <div>
+              <dt>Telefone</dt>
+              <dd>
+                <a
+                  className="client-detail-link"
+                  href={`tel:${client.phone.replace(/[^+\d]/g, "")}`}
+                >
+                  {client.phone}
+                </a>
+              </dd>
+            </div>
+          ) : null}
+          {client.website ? (
+            <div>
+              <dt>Site</dt>
+              <dd>
+                <a
+                  className="client-detail-link"
+                  href={`https://${client.website}`}
+                  rel="noreferrer noopener"
+                  target="_blank"
+                >
+                  {client.website} <Icon className="size-3.5" name="link" />
+                </a>
+              </dd>
+            </div>
+          ) : null}
           <div>
-            <dt className="text-muted text-sm">E-mail</dt>
-            <dd className="mt-1">{client.email ?? "Não informado"}</dd>
+            <dt>Já recebido</dt>
+            <dd className="text-positive font-black">{formatCurrency(earned)}</dd>
           </div>
-          <div>
-            <dt className="text-muted text-sm">Telefone</dt>
-            <dd className="mt-1">{client.phone ?? "Não informado"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted text-sm">Status</dt>
-            <dd className="mt-1">{client.commercial_status === "active" ? "Ativo" : "Inativo"}</dd>
-          </div>
+          {pending > 0 ? (
+            <div>
+              <dt>A receber</dt>
+              <dd className="font-black">{formatCurrency(pending)}</dd>
+            </div>
+          ) : null}
         </dl>
-        {client.notes ? (
-          <p className="text-muted mt-5 text-sm whitespace-pre-wrap">{client.notes}</p>
-        ) : null}
-        <details className="danger-zone form-disclosure mt-5">
-          <summary className="flex cursor-pointer items-center justify-between gap-3">
-            <span className="text-negative flex items-center gap-2 font-black">
-              <Icon className="size-4" name="trash" /> Excluir cliente
-            </span>
-            <span className="text-muted flex items-center gap-1 text-xs">
-              <span className="form-disclosure__closed-label">Ver opções</span>
-              <span className="form-disclosure__open-label">Fechar opções</span>
-              <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-            </span>
-          </summary>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-muted max-w-2xl text-sm">
-              Só é possível excluir clientes sem serviços, cobranças, despesas ou domínios. Se
-              houver histórico, mantenha o cliente inativo.
-            </p>
-            <form action={deleteClient}>
-              <input name="clientId" type="hidden" value={client.id} />
-              <ConfirmSubmitButton
-                className="danger-action"
-                confirmation={`Excluir ${client.name} definitivamente? Esta ação não pode ser desfeita.`}
-                label="Excluir definitivamente"
-              />
-            </form>
-          </div>
-        </details>
       </section>
 
-      <section className="border-line bg-surface mt-6 rounded-2xl border p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {client.notes ? (
+        <section className="panel-card mt-4" id="observacoes">
+          <div className="section-heading mb-3">
+            <span className="section-heading__icon bg-warning-soft text-warning">
+              <Icon name="info" />
+            </span>
+            <div>
+              <h2>Observações</h2>
+              <p>Anotações que você registrou sobre este cliente.</p>
+            </div>
+          </div>
+          <p className="client-notes">{client.notes}</p>
+        </section>
+      ) : null}
+
+      <section className="panel-card mt-4">
+        <div className="section-heading mb-4">
+          <span className="section-heading__icon bg-violet-soft text-violet">
+            <Icon name="briefcase" />
+          </span>
           <div>
-            <h2 className="text-xl font-semibold">Serviços</h2>
-            <p className="text-muted mt-1 text-sm">Receita própria e mídia permanecem separadas.</p>
+            <h2>Serviços</h2>
+            <p>Receita própria e verba de mídia permanecem separadas.</p>
           </div>
         </div>
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           {services?.length ? (
             services.map((service) => (
-              <article className="border-line rounded-xl border p-5" key={service.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold">{service.name}</h3>
-                  <span className="bg-brand-soft text-brand-strong rounded-full px-3 py-1 text-xs font-semibold">
-                    {service.status === "active" ? "Ativo" : "Encerrado"}
-                  </span>
-                </div>
-                {service.description ? (
-                  <p className="text-muted mt-2 text-sm">{service.description}</p>
-                ) : null}
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <dt className="text-muted">Valor cheio</dt>
-                    <dd>{formatCurrency(service.list_price)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Valor aplicado</dt>
-                    <dd className="text-positive font-black">
-                      {formatCurrency(service.company_revenue)}
-                    </dd>
-                    {service.discount_type !== "none" ? (
-                      <small className="text-muted">
-                        desconto de{" "}
-                        {service.discount_type === "percentage"
-                          ? `${service.discount_value}%`
-                          : formatCurrency(service.discount_value)}
-                      </small>
-                    ) : null}
-                  </div>
-                  <div>
-                    <dt className="text-muted">Cobrança</dt>
-                    <dd>{billingFrequencyLabel(service.billing_type)}</dd>
-                    {service.billing_type === "single" && service.installment_count > 1 ? (
-                      <small className="text-muted">{service.installment_count} parcelas</small>
-                    ) : null}
-                  </div>
-                  <div>
-                    <dt className="text-muted">Próximo vencimento</dt>
-                    <dd>
-                      {service.next_due_date
-                        ? formatDatePtBr(service.next_due_date)
-                        : "Sem próxima data"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Tempo contratado</dt>
-                    <dd>{serviceDuration(service.start_date, service.ended_at)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Mídia + adicional</dt>
-                    <dd>
-                      {formatCurrency(
-                        Number(service.media_budget) + Number(service.additional_fee),
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-                {service.promotional_price !== null ? (
-                  <p className="service-note service-note--promo">
-                    <Icon className="size-4" name="sparkles" />{" "}
-                    {formatCurrency(service.promotional_price)}
-                    nos primeiros {service.promotional_cycles} ciclos
-                  </p>
-                ) : null}
-                {service.next_adjustment_date ? (
-                  <p className="service-note">
-                    <Icon className="size-4" name="refresh" /> Revisar preço em{" "}
-                    {formatDatePtBr(service.next_adjustment_date)}
-                    {service.adjustment_rate !== null
-                      ? ` · sugestão de ${service.adjustment_rate}%`
-                      : ""}
-                  </p>
-                ) : null}
-                {service.status === "active" ? (
-                  <>
-                    <div className="mt-4 flex flex-wrap gap-4">
-                      <Link
-                        className="font-semibold hover:underline"
-                        href={`/cobrancas?clientId=${client.id}&serviceId=${service.id}`}
-                      >
-                        Criar cobrança
-                      </Link>
-                      <form action={endClientService}>
-                        <input name="clientId" type="hidden" value={client.id} />
-                        <input name="id" type="hidden" value={service.id} />
-                        <ConfirmSubmitButton
-                          className="font-semibold hover:underline"
-                          confirmation="Encerrar este serviço? A ação não apaga o histórico."
-                          label="Encerrar"
-                        />
-                      </form>
-                    </div>
-                    <details className="form-disclosure border-line mt-4 border-t pt-3">
-                      <summary className="text-brand-strong flex cursor-pointer justify-between text-sm font-black">
-                        Ajustar agenda futura
-                        <span className="text-muted flex items-center gap-1 text-xs">
-                          <span className="form-disclosure__closed-label">Abrir</span>
-                          <span className="form-disclosure__open-label">Fechar</span>
-                          <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-                        </span>
-                      </summary>
-                      <form
-                        action={updateClientServiceSchedule}
-                        className="form-grid mt-3 sm:grid-cols-2"
-                      >
-                        <input name="clientId" type="hidden" value={client.id} />
-                        <input name="id" type="hidden" value={service.id} />
-                        <label className="field">
-                          <span className="field__label">Frequência</span>
-                          <select defaultValue={service.billing_type} name="billingType">
-                            {billingFrequencies.map(([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <DateField
-                          defaultValue={service.next_due_date ?? isoToday()}
-                          label="Próxima cobrança"
-                          name="nextDueDate"
-                          required
-                        />
-                        <SubmitButton className="sm:col-span-2" idleLabel="Atualizar agenda" />
-                      </form>
-                    </details>
-                  </>
-                ) : (
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <form action={reactivateClientService}>
-                      <input name="clientId" type="hidden" value={client.id} />
-                      <input name="id" type="hidden" value={service.id} />
-                      <SubmitButton idleLabel="Reativar serviço" pendingLabel="Reativando…" />
-                    </form>
-                    <form action={deleteOperationalRecord}>
-                      <input name="clientId" type="hidden" value={client.id} />
-                      <input name="id" type="hidden" value={service.id} />
-                      <input name="recordType" type="hidden" value="service" />
-                      <ConfirmSubmitButton
-                        className="danger-action"
-                        confirmation="Excluir este serviço encerrado? Isso só será permitido se não houver cobranças vinculadas."
-                        label="Excluir"
-                      />
-                    </form>
-                  </div>
-                )}
-              </article>
+              <ServiceCard
+                catalog={catalogOptions}
+                clientId={client.id}
+                duration={serviceDuration(service.start_date, service.ended_at)}
+                key={service.id}
+                service={{
+                  additionalFee: Number(service.additional_fee),
+                  adjustmentIntervalMonths: service.adjustment_interval_months,
+                  adjustmentRate:
+                    service.adjustment_rate === null ? null : Number(service.adjustment_rate),
+                  billingType: service.billing_type as BillingFrequency,
+                  description: service.description,
+                  discountType: service.discount_type as "fixed" | "none" | "percentage",
+                  discountValue: Number(service.discount_value),
+                  id: service.id,
+                  installmentCount: service.installment_count,
+                  listPrice: Number(service.list_price),
+                  mediaBudget: Number(service.media_budget),
+                  name: service.name,
+                  nextAdjustmentDate: service.next_adjustment_date,
+                  nextDueDate: service.next_due_date,
+                  notes: service.notes,
+                  promotionalCycles: service.promotional_cycles,
+                  promotionalCyclesUsed: service.promotional_cycles_used,
+                  promotionalPrice:
+                    service.promotional_price === null ? null : Number(service.promotional_price),
+                  startDate: service.start_date,
+                  status: service.status,
+                }}
+              />
             ))
           ) : (
             <p className="text-muted text-sm">Nenhum serviço adicionado.</p>
           )}
         </div>
 
-        {client.commercial_status === "active" ? (
+        {isBillableClientStatus(client.commercial_status) && !archived ? (
           <details className="form-disclosure border-line mt-6 border-t pt-5">
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
-              <span>Adicionar serviço</span>
+              <span className="flex items-center gap-2">
+                <Icon className="size-4" name="plus" /> Adicionar serviço
+              </span>
               <span className="text-muted flex items-center gap-1 text-xs">
                 <span className="form-disclosure__closed-label">Abrir formulário</span>
                 <span className="form-disclosure__open-label">Fechar formulário</span>
@@ -340,25 +299,73 @@ export default async function ClientDetailsPage({
               </span>
             </summary>
             <div className="mt-4">
-              <ServiceApplicationForm
-                catalog={(catalog ?? []).map((service) => ({
-                  adjustmentIntervalMonths: service.default_adjustment_interval_months,
-                  adjustmentRate:
-                    service.default_adjustment_rate === null
-                      ? null
-                      : Number(service.default_adjustment_rate),
-                  billingType: service.default_billing_type as BillingFrequency,
-                  defaultPrice: Number(service.default_price),
-                  description: service.description,
-                  id: service.id,
-                  name: service.name,
-                }))}
-                clientId={client.id}
-              />
+              <ServiceApplicationForm catalog={catalogOptions} clientId={client.id} />
             </div>
           </details>
-        ) : null}
+        ) : (
+          <p className="helper-note mt-5">
+            <Icon className="size-4" name="info" />
+            {archived
+              ? "Desarquive o cliente para voltar a aplicar serviços."
+              : `Clientes em “${statusInfo.label}” não recebem novos serviços. Mude a situação comercial para continuar.`}
+          </p>
+        )}
       </section>
+
+      {!archived ? (
+        <details className="danger-zone form-disclosure mt-8">
+          <summary className="flex cursor-pointer items-center justify-between gap-3">
+            <span className="text-muted flex items-center gap-2 text-sm font-bold">
+              <Icon className="size-4" name="settings" /> Opções avançadas deste cliente
+            </span>
+            <span className="text-muted flex items-center gap-1 text-xs">
+              <span className="form-disclosure__closed-label">Ver</span>
+              <span className="form-disclosure__open-label">Fechar</span>
+              <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
+            </span>
+          </summary>
+          <div className="mt-4 grid gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-muted max-w-2xl text-sm">
+                <strong className="text-foreground">Arquivar</strong> tira o cliente da operação
+                diária e preserva tudo: serviços, cobranças e histórico. É a saída recomendada
+                quando o relacionamento acabou.
+              </p>
+              <form action={archiveClient}>
+                <input name="clientId" type="hidden" value={client.id} />
+                <ConfirmDialog
+                  className="border-line bg-surface min-h-11 rounded-xl border-2 px-4 font-bold"
+                  confirmLabel="Arquivar cliente"
+                  confirmation="O cliente sai das listas do dia a dia e para de gerar alertas. Você pode desarquivar quando quiser, sem perder nada."
+                  icon="archive"
+                  label="Arquivar cliente"
+                  title={`Arquivar ${client.name}`}
+                  tone="default"
+                />
+              </form>
+            </div>
+            <div className="border-line flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-muted max-w-2xl text-sm">
+                <strong className="text-negative">Excluir</strong> apaga o cadastro para sempre. Só
+                funciona para clientes sem serviços, cobranças, despesas ou domínios. Havendo
+                histórico, arquive em vez de excluir.
+              </p>
+              <form action={deleteClient}>
+                <input name="clientId" type="hidden" value={client.id} />
+                <ConfirmDialog
+                  className="danger-action"
+                  confirmLabel="Excluir cliente"
+                  confirmation={`${client.name} sai do sistema para sempre, junto com os contatos cadastrados. Não há como desfazer.`}
+                  icon="trash"
+                  label="Excluir definitivamente"
+                  requiredPhrase={client.name}
+                  title="Excluir cliente definitivamente"
+                />
+              </form>
+            </div>
+          </div>
+        </details>
+      ) : null}
     </AccountShell>
   );
 }

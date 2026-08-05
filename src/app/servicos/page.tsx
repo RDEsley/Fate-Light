@@ -2,13 +2,21 @@ import type { Metadata } from "next";
 
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
-import { SubmitButton } from "@/app/_components/submit-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FieldHint } from "@/components/ui/field-hint";
 import { Icon } from "@/components/ui/icon";
+import { SelectField } from "@/components/ui/select-field";
+import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import { formatCurrency } from "@/features/mvp/format";
 import { billingFrequencies, billingFrequencyLabel } from "@/features/mvp/recurrence";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
-import { createCatalogService, toggleCatalogService, updateCatalogService } from "./actions";
+import {
+  createCatalogService,
+  deleteCatalogService,
+  toggleCatalogService,
+  updateCatalogService,
+} from "./actions";
 
 export const metadata: Metadata = { title: "Serviços" };
 
@@ -121,21 +129,34 @@ export default async function ServicesPage({
               ) : null}
               <details className="advanced-form mt-3">
                 <summary>
-                  <span>Editar serviço</span>
+                  <span className="flex items-center gap-2">
+                    <Icon className="size-4" name="edit" /> Editar serviço
+                  </span>
                   <span className="text-muted text-xs">Abrir</span>
                 </summary>
                 <ServiceCatalogForm action={updateCatalogService} service={service} />
               </details>
-              <form action={toggleCatalogService} className="mt-3 border-t pt-3">
-                <input name="id" type="hidden" value={service.id} />
-                <input name="active" type="hidden" value={String(!service.active)} />
-                <button
-                  className="text-muted hover:text-foreground text-xs font-bold"
-                  type="submit"
-                >
-                  {service.active ? "Inativar no catálogo" : "Reativar no catálogo"}
-                </button>
-              </form>
+              <div className="service-actions">
+                <form action={toggleCatalogService}>
+                  <input name="id" type="hidden" value={service.id} />
+                  <input name="active" type="hidden" value={String(!service.active)} />
+                  <button className="service-action" type="submit">
+                    <Icon className="size-4" name={service.active ? "pause" : "play"} />
+                    {service.active ? "Inativar" : "Reativar"}
+                  </button>
+                </form>
+                <form action={deleteCatalogService}>
+                  <input name="id" type="hidden" value={service.id} />
+                  <ConfirmDialog
+                    className="service-action service-action--danger"
+                    confirmLabel="Excluir do catálogo"
+                    confirmation="O serviço sai do catálogo para sempre. Se algum cliente estiver usando ele, a exclusão é bloqueada — nesse caso, inative em vez de excluir."
+                    icon="trash"
+                    label="Excluir"
+                    title={`Excluir ${service.name}`}
+                  />
+                </form>
+              </div>
             </article>
           ))}
         </div>
@@ -171,29 +192,39 @@ function ServiceCatalogForm({
       {service ? <input name="id" type="hidden" value={service.id} /> : null}
       <label className="field">
         <span className="field__label">Nome</span>
-        <input defaultValue={service?.name} maxLength={120} name="name" required />
+        <input
+          defaultValue={service?.name}
+          maxLength={120}
+          name="name"
+          placeholder="Ex.: Gestão de Google Ads"
+        />
+        <span className="field__hint">
+          Nomes se repetem mal: use um nome que você reconheceria em qualquer cliente.
+        </span>
       </label>
       <label className="field">
-        <span className="field__label">Valor padrão</span>
+        <span className="field__label">
+          Valor padrão
+          <FieldHint>
+            É só uma sugestão inicial. Ao aplicar o serviço em um cliente você pode mudar o valor
+            sem afetar o catálogo nem os outros clientes.
+          </FieldHint>
+        </span>
         <input
-          defaultValue={service?.default_price ?? 0}
+          defaultValue={service?.default_price ?? ""}
           min="0"
           name="defaultPrice"
-          required
+          placeholder="Ex.: 1500,00"
           step="0.01"
           type="number"
         />
       </label>
-      <label className="field">
-        <span className="field__label">Periodicidade</span>
-        <select defaultValue={service?.default_billing_type ?? "monthly"} name="billingType">
-          {billingFrequencies.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField
+        defaultValue={service?.default_billing_type ?? "monthly"}
+        label="Periodicidade"
+        name="billingType"
+        options={billingFrequencies.map(([value, label]) => ({ label, value }))}
+      />
       <label className="field">
         <span className="field__label">
           Reajuste a cada (meses) <span className="field__optional">opcional</span>
@@ -225,10 +256,18 @@ function ServiceCatalogForm({
         </span>
         <textarea defaultValue={service?.description ?? ""} maxLength={3000} name="description" />
       </label>
-      <SubmitButton
-        className="sm:col-span-2"
-        idleLabel={service ? "Salvar alterações" : "Criar serviço"}
-      />
+      <div className="sm:col-span-2">
+        <SoftSubmitButton
+          idleLabel={service ? "Salvar alterações" : "Criar serviço"}
+          requirements={[
+            { message: "Dê um nome ao serviço.", name: "name" },
+            {
+              message: "O valor padrão está em branco. Você poderá ajustá-lo em cada cliente.",
+              name: "defaultPrice",
+            },
+          ]}
+        />
+      </div>
     </form>
   );
 }

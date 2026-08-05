@@ -7,7 +7,10 @@ export const motionPreferenceKeys = {
   system: "fate-light:system-motion",
 } as const;
 
-type PointerMark = { id: number; rotation: number; x: number; y: number };
+/** Duração da onda de clique; mantida em sincronia com as animações de `pointer-ripple-*`. */
+export const pointerMarkDuration = 620;
+
+type PointerMark = { id: number; x: number; y: number };
 
 function preferenceEnabled(key: string) {
   return window.localStorage.getItem(key) !== "off";
@@ -45,16 +48,8 @@ export function MotionExperience() {
       if (document.documentElement.dataset.mouseMotion !== "on" || event.pointerType === "touch")
         return;
       const id = counter.current++;
-      setMarks((current) => [
-        ...current.slice(-23),
-        {
-          id,
-          rotation: (id * 29) % 45,
-          x: event.clientX,
-          y: event.clientY,
-        },
-      ]);
-      removeLater(id, 380);
+      setMarks((current) => [...current.slice(-23), { id, x: event.clientX, y: event.clientY }]);
+      removeLater(id, pointerMarkDuration);
     };
 
     window.addEventListener("pointerdown", onPointerDown, { passive: true });
@@ -69,10 +64,11 @@ export function MotionExperience() {
     <div aria-hidden="true" className="pointer-effects">
       <svg focusable="false">
         {marks.map((mark) => (
-          <g key={mark.id} transform={`translate(${mark.x} ${mark.y}) rotate(${mark.rotation})`}>
+          <g key={mark.id} transform={`translate(${mark.x} ${mark.y})`}>
             <g className="pointer-click-pop">
-              <ellipse className="pointer-click-pop__bubble" cx="0" cy="0" rx="5.8" ry="4.8" />
-              <circle className="pointer-click-pop__dot" cx="6.5" cy="-6.5" r="1.6" />
+              <circle className="pointer-click-pop__bubble" cx="0" cy="0" r="19" />
+              <circle className="pointer-click-pop__wake" cx="0" cy="0" r="13" />
+              <circle className="pointer-click-pop__dot" cx="0" cy="0" r="7" />
             </g>
           </g>
         ))}

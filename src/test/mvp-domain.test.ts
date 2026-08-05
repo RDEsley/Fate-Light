@@ -3,17 +3,21 @@ import { chargeSchema, clientServiceSchema, domainSchema } from "@/features/mvp/
 import { billingFrequencyLabel } from "@/features/mvp/recurrence";
 
 describe("MVP financial boundaries", () => {
+  const baseCharge = {
+    additionalFee: "50",
+    alreadyPaid: false,
+    clientId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    clientServiceId: "",
+    companyRevenue: "500",
+    description: "Mensalidade",
+    dueDate: "2026-08-10",
+    mediaBudget: "1000",
+    notes: "",
+    paymentMethod: "",
+  };
+
   it("mantém receita própria, mídia e adicional independentes", () => {
-    const charge = chargeSchema.parse({
-      additionalFee: "50",
-      clientId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      clientServiceId: "",
-      companyRevenue: "500",
-      description: "Mensalidade",
-      dueDate: "2026-08-10",
-      mediaBudget: "1000",
-      notes: "",
-    });
+    const charge = chargeSchema.parse(baseCharge);
     expect(charge).toMatchObject({ additionalFee: 50, companyRevenue: 500, mediaBudget: 1000 });
     expect(charge.companyRevenue + charge.additionalFee).toBe(550);
   });
@@ -21,16 +25,44 @@ describe("MVP financial boundaries", () => {
   it("rejeita cobrança zerada", () => {
     expect(
       chargeSchema.safeParse({
+        ...baseCharge,
         additionalFee: 0,
-        clientId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        clientServiceId: "",
         companyRevenue: 0,
-        description: "Mensalidade",
-        dueDate: "2026-08-10",
         mediaBudget: 0,
-        notes: "",
       }).success,
     ).toBe(false);
+  });
+
+  it("exige forma de pagamento ao registrar cobrança já quitada", () => {
+    expect(chargeSchema.safeParse({ ...baseCharge, alreadyPaid: true }).success).toBe(false);
+    expect(
+      chargeSchema.safeParse({ ...baseCharge, alreadyPaid: true, paymentMethod: "Pix" }).success,
+    ).toBe(true);
+  });
+
+  it("aceita ciclo promocional gratuito com quantidade de ciclos", () => {
+    const free = clientServiceSchema.safeParse({
+      additionalFee: 0,
+      adjustmentIntervalMonths: "",
+      adjustmentRate: "",
+      billingType: "monthly",
+      description: "",
+      discountType: "none",
+      discountValue: 0,
+      installmentCount: 1,
+      listPrice: 1000,
+      mediaBudget: 0,
+      name: "Gestão de tráfego",
+      nextDueDate: "2026-08-05",
+      notes: "",
+      promotionalCycles: "4",
+      promotionalPrice: "0",
+      serviceId: "",
+      startDate: "2025-12-01",
+    });
+
+    expect(free.success).toBe(true);
+    expect(free.data).toMatchObject({ promotionalCycles: 4, promotionalPrice: 0 });
   });
 
   it("normaliza domínio e classifica alertas de vencimento", () => {

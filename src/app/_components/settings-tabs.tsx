@@ -1,36 +1,71 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { Route } from "next";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 
-const tabs: { href: Route; icon: IconName; label: string }[] = [
-  { href: "/perfil", icon: "user", label: "Meu perfil" },
-  { href: "/perfil#experiencia", icon: "sparkles", label: "Experiência" },
-  { href: "/configuracoes/empresa", icon: "building", label: "Empresa" },
+type SettingsTab = {
+  description: string;
+  href: Route;
+  icon: IconName;
+  label: string;
+  /** Âncora dentro da própria página, marcada como ativa junto com a rota base. */
+  section?: string;
+};
+
+const tabs: SettingsTab[] = [
+  {
+    description: "Nome, contato e localização",
+    href: "/perfil",
+    icon: "user",
+    label: "Meu perfil",
+  },
+  {
+    description: "Movimento, contraste e leitura",
+    href: "/perfil#experiencia",
+    icon: "sparkles",
+    label: "Experiência",
+    section: "/perfil",
+  },
+  {
+    description: "Identidade, datas e alertas",
+    href: "/configuracoes/empresa",
+    icon: "building",
+    label: "Empresa",
+  },
+  {
+    description: "Exportação e exclusão de conta",
+    href: "/perfil#privacidade",
+    icon: "info",
+    label: "Privacidade",
+    section: "/perfil",
+  },
 ];
 
 export function SettingsTabs() {
   const pathname = usePathname();
+
   return (
-    <nav
-      aria-label="Configurações"
-      className="mb-5 flex gap-1 overflow-x-auto rounded-2xl border-2 border-slate-700/10 bg-white p-1.5"
-    >
-      {tabs.map((tab) => {
-        const active = tab.href === "/perfil" ? pathname === "/perfil" : pathname === tab.href;
-        return (
-          <Link
-            className={`${active ? "bg-brand-soft text-brand-strong" : "text-muted hover:bg-[#f1f3ef]"} flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-black`}
-            href={tab.href}
-            key={tab.href}
-          >
-            <Icon className="size-4" name={tab.icon} /> {tab.label}
-          </Link>
-        );
-      })}
+    <nav aria-label="Configurações" className="settings-tabs">
+      {tabs.map((tab) => (
+        <Link
+          // `usePathname` descarta o hash, então as abas de âncora pertencem à rota base.
+          aria-current={pathname === (tab.section ?? tab.href) ? "page" : undefined}
+          className="settings-tabs__item"
+          href={tab.href}
+          key={tab.href}
+        >
+          <span className="settings-tabs__icon">
+            <Icon className="size-4" name={tab.icon} />
+          </span>
+          <span className="min-w-0">
+            <strong>{tab.label}</strong>
+            <small>{tab.description}</small>
+          </span>
+        </Link>
+      ))}
     </nav>
   );
 }

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 import { createExpense, deleteOperationalRecord, markExpensePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
-import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientCombobox, DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
@@ -217,10 +217,13 @@ export default async function ExpensesPage({
                     <input name="clientId" type="hidden" value="" />
                     <input name="id" type="hidden" value={expense.id} />
                     <input name="recordType" type="hidden" value="expense" />
-                    <ConfirmSubmitButton
+                    <ConfirmDialog
                       className="danger-action"
-                      confirmation="Excluir definitivamente esta despesa ainda não paga?"
+                      confirmLabel="Excluir despesa"
+                      confirmation="A despesa ainda não paga some do sistema sem deixar registro."
+                      icon="trash"
                       label="Excluir"
+                      title={expense.description}
                     />
                   </form>
                 </div>
