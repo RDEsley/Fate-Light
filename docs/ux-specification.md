@@ -113,7 +113,7 @@ O timezone usa identificador IANA. Moeda padrão pode ser BRL, mas fica explíci
 Seções:
 
 - Dados pessoais: nome, foto, telefone opcional e e-mail somente leitura.
-- Aparência e idioma: tema, idioma e timezone pessoal.
+- Experiência e idioma: idioma, timezone pessoal e controles separados para animações do mouse e do sistema.
 - Segurança e sessões: sessão atual e revogação disponível.
 - Seus dados: exportar.
 - Zona de risco: solicitar exclusão com confirmação reforçada e explicação de retenção.
@@ -310,7 +310,17 @@ Destructive actions informam consequência. Ações financeiras confirmadas não
 - Cores para própria/mídia/repasse são consistentes, acompanhadas de rótulo.
 - Gradientes limitados à marca, não aos dados.
 - Ícones sempre têm rótulo/tooltip quando a ação não for óbvia.
-- Modo claro e escuro pode entrar no MVP, desde que contraste e prazo não sejam prejudicados.
+- O produto usa somente um tema claro, suave e de baixo brilho, sem alternância de modo.
+- A linguagem visual combina acabamento profissional com detalhes cartoon: contornos consistentes,
+  sombras curtas, formas expressivas e movimento funcional, sem imitar interfaces genéricas.
+- O cursor não produz rastro; o clique exibe uma pequena bolha elástica com um ponto saltando,
+  minimalista e breve. O efeito do ponteiro é opcional e separado das demais animações.
+- Formulários operacionais priorizam densidade compacta, progresso visível, microtextos diretos e
+  agrupamento em painéis expansíveis com rótulos de abrir/fechar coerentes.
+- Campos de data abrem o calendário em toda a área clicável. Seletores de cliente permitem busca por
+  nome ou empresa e filtro entre ativos, inativos e todos, sem exigir rolagem por listas extensas.
+- Exclusões usam linguagem explícita, confirmação contextual e bloqueio de históricos confirmados;
+  a zona de risco do workspace exige uma expressão reforçada antes de qualquer limpeza.
 
 ## 17. Acessibilidade
 

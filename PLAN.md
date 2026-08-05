@@ -36,7 +36,7 @@ As decisões detalhadas estão em [docs/decisions.md](docs/decisions.md) e nos A
 - Login por magic link, encerramento de sessão e tratamento de conta suspensa.
 - Aceite versionado dos Termos de Uso e da Política de Privacidade.
 - Onboarding para criar o workspace inicial.
-- Perfil pessoal com nome, foto, telefone opcional, tema, idioma, timezone, sessões, exportação e solicitação de exclusão.
+- Perfil pessoal com nome, foto, telefone opcional, idioma, timezone, preferências de movimento, sessões, exportação e solicitação de exclusão.
 - Configurações do workspace: identidade, moeda única, timezone, formato de data e alertas padrão.
 
 ### Operação e financeiro

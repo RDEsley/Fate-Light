@@ -7,17 +7,17 @@ Decisões consolidadas e revisadas em 2026-07-30:
 - Runtime fixado em Node.js `24.18.1` LTS e npm `11.16.0`. A versão foi confirmada no índice e nos
   arquivos de distribuição oficiais, além do manifesto consumido pelo `actions/setup-node`.
 - Os tipos do runtime usam `@types/node` `24.13.3`, na mesma linha principal do Node executado.
-- Aplicação fixada em Next.js `16.2.12` e React/React DOM `19.2.8`, releases estáveis atuais, sem
+- Aplicação fixada em Next.js `16.3.0` e React/React DOM `19.2.8`, releases estáveis atuais, sem
   preview ou canary.
 - TypeScript `6.0.3`, modo `strict`, App Router, diretório `src/` e Server Components por padrão.
   A linha 7 foi adiada até que o ecossistema de lint do Next usado pelo projeto seja compatível.
 - ESLint `9.39.5` permanece porque o `eslint-config-next` estável ainda carrega plugins cuja árvore
   não foi atualizada de forma compatível para a correção transitiva de `minimatch`.
-- O único override mantido é PostCSS `8.5.25`: ele substitui o `8.4.31` transitivo do Next dentro da
-  mesma major e elimina os advisories `GHSA-qx2v-qp2m-jg93`, `GHSA-6g55-p6wh-862q` e
-  `GHSA-r28c-9q8g-f849`.
-- Os overrides de Sharp, minimatch e brace-expansion foram removidos na revisão corretiva porque
-  excediam os intervalos declarados pelos pacotes pais. Os advisories sem correção compatível ficam
+- Não há overrides após a atualização para Next.js `16.3.0`: o pacote pai passou a aceitar Sharp
+  `^0.35.3`; Next usa PostCSS `8.5.23`, enquanto Tailwind e Vite compartilham `8.5.25`, todas versões
+  corrigidas e dentro dos contratos declarados.
+- Os overrides de Sharp, PostCSS, minimatch e brace-expansion foram removidos quando deixaram de ser
+  necessários ou excediam os intervalos declarados pelos pacotes pais. Advisories sem correção compatível ficam
   registrados como riscos conhecidos em [repository-audit.md](repository-audit.md).
 - Tailwind CSS `4.3.3` concentra tokens semânticos em `globals.css`, com temas claro/escuro,
   contraste, foco visível e redução de movimento.
@@ -106,6 +106,9 @@ Decisões consolidadas em 2026-07-31:
 | ADR-0008 | Bootstrap explícito de identidade e isolamento RLS | Aceita | [ADR](adr/0008-identity-workspace-bootstrap-and-rls.md) |
 | ADR-0009 | Autenticação SSR, gate de conta e proteção contra abuso | Aceita | [ADR](adr/0009-ssr-authentication-and-abuse-protection.md) |
 | ADR-0010 | Cadastros operacionais arquiváveis e auditoria mínima | Aceita | [ADR](adr/0010-operational-records-and-audit.md) |
+| ADR-0011 | Importação de planilha em memória, idempotente e transacional | Aceita | [ADR](adr/0011-transactional-spreadsheet-import.md) |
+| ADR-0012 | Contrato de versões do runtime na Vercel | Aceita | [ADR](adr/0012-vercel-runtime-version-contract.md) |
+| ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
 
 ## Outras decisões consolidadas
 
