@@ -49,7 +49,7 @@ async function fillDate(field: Locator, value: string) {
 
 async function selectClient(panel: Locator, name: string) {
   await panel.getByRole("combobox", { name: "Cliente", exact: true }).fill(name);
-  await panel.getByRole("option").filter({ hasText: name }).click();
+  await panel.getByRole("listbox").getByRole("option").filter({ hasText: name }).click();
 }
 
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
