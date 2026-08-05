@@ -4,11 +4,12 @@ import { dirname, resolve } from "node:path";
 
 const outputPath = resolve("src/types/database.generated.ts");
 const checkOnly = process.argv.includes("--check");
+const linked = process.argv.includes("--linked");
 const cliPath = resolve("node_modules/supabase/dist/supabase.js");
 
 const generation = spawnSync(
   process.execPath,
-  [cliPath, "gen", "types", "typescript", "--local", "--schema", "public"],
+  [cliPath, "gen", "types", "typescript", linked ? "--linked" : "--local", "--schema", "public"],
   {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -21,7 +22,7 @@ if (generation.status !== 0) {
 }
 
 const generated = [
-  "// Arquivo gerado por `npm run db:types`. Não edite manualmente.",
+  `// Arquivo gerado por \`${linked ? "npm run db:types:linked" : "npm run db:types"}\`. Não edite manualmente.`,
   generation.stdout.trim(),
   "",
 ].join("\n");
