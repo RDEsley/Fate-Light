@@ -47,7 +47,9 @@ async function addService(page: Page, values: { name: string; own: string; media
   await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
   await panel.getByLabel("Valor cheio").fill(values.own);
-  await panel.getByLabel("Primeiro vencimento").fill(dateOffset(7));
+  const firstDueDate = panel.getByLabel("Primeiro vencimento");
+  await firstDueDate.fill(dateOffset(7));
+  await firstDueDate.press("Escape");
   const mediaBudget = panel.getByLabel("Verba de mídia");
   await panel.getByText("Personalizar preço e agenda", { exact: true }).click();
   await expect(mediaBudget).toBeVisible();
