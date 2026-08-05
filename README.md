@@ -8,7 +8,7 @@
   </p>
   <p>
     <a href="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml"><img src="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-    <a href="package.json"><img src="https://img.shields.io/badge/version-0.4.0-2563EB.svg" alt="Versão 0.4.0" /></a>
+    <a href="package.json"><img src="https://img.shields.io/badge/version-0.4.1-2563EB.svg" alt="Versão 0.4.1" /></a>
     <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16.3.0-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3.0" /></a>
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=0B1F2A" alt="React 19.2.8" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0.3" /></a>

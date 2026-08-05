@@ -24,6 +24,7 @@ select set_config(
   true
 );
 
+reset role;
 insert into public.clients (id, workspace_id, kind, name, commercial_status)
 values (
   '73737373-0001-4373-8373-737373737373',
@@ -34,6 +35,7 @@ values (
   current_setting('test.lifecycle_workspace')::uuid,
   'company', 'Cliente com histórico', 'active'
 );
+set local role authenticated;
 
 select results_eq(
   $$select public.delete_client_record('73737373-0001-4373-8373-737373737373'::uuid)$$,
@@ -41,6 +43,7 @@ select results_eq(
   'Exclui cliente sem vínculos'
 );
 
+reset role;
 insert into public.client_services (
   id, workspace_id, client_id, name, billing_type, start_date, next_due_date, status
 ) values (
@@ -49,6 +52,7 @@ insert into public.client_services (
   '73737373-0002-4373-8373-737373737373',
   'Serviço anual', 'annual', current_date, current_date + 365, 'active'
 );
+set local role authenticated;
 
 select results_eq(
   $$select public.delete_client_record('73737373-0002-4373-8373-737373737373'::uuid)$$,
@@ -71,6 +75,7 @@ select results_eq(
   'Exclui serviço encerrado sem cobrança'
 );
 
+reset role;
 insert into public.charges (
   id, workspace_id, client_id, description, due_date, company_revenue, status, paid_at
 ) values (
@@ -84,6 +89,7 @@ insert into public.charges (
   '73737373-0002-4373-8373-737373737373',
   'Cobrança pendente', current_date, 100, 'pending', null
 );
+set local role authenticated;
 
 select results_eq(
   $$select public.delete_workspace_record('charge', '73737373-2000-4373-8373-737373737373'::uuid)$$,
@@ -97,6 +103,7 @@ select results_eq(
   'Exclui cobrança ainda não confirmada'
 );
 
+reset role;
 insert into public.expenses (
   id, workspace_id, description, category, amount, due_date, status, paid_at, expense_type
 ) values (
@@ -104,6 +111,7 @@ insert into public.expenses (
   current_setting('test.lifecycle_workspace')::uuid,
   'Despesa paga', 'tools', 50, current_date, 'paid', statement_timestamp(), 'fixed'
 );
+set local role authenticated;
 
 select results_eq(
   $$select public.delete_workspace_record('expense', '73737373-3000-4373-8373-737373737373'::uuid)$$,

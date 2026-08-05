@@ -44,7 +44,7 @@ function dateOffset(days: number) {
 
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
-  await panel.locator("summary").click();
+  await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
   await panel.getByLabel("Valor cheio").fill(values.own);
   await panel.getByLabel("Primeiro vencimento").fill(dateOffset(7));
