@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 import { cancelDomain, createDomain, deleteOperationalRecord } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
-import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientCombobox, DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { expiryLabel, formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
@@ -206,10 +206,14 @@ export default async function DomainsPage({
                 {domain.status === "active" ? (
                   <form action={cancelDomain} className="mt-4">
                     <input name="id" type="hidden" value={domain.id} />
-                    <ConfirmSubmitButton
+                    <ConfirmDialog
                       className="font-semibold hover:underline"
-                      confirmation="Cancelar o acompanhamento deste domínio? O histórico será preservado."
+                      confirmLabel="Cancelar acompanhamento"
+                      confirmation="O domínio para de gerar alertas de expiração, mas continua no histórico."
+                      icon="x"
                       label="Cancelar domínio"
+                      title={domain.domain}
+                      tone="default"
                     />
                   </form>
                 ) : (
@@ -217,10 +221,13 @@ export default async function DomainsPage({
                     <input name="clientId" type="hidden" value="" />
                     <input name="id" type="hidden" value={domain.id} />
                     <input name="recordType" type="hidden" value="domain" />
-                    <ConfirmSubmitButton
+                    <ConfirmDialog
                       className="text-negative font-semibold hover:underline"
-                      confirmation="Excluir definitivamente este domínio cancelado?"
+                      confirmLabel="Excluir domínio"
+                      confirmation="O domínio cancelado some do sistema sem deixar registro."
+                      icon="trash"
                       label="Excluir domínio"
+                      title={domain.domain}
                     />
                   </form>
                 )}

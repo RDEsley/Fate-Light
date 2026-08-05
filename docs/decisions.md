@@ -104,6 +104,20 @@ Consolidada em 2026-08-05:
 - A confirmação deve ser reativada antes da Fase 12 (hardening e publicação). Detalhes no
   [ADR 0014](adr/0014-temporary-email-confirmation-waiver.md).
 
+## Estados do cliente, pausa de serviço e ciclos promocionais gratuitos
+
+Consolidada em 2026-08-05:
+
+- Cobrança de valor zero passa a ser válida (`gross_total >= 0`), permitindo ciclos
+  promocionais 100% gratuitos sem travar o avanço do serviço.
+- A promoção conta a partir do primeiro vencimento, nunca da data de início do serviço.
+- O cliente passa a admitir seis situações comerciais: orçamento, pendente, ativo, inativo,
+  lista negra e arquivado. O serviço passa a admitir pausa, sem gerar cobranças nem alertas
+  enquanto pausado.
+- Cancelamento de cobrança passa a exigir motivo. Serviço aplicado a um cliente entra
+  automaticamente no catálogo do workspace, reaproveitando por nome em vez de duplicar.
+- Detalhes no [ADR 0015](adr/0015-client-states-and-service-lifecycle-experience.md).
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |
@@ -122,6 +136,7 @@ Consolidada em 2026-08-05:
 | ADR-0012 | Contrato de versões do runtime na Vercel | Aceita | [ADR](adr/0012-vercel-runtime-version-contract.md) |
 | ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
 | ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha | Aceita | [ADR](adr/0014-temporary-email-confirmation-waiver.md) |
+| ADR-0015 | Estados do cliente, pausa de serviço e ciclos promocionais gratuitos | Aceita | [ADR](adr/0015-client-states-and-service-lifecycle-experience.md) |
 
 ## Outras decisões consolidadas
 

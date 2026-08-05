@@ -4,7 +4,9 @@ import { z } from "zod";
 const clientQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
   q: z.string().trim().max(80).catch(""),
-  state: z.enum(["all", "active", "inactive"]).catch("all"),
+  state: z
+    .enum(["all", "budget", "pending", "active", "inactive", "blacklist", "archived"])
+    .catch("all"),
 });
 
 export function parseClientQuery(parameters: Record<string, string | undefined>) {

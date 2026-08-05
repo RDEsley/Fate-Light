@@ -5,6 +5,7 @@ import {
   applyMotionPreferences,
   MotionExperience,
   motionPreferenceKeys,
+  pointerMarkDuration,
 } from "@/components/motion-experience";
 
 function mockReducedMotion(matches: boolean) {
@@ -45,16 +46,28 @@ describe("motion experience", () => {
     expect(document.documentElement.dataset.systemMotion).toBe("off");
   });
 
-  it("cria e remove o impacto do clique", () => {
+  it("cria e remove a onda do clique", () => {
     const { container } = render(<MotionExperience />);
 
     fireEvent.pointerDown(window, { clientX: 40, clientY: 50, pointerType: "mouse" });
     expect(container.querySelectorAll(".pointer-click-pop")).toHaveLength(1);
     expect(container.querySelector(".pointer-click-pop__bubble")).toBeInTheDocument();
+    expect(container.querySelector(".pointer-click-pop__wake")).toBeInTheDocument();
     expect(container.querySelector(".pointer-click-pop__dot")).toBeInTheDocument();
 
-    act(() => vi.advanceTimersByTime(380));
+    act(() => vi.advanceTimersByTime(pointerMarkDuration));
     expect(container.querySelectorAll(".pointer-click-pop")).toHaveLength(0);
+  });
+
+  it("posiciona a onda no ponto exato do clique", () => {
+    const { container } = render(<MotionExperience />);
+
+    fireEvent.pointerDown(window, { clientX: 128, clientY: 64, pointerType: "mouse" });
+
+    expect(container.querySelector(".pointer-effects g")).toHaveAttribute(
+      "transform",
+      "translate(128 64)",
+    );
   });
 
   it("não cria rastro e ignora toque ou clique quando a preferência está desligada", () => {

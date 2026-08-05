@@ -1,31 +1,42 @@
 import type { Metadata } from "next";
 
-import {
-  cancelCharge,
-  createCharge,
-  deleteOperationalRecord,
-  markChargePaid,
-} from "@/app/_actions/mvp";
+import { createCharge, deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
-import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FieldHint } from "@/components/ui/field-hint";
 import { ClientCombobox, DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
+import { SelectField } from "@/components/ui/select-field";
+import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
+import { cancellationReasons } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
+import { CancelChargeForm } from "./cancel-charge-form";
 import { DelayReasonForm } from "./delay-reason-form";
+import { FocusCharge } from "./focus-charge";
 
 export const metadata: Metadata = { title: "Cobranças" };
 
 const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro", "Outro"];
+const paymentOptions = paymentMethods.map((method) => ({ label: method, value: method }));
+const cancellationLabels = new Map<string, string>(cancellationReasons.map(([v, l]) => [v, l]));
+
+const statusLabels: Record<string, string> = {
+  cancelled: "Cancelada",
+  overdue: "Vencida",
+  paid: "Paga",
+  pending: "Pendente",
+};
 
 export default async function ChargesPage({
   searchParams,
 }: {
   searchParams: Promise<{
     clientId?: string;
+    focus?: string;
     q?: string;
     serviceId?: string;
     state?: string;
@@ -40,7 +51,7 @@ export default async function ChargesPage({
   let chargesRequest = context.supabase
     .from("charges")
     .select(
-      "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, clients(name)",
+      "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name)",
     )
     .eq("workspace_id", context.workspaceId)
     .order("due_date", { ascending: false })
@@ -67,10 +78,12 @@ export default async function ChargesPage({
 
   return (
     <AccountShell
-      description="Registre recebíveis sem misturar receita da empresa com verba de mídia."
+      description="As cobranças nascem dos serviços dos clientes. Aqui você acompanha, recebe e ajusta."
       title="Cobranças"
     >
       <MvpStatusMessage status={parameters.status} />
+      <FocusCharge chargeId={parameters.focus} />
+
       <form className="panel-card mb-4 flex flex-col gap-3 p-3! sm:flex-row" method="get">
         <label className="relative flex-1">
           <span className="sr-only">Buscar cobranças</span>
@@ -106,13 +119,14 @@ export default async function ChargesPage({
           Filtrar
         </button>
       </form>
+
       <details className="panel-card form-disclosure mb-5" open={Boolean(parameters.clientId)}>
         <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
           <span className="flex items-center gap-2">
             <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
               <Icon className="size-4" name="plus" />
             </span>
-            Nova cobrança
+            Cobrança avulsa
           </span>
           <span className="text-muted flex items-center gap-1 text-xs">
             <span className="form-disclosure__closed-label">Abrir formulário</span>
@@ -120,6 +134,11 @@ export default async function ChargesPage({
             <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
           </span>
         </summary>
+        <p className="helper-note mt-3">
+          <Icon className="size-4" name="info" /> O caminho normal é aplicar um serviço no card do
+          cliente, que já cria e renova as cobranças. Use este formulário para lançamentos fora da
+          recorrência ou para registrar algo que já aconteceu.
+        </p>
         <form action={createCharge} className="form-grid mt-4 sm:grid-cols-2">
           <ClientCombobox
             clients={(clients ?? []).map((client) => ({
@@ -130,131 +149,158 @@ export default async function ChargesPage({
             }))}
             defaultValue={parameters.clientId}
           />
-          <label className="text-sm font-semibold">
-            Serviço opcional
-            <select
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              defaultValue={parameters.serviceId ?? ""}
-              name="clientServiceId"
-            >
-              <option value="">Sem vínculo</option>
-              {services?.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {clientNames.get(service.client_id)} — {service.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-semibold sm:col-span-2">
-            Descrição
+          <SelectField
+            defaultValue={parameters.serviceId ?? ""}
+            label="Serviço vinculado"
+            name="clientServiceId"
+            optional
+            options={[
+              { description: "Cobrança independente", label: "Sem vínculo", value: "" },
+              ...(services ?? []).map((service) => ({
+                description: clientNames.get(service.client_id),
+                label: service.name,
+                value: service.id,
+              })),
+            ]}
+            placeholder="Sem vínculo"
+          />
+          <label className="field sm:col-span-2">
+            <span className="field__label">Descrição</span>
             <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
               maxLength={200}
               name="description"
-              required
+              placeholder="Ex.: Gestão de tráfego — agosto"
             />
           </label>
           <DateField defaultValue={today} label="Vencimento" name="dueDate" required />
-          <label className="text-sm font-semibold">
-            Receita própria
+          <label className="field">
+            <span className="field__label">
+              Receita própria
+              <FieldHint>
+                O que fica com você. É este valor que entra nos relatórios de faturamento.
+              </FieldHint>
+            </span>
             <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              defaultValue="0"
               min="0"
               name="companyRevenue"
-              required
+              placeholder="Ex.: 1500,00"
               step="0.01"
               type="number"
             />
           </label>
-          <label className="text-sm font-semibold">
-            Verba de mídia
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              defaultValue="0"
-              min="0"
-              name="mediaBudget"
-              required
-              step="0.01"
-              type="number"
-            />
+          <label className="field">
+            <span className="field__label">
+              Verba de mídia <span className="field__optional">opcional</span>
+              <FieldHint>
+                Dinheiro do cliente que só passa por você para virar anúncio. Não conta como sua
+                receita.
+              </FieldHint>
+            </span>
+            <input min="0" name="mediaBudget" placeholder="Ex.: 800,00" step="0.01" type="number" />
           </label>
-          <label className="text-sm font-semibold">
-            Adicional
+          <label className="field">
+            <span className="field__label">
+              Adicional <span className="field__optional">opcional</span>
+            </span>
             <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              defaultValue="0"
               min="0"
               name="additionalFee"
-              required
+              placeholder="Ex.: 120,00"
               step="0.01"
               type="number"
             />
           </label>
-          <label className="text-sm font-semibold sm:col-span-2">
-            Observações
-            <textarea
-              className="border-line bg-canvas mt-2 min-h-24 w-full rounded-xl border px-4 py-3"
-              maxLength={5000}
-              name="notes"
-            />
+          <div className="option-card sm:col-span-2">
+            <label className="option-card__toggle">
+              <input name="alreadyPaid" type="checkbox" />
+              <span>
+                <strong>Esta cobrança já foi paga</strong>
+                <small>
+                  Para registrar algo que aconteceu antes de você usar o sistema. Entra direto como
+                  quitada, na data de vencimento informada.
+                </small>
+              </span>
+            </label>
+            <div className="mt-3">
+              <SelectField
+                defaultValue="Pix"
+                label="Forma de pagamento"
+                name="paymentMethod"
+                options={paymentOptions}
+              />
+            </div>
+          </div>
+          <label className="field sm:col-span-2">
+            <span className="field__label">
+              Observações <span className="field__optional">opcional</span>
+            </span>
+            <textarea maxLength={5000} name="notes" />
           </label>
           <div className="sm:col-span-2">
-            <SubmitButton idleLabel="Criar cobrança" />
+            <SoftSubmitButton
+              idleLabel="Criar cobrança"
+              requirements={[
+                { message: "Descreva a cobrança para reconhecê-la depois.", name: "description" },
+                {
+                  message: "Todos os valores estão zerados — a cobrança precisa de algum valor.",
+                  name: ["companyRevenue", "mediaBudget", "additionalFee"],
+                  warnOnZero: true,
+                },
+              ]}
+            />
           </div>
         </form>
       </details>
+
       {error ? (
         <p role="alert">Não foi possível carregar as cobranças.</p>
       ) : charges?.length ? (
-        <div className="space-y-4">
+        <div className="charge-list">
           {charges.map((charge) => {
             const effectiveStatus =
               charge.status === "pending" && charge.due_date < today ? "overdue" : charge.status;
             return (
               <article
-                className={`cartoon-card p-4 sm:p-5 ${effectiveStatus === "overdue" ? "critical-card" : ""}`}
+                className={`charge-card ${effectiveStatus === "overdue" ? "critical-card" : ""}`}
+                id={`charge-${charge.id}`}
                 key={charge.id}
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 className="font-semibold">{charge.description}</h2>
-                    <p className="text-muted text-sm">
+                <div className="charge-card__head">
+                  <div className="min-w-0">
+                    <h2>{charge.description}</h2>
+                    <p>
                       {charge.clients?.name ?? "Cliente"} · vencimento{" "}
                       {formatDatePtBr(charge.due_date)}
                     </p>
                   </div>
-                  <span
-                    className={`${effectiveStatus === "overdue" ? "bg-negative-soft text-negative" : effectiveStatus === "paid" ? "bg-positive-soft text-positive" : effectiveStatus === "cancelled" ? "bg-slate-100 text-slate-600" : "bg-warning-soft text-warning"} rounded-full px-3 py-1 text-xs font-black`}
-                  >
-                    {
-                      {
-                        pending: "Pendente",
-                        paid: "Pago",
-                        overdue: "Vencido",
-                        cancelled: "Cancelado",
-                      }[effectiveStatus]
-                    }
+                  <span className={`charge-status charge-status--${effectiveStatus}`}>
+                    {statusLabels[effectiveStatus]}
                   </span>
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+
+                <dl className="charge-card__values">
                   <div>
-                    <dt className="text-muted">Receita própria</dt>
+                    <dt>Receita própria</dt>
                     <dd>{formatCurrency(charge.company_revenue)}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted">Mídia</dt>
+                    <dt>Mídia</dt>
                     <dd>{formatCurrency(charge.media_budget)}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted">Adicional</dt>
+                    <dt>Adicional</dt>
                     <dd>{formatCurrency(charge.additional_fee)}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted">Total bruto</dt>
-                    <dd className="font-semibold">{formatCurrency(charge.gross_total)}</dd>
+                    <dt>Total bruto</dt>
+                    <dd className="font-black">
+                      {Number(charge.gross_total) === 0
+                        ? "Cortesia"
+                        : formatCurrency(charge.gross_total)}
+                    </dd>
                   </div>
                 </dl>
+
                 {effectiveStatus === "overdue" ? (
                   charge.delay_reason ? (
                     <div className="delay-reason-note">
@@ -267,58 +313,69 @@ export default async function ChargesPage({
                     <DelayReasonForm chargeId={charge.id} />
                   )
                 ) : null}
+
+                {charge.status === "cancelled" && charge.cancel_reason ? (
+                  <div className="delay-reason-note">
+                    <Icon className="size-4" name="x" />
+                    <span>
+                      <strong>
+                        {cancellationLabels.get(charge.cancel_reason_code ?? "") ?? "Cancelada"}:
+                      </strong>{" "}
+                      {charge.cancel_reason}
+                    </span>
+                  </div>
+                ) : null}
+
                 {charge.status === "pending" ? (
-                  <div className="mt-4 flex flex-wrap items-end gap-4">
-                    <form action={markChargePaid} className="flex flex-wrap items-end gap-3">
+                  <div className="charge-card__actions">
+                    <form action={markChargePaid} className="charge-settle">
                       <input name="id" type="hidden" value={charge.id} />
-                      <label className="text-sm font-semibold">
-                        Forma de pagamento
-                        <select
-                          className="border-line bg-canvas mt-2 min-h-10 rounded-xl border px-3"
-                          name="paymentMethod"
-                        >
-                          {paymentMethods.map((method) => (
-                            <option key={method}>{method}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <SubmitButton idleLabel="Marcar como paga" />
-                    </form>
-                    <form action={cancelCharge}>
-                      <input name="id" type="hidden" value={charge.id} />
-                      <ConfirmSubmitButton
-                        className="min-h-10 font-semibold hover:underline"
-                        confirmation="Cancelar esta cobrança? O registro será preservado."
-                        label="Cancelar cobrança"
+                      <SelectField
+                        defaultValue="Pix"
+                        label="Forma de pagamento"
+                        name="paymentMethod"
+                        options={paymentOptions}
                       />
+                      <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
                     </form>
+                    <div className="charge-card__secondary">
+                      <CancelChargeForm chargeId={charge.id} description={charge.description} />
+                      <form action={deleteOperationalRecord}>
+                        <input name="clientId" type="hidden" value="" />
+                        <input name="id" type="hidden" value={charge.id} />
+                        <input name="recordType" type="hidden" value="charge" />
+                        <ConfirmDialog
+                          className="charge-action charge-action--danger"
+                          confirmLabel="Excluir cobrança"
+                          confirmation="A cobrança some do sistema sem deixar registro. Se ela existiu de verdade, prefira cancelar para manter o histórico."
+                          icon="trash"
+                          label="Excluir"
+                          title={charge.description}
+                        />
+                      </form>
+                    </div>
+                  </div>
+                ) : charge.paid_at ? (
+                  <p className="charge-card__footnote">
+                    <Icon className="size-4" name="check" /> Pago em{" "}
+                    {new Date(charge.paid_at).toLocaleString("pt-BR")} via {charge.payment_method}
+                  </p>
+                ) : charge.status === "cancelled" ? (
+                  <div className="charge-card__actions">
                     <form action={deleteOperationalRecord}>
                       <input name="clientId" type="hidden" value="" />
                       <input name="id" type="hidden" value={charge.id} />
                       <input name="recordType" type="hidden" value="charge" />
-                      <ConfirmSubmitButton
-                        className="text-negative min-h-10 font-semibold hover:underline"
-                        confirmation="Excluir definitivamente esta cobrança ainda não paga?"
-                        label="Excluir"
+                      <ConfirmDialog
+                        className="charge-action charge-action--danger"
+                        confirmLabel="Excluir cobrança"
+                        confirmation="A cobrança cancelada some do sistema sem deixar registro."
+                        icon="trash"
+                        label="Excluir cobrança"
+                        title={charge.description}
                       />
                     </form>
                   </div>
-                ) : charge.paid_at ? (
-                  <p className="text-muted mt-4 text-sm">
-                    Pago em {new Date(charge.paid_at).toLocaleString("pt-BR")} via{" "}
-                    {charge.payment_method}
-                  </p>
-                ) : charge.status === "cancelled" ? (
-                  <form action={deleteOperationalRecord} className="mt-4">
-                    <input name="clientId" type="hidden" value="" />
-                    <input name="id" type="hidden" value={charge.id} />
-                    <input name="recordType" type="hidden" value="charge" />
-                    <ConfirmSubmitButton
-                      className="text-negative font-semibold hover:underline"
-                      confirmation="Excluir definitivamente esta cobrança cancelada?"
-                      label="Excluir cobrança"
-                    />
-                  </form>
                 ) : null}
               </article>
             );
@@ -328,7 +385,7 @@ export default async function ChargesPage({
         <section className="border-line bg-surface rounded-2xl border p-8 text-center">
           <h2 className="text-xl font-semibold">Nenhuma cobrança</h2>
           <p className="text-muted mt-2">
-            Crie a primeira cobrança para acompanhar os recebimentos.
+            Aplique um serviço no card de um cliente para que as cobranças passem a nascer sozinhas.
           </p>
         </section>
       )}

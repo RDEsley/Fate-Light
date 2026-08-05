@@ -46,6 +46,7 @@ export async function getAttentionItems(
         .order("expires_on")
         .limit(20),
       context.supabase
+        // Serviço pausado não entra no radar: foi o usuário que pediu a pausa.
         .from("client_services")
         .select("id, client_id, name, next_adjustment_date, clients(name)")
         .eq("workspace_id", context.workspaceId)
@@ -57,8 +58,9 @@ export async function getAttentionItems(
     ]);
 
   const items: AttentionItem[] = [
+    // O alerta funciona como guia: leva direto à cobrança citada, não à lista genérica.
     ...(charges ?? []).map((charge) => ({
-      href: "/cobrancas" as const,
+      href: `/cobrancas?focus=${charge.id}` as Route,
       id: `charge-${charge.id}`,
       meta: `${charge.clients?.name ?? "Cliente"} · ${formatDatePtBr(charge.due_date)}`,
       severity: charge.due_date < today ? ("danger" as const) : ("warning" as const),

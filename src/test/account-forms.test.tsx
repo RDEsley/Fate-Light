@@ -109,9 +109,31 @@ describe("account forms", () => {
     render(<LifecycleRequestPanel requests={[]} />);
 
     expect(screen.getByRole("button", { name: /solicitar exportação/i })).toBeVisible();
+    expect(screen.getByText(/nenhuma solicitação registrada/i)).toBeVisible();
+
+    // A exclusão fica atrás de um disclosure fechado para não competir com o uso normal.
+    const disclosure = screen.getByText(/encerrar a conta/i).closest("details");
+    expect(disclosure).toBeInTheDocument();
+    expect(screen.getByText(/não apaga dados/i)).not.toBeVisible();
+
+    disclosure!.open = true;
+    expect(screen.getByText(/não apaga dados/i)).toBeVisible();
     expect(screen.getByLabelText(/digite excluir minha conta/i)).toBeRequired();
     expect(screen.getByRole("checkbox", { name: /registra o pedido/i })).toBeRequired();
-    expect(screen.getByText(/não apaga dados/i)).toBeVisible();
-    expect(screen.getByText(/nenhuma solicitação registrada/i)).toBeVisible();
+  });
+
+  it("libera a exclusão somente após a frase exata de confirmação", () => {
+    render(<LifecycleRequestPanel requests={[]} />);
+
+    const submit = screen.getByRole("button", { name: /solicitar exclusão/i });
+    expect(submit).toBeDisabled();
+
+    const field = screen.getByLabelText(/digite excluir minha conta/i);
+    fireEvent.change(field, { target: { value: "excluir" } });
+    expect(screen.getByText(/a frase ainda não confere/i)).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+
+    fireEvent.change(field, { target: { value: "EXCLUIR MINHA CONTA" } });
+    expect(submit).toBeEnabled();
   });
 });

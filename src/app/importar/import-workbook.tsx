@@ -36,7 +36,10 @@ export function ImportWorkbook() {
     setPending(null);
   };
 
-  const hasErrors = state.preview?.issues.some(({ level }) => level === "error") ?? false;
+  const issues = state.preview?.issues ?? [];
+  const errorCount = issues.filter(({ level }) => level === "error").length;
+  const warningCount = issues.length - errorCount;
+  const hasErrors = errorCount > 0;
 
   return (
     <form className="space-y-5" ref={formRef}>
@@ -103,30 +106,54 @@ export function ImportWorkbook() {
 
           {state.preview.issues.length ? (
             <div className="panel-card p-0!">
-              <div className="border-b px-5 py-4">
-                <h2 className="font-black">Pontos encontrados</h2>
-                <p className="text-muted mt-1 text-sm">
-                  Erros bloqueiam o lote; avisos exigem revisão.
-                </p>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
+                <div>
+                  <h2 className="font-black">O que precisa da sua atenção</h2>
+                  <p className="text-muted mt-1 text-sm">
+                    Erros bloqueiam o lote inteiro. Avisos deixam importar, mas vale conferir.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {errorCount ? (
+                    <span className="bg-negative-soft text-negative rounded-full px-3 py-1 text-xs font-black">
+                      {errorCount} {errorCount === 1 ? "erro" : "erros"}
+                    </span>
+                  ) : null}
+                  {warningCount ? (
+                    <span className="bg-warning-soft text-warning rounded-full px-3 py-1 text-xs font-black">
+                      {warningCount} {warningCount === 1 ? "aviso" : "avisos"}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <ul className="max-h-80 divide-y overflow-auto">
-                {state.preview.issues.map((item, index) => (
-                  <li
-                    className="flex gap-3 px-5 py-3 text-sm"
-                    key={`${item.sheet}-${item.row}-${index}`}
-                  >
-                    <Icon
-                      className={`mt-0.5 size-4 shrink-0 ${item.level === "error" ? "text-negative" : "text-warning"}`}
-                      name="alert"
-                    />
-                    <span>
-                      <strong>
-                        {item.sheet} · linha {item.row}
-                      </strong>
-                      <span className="text-muted mt-0.5 block">{item.message}</span>
-                    </span>
-                  </li>
-                ))}
+                {/* Erros primeiro: são eles que impedem a importação de seguir. */}
+                {[...state.preview.issues]
+                  .sort((left, right) =>
+                    left.level === right.level
+                      ? left.row - right.row
+                      : left.level === "error"
+                        ? -1
+                        : 1,
+                  )
+                  .map((item, index) => (
+                    <li
+                      className="flex gap-3 px-5 py-3 text-sm"
+                      key={`${item.sheet}-${item.row}-${index}`}
+                    >
+                      <Icon
+                        className={`mt-0.5 size-4 shrink-0 ${item.level === "error" ? "text-negative" : "text-warning"}`}
+                        name="alert"
+                      />
+                      <span className="min-w-0">
+                        <strong>
+                          {item.sheet} · linha {item.row}
+                          {item.field ? ` · coluna ${item.field}` : ""}
+                        </strong>
+                        <span className="text-muted mt-0.5 block">{item.message}</span>
+                      </span>
+                    </li>
+                  ))}
               </ul>
             </div>
           ) : null}

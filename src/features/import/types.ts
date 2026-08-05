@@ -26,7 +26,8 @@ export type ImportPayload = {
     name: string;
     notes: string;
     phone: string;
-    status: "active" | "inactive";
+    status: "active" | "blacklist" | "budget" | "inactive" | "pending";
+    website: string;
   }>;
   domains: Array<{
     autoRenew: boolean;

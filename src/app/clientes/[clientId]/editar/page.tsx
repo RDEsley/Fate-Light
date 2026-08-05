@@ -28,7 +28,7 @@ export default async function EditClientPage({ params, searchParams }: EditClien
 
   const { data: client, error } = await context.supabase
     .from("clients")
-    .select("id, name, trade_name, email, phone, commercial_status, notes, archived_at")
+    .select("id, name, trade_name, email, phone, website, commercial_status, notes, archived_at")
     .eq("id", clientId.data)
     .eq("workspace_id", context.workspaceId)
     .single();
@@ -42,7 +42,7 @@ export default async function EditClientPage({ params, searchParams }: EditClien
       title={`Editar ${client.name}`}
     >
       <ClientStatusMessage status={status} />
-      <section className="panel-card mx-auto w-full max-w-4xl">
+      <div className="mx-auto w-full max-w-4xl">
         <ClientForm
           action={updateClient}
           cancelHref={`/clientes/${client.id}` as Route}
@@ -55,9 +55,10 @@ export default async function EditClientPage({ params, searchParams }: EditClien
             notes: client.notes,
             phone: client.phone,
             status: client.commercial_status,
+            website: client.website,
           }}
         />
-      </section>
+      </div>
     </AccountShell>
   );
 }

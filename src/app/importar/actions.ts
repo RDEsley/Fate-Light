@@ -38,6 +38,30 @@ async function readFile(formData: FormData) {
   } as const;
 }
 
+/**
+ * A RPC transacional não grava o site do cliente. Em vez de reescrever aquela função
+ * inteira por causa de uma coluna, o site é aplicado logo depois, por nome, e só onde
+ * ainda estiver vazio — nunca sobrescreve o que o usuário já preencheu na interface.
+ */
+async function applyImportedWebsites(
+  supabase: Awaited<ReturnType<typeof requireWorkspaceContext>>["supabase"],
+  workspaceId: string,
+  payload: Awaited<ReturnType<typeof readFile>>["normalized"]["payload"],
+) {
+  const withWebsite = payload.clients.filter((client) => client.website);
+  if (!withWebsite.length) return;
+  await Promise.all(
+    withWebsite.map((client) =>
+      supabase
+        .from("clients")
+        .update({ website: client.website })
+        .eq("workspace_id", workspaceId)
+        .ilike("name", client.name)
+        .is("website", null),
+    ),
+  );
+}
+
 async function validateRelations(
   normalized: Awaited<ReturnType<typeof readFile>>["normalized"],
   issues: ImportIssue[],
@@ -202,6 +226,7 @@ export async function confirmSpreadsheet(formData: FormData): Promise<ImportActi
     }
     const result = data as { counts?: Record<string, number>; status?: string };
     const duplicate = result.status === "duplicate";
+    if (!duplicate) await applyImportedWebsites(supabase, workspaceId, parsed.normalized.payload);
     revalidatePath("/dashboard");
     revalidatePath("/clientes");
     revalidatePath("/cobrancas");

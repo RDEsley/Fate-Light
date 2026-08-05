@@ -26,8 +26,9 @@ vi.mock("@/lib/auth/workspace-context", () => ({
 }));
 
 import {
+  deleteClientService,
   deleteOperationalRecord,
-  reactivateClientService,
+  setClientServiceState,
   updateClientServiceSchedule,
 } from "@/app/_actions/mvp";
 
@@ -51,16 +52,86 @@ describe("operational lifecycle actions", () => {
     lifecycleMocks.rpc.mockResolvedValue({ data: "deleted", error: null });
   });
 
-  it("reativa um serviço encerrado dentro do workspace atual", async () => {
+  it("pausa um serviço sem marcar encerramento", async () => {
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+    formData.set("state", "paused");
+
+    await expect(setClientServiceState(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=service-paused`,
+    );
+    expect(lifecycleMocks.chain.update).toHaveBeenCalledWith({
+      ended_at: null,
+      status: "paused",
+    });
+  });
+
+  it("retoma um serviço pausado limpando a data de encerramento", async () => {
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+    formData.set("state", "active");
+
+    await expect(setClientServiceState(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=service-resumed`,
+    );
+    expect(lifecycleMocks.chain.update).toHaveBeenCalledWith({
+      ended_at: null,
+      status: "active",
+    });
+  });
+
+  it("encerra um serviço registrando a data", async () => {
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+    formData.set("state", "ended");
+
+    await expect(setClientServiceState(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=service-ended`,
+    );
+    expect(lifecycleMocks.chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "ended" }),
+    );
+    const [payload] = lifecycleMocks.chain.update.mock.calls.at(-1) as [{ ended_at: string }];
+    expect(payload.ended_at).toEqual(expect.any(String));
+  });
+
+  it("recusa um estado de serviço fora do contrato", async () => {
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+    formData.set("state", "cancelled");
+
+    await expect(setClientServiceState(formData)).rejects.toThrow(
+      "REDIRECT:/clientes?status=service-error",
+    );
+    expect(lifecycleMocks.chain.update).not.toHaveBeenCalled();
+  });
+
+  it("exclui serviço e cobranças não pagas pela RPC em cascata", async () => {
     const formData = new FormData();
     formData.set("clientId", clientId);
     formData.set("id", recordId);
 
-    await expect(reactivateClientService(formData)).rejects.toThrow(
-      `REDIRECT:/clientes/${clientId}?status=service-reactivated`,
+    await expect(deleteClientService(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=deleted`,
     );
-    expect(lifecycleMocks.chain.update).toHaveBeenCalledWith({ ended_at: null, status: "active" });
-    expect(lifecycleMocks.chain.eq).toHaveBeenCalledWith("status", "ended");
+    expect(lifecycleMocks.rpc).toHaveBeenCalledWith("delete_client_service_cascade", {
+      p_service_id: recordId,
+    });
+  });
+
+  it("avisa quando a exclusão do serviço é bloqueada por cobrança paga", async () => {
+    lifecycleMocks.rpc.mockResolvedValue({ data: "blocked", error: null });
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+
+    await expect(deleteClientService(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=service-delete-blocked`,
+    );
   });
 
   it("atualiza somente a agenda futura do serviço", async () => {

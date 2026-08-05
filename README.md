@@ -33,16 +33,29 @@
 ## 📌 Sobre o projeto
 
 O **Fate Light** é um sistema de gestão financeira operacional desenvolvido pela **Fate Light Tech**.
-A própria empresa utiliza o produto no dia a dia, mas ele foi projetado para atender também agências,
-prestadores de serviços e outros negócios que precisam substituir controles dispersos em planilhas.
 
-A aplicação acompanha o ciclo completo, desde o cadastro do cliente até o recebimento, sem misturar
-a receita da empresa com a verba administrada de mídia.
+### Para quem ele serve
 
-O sistema oferece autenticação por e-mail e senha ou magic link, cadastro com nome pessoal ou da
-empresa, isolamento por workspace e políticas de segurança no banco. A interface em PT-BR adota um
-tema claro suave, identidade cartoon própria, navegação lateral responsiva e recursos persistentes
-de acessibilidade.
+Para quem hoje controla o próprio negócio em uma planilha e já sentiu que ela não dá mais conta:
+**freelancers, agências pequenas e prestadores de serviço recorrente**. O ponto de partida é honesto
+— o sistema é, em essência, uma planilha que sabe as regras do seu negócio. Ele não trava seu
+trabalho com campos obrigatórios; avisa quando algo importante ficou em branco e deixa você seguir
+se quiser.
+
+Ele resolve especificamente:
+
+- **cobrar todo mês sem esquecer** — você aplica o serviço uma vez no cliente e as cobranças passam
+  a nascer sozinhas, ciclo após ciclo;
+- **não misturar o que é seu com o que é do cliente** — verba de mídia entra e sai sem nunca contar
+  como seu faturamento;
+- **saber o que vence antes de vencer** — alertas levam você direto à cobrança citada, com rolagem
+  guiada até o card certo;
+- **começar com o histórico que você já tem** — importação de planilha ou registro de tudo que o
+  cliente já pagou antes do sistema existir.
+
+A aplicação acompanha o ciclo completo, do cadastro do cliente ao recebimento, com autenticação por
+e-mail e senha ou magic link, isolamento por workspace e políticas de segurança no banco. Interface
+em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 
 > **Status:** MVP operacional. O fluxo principal está implementado e validado localmente com banco,
 > testes automatizados e navegador real.
@@ -52,9 +65,9 @@ de acessibilidade.
 | Área              | Recursos disponíveis                                                                                                           |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e alertas de vencimento             |
-| 👥 **Clientes**   | Listagem, busca, cadastro, edição, visualização, ativação, inativação e exclusão protegida pelo histórico                      |
-| 🧩 **Serviços**   | Catálogo reutilizável, preço padrão, desconto, acréscimos, parcelas, promoções, reajustes, nove cadências e reativação         |
-| 💳 **Cobranças**  | Geração automática, baixa com próxima recorrência, motivo de atraso, mídia separada, cancelamento e exclusão protegida         |
+| 👥 **Clientes**   | Seis situações comerciais, site com link, observações em destaque, arquivamento, histórico anterior e exclusão protegida       |
+| 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, edição do serviço aplicado, pausa reversível, encerramento, promoções e nove cadências |
+| 💳 **Cobranças**  | Geração automática, baixa com próxima recorrência, motivo de atraso e de cancelamento, registro de cobrança já paga            |
 | 🧾 **Despesas**   | Categorias operacionais, despesas fixas ou variáveis, cliente opcional, baixa e exclusão de registros não pagos                |
 | 🌐 **Domínios**   | Cliente ativo ou inativo, registrador, expiração, renovação, custo, responsável, cancelamento e exclusão segura                |
 | 🔔 **Alertas**    | Cobranças, despesas, domínios e revisões de reajuste com prioridade visual, central de notificações e lembretes                |
@@ -62,21 +75,35 @@ de acessibilidade.
 | 📥 **Importação** | Prévia e confirmação transacional de planilhas Excel/CSV, modelo oficial, formato legado e proteção contra duplicidade         |
 | 🔐 **Conta**      | Login por e-mail e senha, opção de magic link, onboarding, perfil, acessibilidade, configurações e solicitações de privacidade |
 
+### Situações do cliente e do serviço
+
+O cliente tem seis situações: **Orçamento**, **Pendente**, **Ativo**, **Inativo**, **Lista negra** e
+**Arquivado**. Só Orçamento, Pendente e Ativo recebem serviços novos. Arquivar preserva todo o
+histórico e é a saída recomendada quando a exclusão está bloqueada.
+
+O serviço aplicado a um cliente tem três estados, e a diferença importa:
+
+| Estado        | O que acontece                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ativo**     | Gera cobranças no ciclo e aparece nos alertas                                                                                                     |
+| **Pausado**   | Para de gerar cobranças e some do radar de alertas; retomar restaura a agenda de onde parou, com os ciclos promocionais já consumidos preservados |
+| **Encerrado** | Definitivo. Nada mais é gerado; cobranças e histórico permanecem intactos                                                                         |
+
 ### Experiência de uso
 
-- dashboard completo com filtro de período, indicadores positivos/negativos e central de alertas;
-- menu lateral recolhível no desktop e navegação adaptada para celular;
-- perfil e configurações da empresa agrupados no canto superior direito;
-- tutorial da primeira utilização, confirmações animadas, alertas críticos e estados vazios orientativos;
-- formulários compactos sem barras de progresso, calendários integralmente em PT-BR no padrão
-  `DD/MM/AAAA` e seleção pesquisável de clientes por status, preparada para bases extensas;
-- notificações no canto superior direito com pausa ao passar o mouse, fechamento automático e
-  indicador visual de tempo;
-- impacto minimalista no clique, microinterações e controles independentes para desativar animações
-  do ponteiro e do sistema;
+- diálogos de confirmação próprios em todo o sistema — nenhum `window.confirm` nativo, e exclusões
+  irreversíveis exigem digitar o nome do registro;
+- avisos em vez de bloqueios: campos importantes em branco geram uma lista do que faltou, e o
+  segundo clique envia assim mesmo;
+- erros de formulário apontam o campo exato em português, sem perder o que foi digitado;
+- explicações contextuais em `?` ao lado dos rótulos que costumam gerar dúvida;
+- selects que medem o espaço disponível e abrem para cima quando não cabem abaixo;
+- alerta como guia: clicar leva à cobrança citada, com rolagem suave e destaque temporário da borda;
+- dashboard com filtro de período, menu lateral recolhível e navegação adaptada para celular;
+- notificações e avisos ancorados no canto superior direito, logo abaixo do bloco da conta;
+- clique com efeito de onda de água, desativável junto com as demais animações;
 - botão global de acessibilidade com texto maior, contraste reforçado e destaque de links;
-- central de perigo com confirmação reforçada para limpar os dados operacionais do workspace;
-- identidade visual oficial servida em tamanhos adequados de logo, favicon e manifesto web.
+- zonas de risco padronizadas, sempre fechadas por padrão e com confirmação digitada.
 
 ### Regra financeira central
 
@@ -91,19 +118,31 @@ Resultado da empresa = receita própria recebida
 A **verba de mídia nunca entra na receita da empresa**. Cobranças atrasadas são identificadas pela
 data de vencimento, sem depender de Cron ou de atualização manual de status.
 
+Duas consequências dessa regra valem destaque:
+
+- **receita é sempre a soma das cobranças.** Não existe campo separado de "total já recebido": o
+  histórico anterior ao sistema vira uma cobrança real, já quitada, para que dashboard e histórico
+  fechem sozinhos;
+- **cobrança de R$ 0,00 é válida.** Um ciclo promocional gratuito precisa existir como cobrança —
+  é a liquidação dela que avança a recorrência para o ciclo seguinte.
+
 ## 🧭 Fluxo de uso
 
 1. Informe seu nome ou o nome da empresa e entre com senha ou magic link; confirme o workspace sugerido no primeiro acesso.
-2. Cadastre um cliente em **Clientes**.
-3. Cadastre serviços reutilizáveis no **Catálogo de serviços** e aplique-os ao cliente com desconto,
-   parcelas, preço promocional ou lembrete de reajuste quando necessário.
+2. Cadastre um cliente em **Clientes**. Se ele já pagava você antes, informe o total no bloco
+   "Já trabalhei com este cliente antes" e o histórico entra junto.
+3. Aplique um serviço no card do cliente, com desconto, parcelas, preço promocional ou lembrete de
+   reajuste. **Serviços digitados aqui entram no catálogo sozinhos** e podem ser reutilizados em
+   outros clientes; nomes repetidos reaproveitam o registro existente em vez de duplicar.
 4. A primeira cobrança é criada automaticamente; cobranças avulsas continuam disponíveis e mantêm
    receita própria e mídia em campos separados.
 5. Marque a cobrança como paga; serviços recorrentes agendam o próximo vencimento automaticamente.
-6. Registre despesas e vencimentos de domínios.
-7. Acompanhe totais e alertas no **Dashboard**.
-8. Para migrar dados existentes, abra **Importar dados**, gere a prévia e confirme somente depois de
-   revisar as contagens e os avisos.
+6. Se o cliente pedir uma pausa, use **Pausar** no serviço em vez de encerrar: alertas e cobranças
+   param, e **Retomar** devolve a agenda de onde ela estava.
+7. Registre despesas e vencimentos de domínios.
+8. Acompanhe totais e alertas no **Dashboard**; clicar no alerta leva direto ao registro citado.
+9. Para migrar dados existentes, abra **Importar dados**, gere a prévia e confirme somente depois de
+   revisar as contagens, os erros e os avisos.
 
 ## 🛠️ Tecnologias
 
@@ -318,8 +357,11 @@ diretamente com o responsável pelo projeto.
 - Não há anexos, notificações por e-mail, push ou Cron; os alertas ficam disponíveis dentro do sistema.
 - A importação aceita `.xlsx` e `.csv` de até 4 MB e 1.000 registros por lote; arquivos maiores devem
   ser divididos.
-- A exclusão operacional é conservadora: clientes com vínculos, serviços com cobranças, cobranças ou
-  despesas pagas e domínios não cancelados são preservados como histórico.
+- A exclusão operacional é conservadora: clientes com vínculos, cobranças ou despesas pagas e
+  domínios não cancelados são preservados como histórico. Excluir um serviço remove junto as
+  cobranças **não pagas** dele; havendo qualquer pagamento confirmado, a exclusão é bloqueada e o
+  caminho é encerrar.
+- Serviços do catálogo em uso por algum cliente não podem ser excluídos, apenas inativados.
 - Pedidos de exportação e exclusão registram a solicitação, mas não executam jobs automaticamente.
 - Os documentos legais incluídos no seed são fictícios e precisam de revisão antes da produção.
 - SMTP, Turnstile e URLs de redirecionamento devem ser configurados no ambiente hospedado.

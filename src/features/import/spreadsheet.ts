@@ -95,15 +95,43 @@ function booleanValue(input: unknown) {
   return ["1", "sim", "s", "true", "yes", "y"].includes(key(input));
 }
 
-function statusValue(input: unknown, kind: "client"): "active" | "inactive";
+/** Sinônimos aceitos na coluna Status de clientes, incluindo as situações novas. */
+const clientStatusAliases: Record<string, ImportPayload["clients"][number]["status"]> = {
+  ativa: "active",
+  ativo: "active",
+  active: "active",
+  inativa: "inactive",
+  inativo: "inactive",
+  inactive: "inactive",
+  orcamento: "budget",
+  orçamento: "budget",
+  budget: "budget",
+  proposta: "budget",
+  pendente: "pending",
+  pending: "pending",
+  "lista negra": "blacklist",
+  listanegra: "blacklist",
+  blacklist: "blacklist",
+  bloqueado: "blacklist",
+};
+
+function statusValue(input: unknown, kind: "client"): ImportPayload["clients"][number]["status"];
 function statusValue(input: unknown, kind: "financial"): "pending" | "paid" | "cancelled";
 function statusValue(input: unknown, kind: "client" | "financial") {
   const normalized = key(input);
-  if (kind === "client")
-    return ["inactive", "inativo", "inativa"].includes(normalized) ? "inactive" : "active";
+  if (kind === "client") return clientStatusAliases[normalized] ?? "active";
   if (["paid", "pago", "paga"].includes(normalized)) return "paid";
   if (["cancelled", "canceled", "cancelado", "cancelada"].includes(normalized)) return "cancelled";
   return "pending";
+}
+
+/** Aceita o site colado de qualquer jeito e guarda só o host. */
+function websiteValue(input: unknown) {
+  const raw = text(input)
+    .toLowerCase()
+    .replace(/^https?:\/\//, "");
+  const host = raw.split("/")[0] ?? "";
+  return /^[a-z0-9]([a-z0-9.-]{1,251}[a-z0-9])?$/.test(host) ? host : "";
 }
 
 const categoryValues: ImportPayload["expenses"][number]["category"][] = [
@@ -171,6 +199,18 @@ function parseCanonicalSheet(sheet: Sheet, payload: ImportPayload, issues: Impor
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         issue(issues, sheet.sheet, sourceRow, "E-mail inválido.", "Email");
       }
+      const rawWebsite = text(value(row, headers, ["Site", "Website", "URL"]));
+      const website = websiteValue(rawWebsite);
+      if (rawWebsite && !website) {
+        issue(
+          issues,
+          sheet.sheet,
+          sourceRow,
+          "Site ignorado por formato inválido.",
+          "Site",
+          "warning",
+        );
+      }
       payload.clients.push({
         companyName: text(value(row, headers, ["Empresa", "Company"])),
         email,
@@ -178,6 +218,7 @@ function parseCanonicalSheet(sheet: Sheet, payload: ImportPayload, issues: Impor
         notes,
         phone: text(value(row, headers, ["Telefone", "Phone"])),
         status: statusValue(value(row, headers, ["Status"]), "client"),
+        website,
       });
       return;
     }
@@ -393,6 +434,7 @@ function parseLegacySheet(sheet: Sheet, payload: ImportPayload, issues: ImportIs
         notes: "Importado da planilha legada.",
         phone: "",
         status: "active",
+        website: "",
       });
     }
     const startDate = dateValue(value(row, headers, ["Start Date"]));

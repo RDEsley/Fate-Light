@@ -1,21 +1,26 @@
 import { ToastNotification } from "@/components/ui/toast-notification";
 
 const messages: Record<string, string> = {
-  activated: "Cliente ativado.",
+  archived: "Cliente arquivado. O histórico continua guardado.",
   created: "Cliente criado com segurança.",
-  deleted: "Cliente excluído. Os demais dados permaneceram intactos.",
+  deleted: "Registro excluído. Os demais dados permaneceram intactos.",
   "delete-blocked":
-    "Este cliente possui histórico vinculado. Inative-o para preservar os registros.",
-  "delete-error": "Não foi possível excluir este cliente.",
+    "Este cliente possui histórico vinculado. Arquive-o para preservar os registros.",
+  "delete-error": "Não foi possível excluir este registro.",
   error: "Não foi possível concluir a operação.",
   invalid: "Revise os campos informados.",
-  inactivated: "Cliente inativado.",
-  "service-created": "Serviço adicionado ao cliente.",
+  restored: "Cliente desarquivado e de volta à operação.",
+  "service-created": "Serviço aplicado e cobrança criada.",
+  "service-delete-blocked":
+    "Existe cobrança paga neste serviço. Encerre-o em vez de excluir para preservar o histórico.",
   "service-ended": "Serviço encerrado.",
-  "service-reactivated": "Serviço reativado e pronto para novas cobranças.",
-  "service-schedule-updated": "Agenda de cobrança futura atualizada.",
   "service-error": "Não foi possível salvar o serviço.",
   "service-invalid": "Revise os dados do serviço.",
+  "service-paused": "Serviço pausado. Sem novas cobranças nem alertas até você retomar.",
+  "service-resumed": "Serviço retomado.",
+  "service-schedule-updated": "Agenda de cobrança futura atualizada.",
+  "service-updated": "Serviço atualizado. Cobranças pendentes acompanharam o novo valor.",
+  "status-updated": "Situação comercial atualizada.",
   updated: "Cliente atualizado.",
 };
 
