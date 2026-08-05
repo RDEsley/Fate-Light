@@ -1,24 +1,96 @@
 import { z } from "zod";
 
+import { billingFrequencyValues } from "./recurrence";
+
 const money = z.coerce.number().finite().min(0).max(9_999_999_999_999.99);
 const optionalText = (maximum: number) => z.string().trim().max(maximum);
 const optionalMoney = z.union([z.literal(""), money]);
+const nullableMoney = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? null : value),
+  money.nullable(),
+);
+const nullableInteger = (maximum: number) =>
+  z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? null : value),
+    z.coerce.number().int().min(1).max(maximum).nullable(),
+  );
 
 export const identifierSchema = z.string().uuid();
 
 export const clientServiceSchema = z
   .object({
     additionalFee: money,
-    billingType: z.enum(["single", "monthly"]),
-    companyRevenue: money,
+    adjustmentIntervalMonths: nullableInteger(60),
+    adjustmentRate: nullableMoney,
+    billingType: z.enum(billingFrequencyValues),
     description: optionalText(3000),
+    discountType: z.enum(["none", "percentage", "fixed"]),
+    discountValue: money,
+    installmentCount: z.coerce.number().int().min(1).max(120),
+    listPrice: money,
     mediaBudget: money,
     name: z.string().trim().min(2).max(120),
     nextDueDate: z.string().date(),
     notes: optionalText(5000),
+    promotionalCycles: nullableInteger(60),
+    promotionalPrice: nullableMoney,
+    serviceId: z.union([z.literal(""), identifierSchema]),
     startDate: z.string().date(),
   })
-  .refine((value) => value.nextDueDate >= value.startDate, { path: ["nextDueDate"] });
+  .refine((value) => value.nextDueDate >= value.startDate, { path: ["nextDueDate"] })
+  .refine(
+    (value) =>
+      (value.discountType === "none" && value.discountValue === 0) ||
+      (value.discountType === "percentage" && value.discountValue <= 100) ||
+      (value.discountType === "fixed" && value.discountValue <= value.listPrice),
+    { path: ["discountValue"] },
+  )
+  .refine(
+    (value) =>
+      (value.promotionalPrice === null && value.promotionalCycles === null) ||
+      (value.promotionalPrice !== null && value.promotionalCycles !== null),
+    { path: ["promotionalPrice"] },
+  )
+  .refine(
+    (value) =>
+      (value.adjustmentIntervalMonths === null && value.adjustmentRate === null) ||
+      (value.adjustmentIntervalMonths !== null &&
+        value.adjustmentRate !== null &&
+        value.adjustmentRate <= 100),
+    { path: ["adjustmentIntervalMonths"] },
+  );
+
+export const serviceCatalogSchema = z
+  .object({
+    adjustmentIntervalMonths: nullableInteger(60),
+    adjustmentRate: nullableMoney,
+    billingType: z.enum(billingFrequencyValues),
+    defaultPrice: money,
+    description: optionalText(3000),
+    name: z.string().trim().min(2).max(120),
+  })
+  .refine(
+    (value) =>
+      (value.adjustmentIntervalMonths === null && value.adjustmentRate === null) ||
+      (value.adjustmentIntervalMonths !== null &&
+        value.adjustmentRate !== null &&
+        value.adjustmentRate <= 100),
+    { path: ["adjustmentIntervalMonths"] },
+  );
+
+export function discountedPrice(
+  listPrice: number,
+  discountType: "fixed" | "none" | "percentage",
+  discountValue: number,
+) {
+  const result =
+    discountType === "percentage"
+      ? listPrice * (1 - discountValue / 100)
+      : discountType === "fixed"
+        ? listPrice - discountValue
+        : listPrice;
+  return Math.round(Math.max(0, result) * 100) / 100;
+}
 
 export const chargeSchema = z
   .object({
@@ -75,6 +147,36 @@ export const domainSchema = z.object({
 export const paymentSchema = z.object({
   id: identifierSchema,
   paymentMethod: z.string().trim().min(2).max(80),
+});
+
+export const delayReasonSchema = z
+  .object({
+    code: z.enum([
+      "client_requested",
+      "invoice_issue",
+      "payment_rescheduled",
+      "commercial_negotiation",
+      "internal_follow_up",
+      "other",
+    ]),
+    id: identifierSchema,
+    reason: z.string().trim().min(2).max(500),
+  })
+  .refine((value) => value.code !== "other" || value.reason.length >= 4, {
+    path: ["reason"],
+  });
+
+export const serviceScheduleSchema = z.object({
+  billingType: z.enum(billingFrequencyValues),
+  clientId: identifierSchema,
+  id: identifierSchema,
+  nextDueDate: z.string().date(),
+});
+
+export const operationalDeletionSchema = z.object({
+  clientId: z.union([z.literal(""), identifierSchema]),
+  id: identifierSchema,
+  recordType: z.enum(["charge", "domain", "expense", "service"]),
 });
 
 export function optional(value: string) {

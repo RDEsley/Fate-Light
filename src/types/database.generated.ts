@@ -1,4 +1,4 @@
-// Arquivo gerado por `npm run db:types`. Não edite manualmente.
+// Arquivo gerado por `npm run db:types:linked`. Não edite manualmente.
 export type Json =
   | string
   | number
@@ -8,8 +8,67 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15"
+  }
   public: {
     Tables: {
+      activity_events: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          client_id: string | null
+          entity_id: string
+          entity_type: string
+          event_data: Json
+          id: string
+          occurred_at: string
+          summary: string
+          workspace_id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          client_id?: string | null
+          entity_id: string
+          entity_type: string
+          event_data?: Json
+          id?: string
+          occurred_at?: string
+          summary: string
+          workspace_id: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          client_id?: string | null
+          entity_id?: string
+          entity_type?: string
+          event_data?: Json
+          id?: string
+          occurred_at?: string
+          summary?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_events_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "activity_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -71,6 +130,9 @@ export type Database = {
           company_revenue: number
           created_at: string
           created_by: string
+          delay_reason: string | null
+          delay_reason_code: string | null
+          delay_recorded_at: string | null
           description: string
           due_date: string
           gross_total: number | null
@@ -91,6 +153,9 @@ export type Database = {
           company_revenue?: number
           created_at?: string
           created_by?: string
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
           description: string
           due_date: string
           gross_total?: number | null
@@ -111,6 +176,9 @@ export type Database = {
           company_revenue?: number
           created_at?: string
           created_by?: string
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
           description?: string
           due_date?: string
           gross_total?: number | null
@@ -214,17 +282,29 @@ export type Database = {
       client_services: {
         Row: {
           additional_fee: number
+          adjustment_interval_months: number | null
+          adjustment_rate: number | null
           billing_type: string
           client_id: string
           company_revenue: number
           created_at: string
           created_by: string
           description: string | null
+          discount_type: string
+          discount_value: number
+          ended_at: string | null
           id: string
+          installment_count: number
+          list_price: number
           media_budget: number
           name: string
+          next_adjustment_date: string | null
           next_due_date: string | null
           notes: string | null
+          promotional_cycles: number | null
+          promotional_cycles_used: number
+          promotional_price: number | null
+          service_id: string | null
           start_date: string
           status: string
           updated_at: string
@@ -233,17 +313,29 @@ export type Database = {
         }
         Insert: {
           additional_fee?: number
+          adjustment_interval_months?: number | null
+          adjustment_rate?: number | null
           billing_type?: string
           client_id: string
           company_revenue?: number
           created_at?: string
           created_by?: string
           description?: string | null
+          discount_type?: string
+          discount_value?: number
+          ended_at?: string | null
           id?: string
+          installment_count?: number
+          list_price: number
           media_budget?: number
           name: string
+          next_adjustment_date?: string | null
           next_due_date?: string | null
           notes?: string | null
+          promotional_cycles?: number | null
+          promotional_cycles_used?: number
+          promotional_price?: number | null
+          service_id?: string | null
           start_date: string
           status?: string
           updated_at?: string
@@ -252,17 +344,29 @@ export type Database = {
         }
         Update: {
           additional_fee?: number
+          adjustment_interval_months?: number | null
+          adjustment_rate?: number | null
           billing_type?: string
           client_id?: string
           company_revenue?: number
           created_at?: string
           created_by?: string
           description?: string | null
+          discount_type?: string
+          discount_value?: number
+          ended_at?: string | null
           id?: string
+          installment_count?: number
+          list_price?: number
           media_budget?: number
           name?: string
+          next_adjustment_date?: string | null
           next_due_date?: string | null
           notes?: string | null
+          promotional_cycles?: number | null
+          promotional_cycles_used?: number
+          promotional_price?: number | null
+          service_id?: string | null
           start_date?: string
           status?: string
           updated_at?: string
@@ -270,6 +374,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "client_services_catalog_fk"
+            columns: ["workspace_id", "service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "client_services_client_fk"
             columns: ["workspace_id", "client_id"]
@@ -545,6 +656,56 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          confirmed_at: string
+          created_at: string
+          created_by: string
+          entity_counts: Json
+          id: string
+          mapping_version: string
+          row_count: number
+          source_checksum: string
+          source_type: string
+          status: string
+          workspace_id: string
+        }
+        Insert: {
+          confirmed_at?: string
+          created_at?: string
+          created_by?: string
+          entity_counts?: Json
+          id?: string
+          mapping_version: string
+          row_count: number
+          source_checksum: string
+          source_type: string
+          status?: string
+          workspace_id: string
+        }
+        Update: {
+          confirmed_at?: string
+          created_at?: string
+          created_by?: string
+          entity_counts?: Json
+          id?: string
+          mapping_version?: string
+          row_count?: number
+          source_checksum?: string
+          source_type?: string
+          status?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_acceptances: {
         Row: {
           accepted_at: string
@@ -673,8 +834,12 @@ export type Database = {
           archived_at: string | null
           created_at: string
           created_by: string
+          default_adjustment_interval_months: number | null
+          default_adjustment_rate: number | null
+          default_billing_type: string
           default_component_kind: string
           default_financial_nature: string
+          default_price: number
           description: string | null
           id: string
           name: string
@@ -687,8 +852,12 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by?: string
+          default_adjustment_interval_months?: number | null
+          default_adjustment_rate?: number | null
+          default_billing_type?: string
           default_component_kind?: string
           default_financial_nature?: string
+          default_price?: number
           description?: string | null
           id?: string
           name: string
@@ -701,8 +870,12 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by?: string
+          default_adjustment_interval_months?: number | null
+          default_adjustment_rate?: number | null
+          default_billing_type?: string
           default_component_kind?: string
           default_financial_nature?: string
+          default_price?: number
           description?: string | null
           id?: string
           name?: string
@@ -1007,6 +1180,29 @@ export type Database = {
       }
     }
     Functions: {
+      apply_service_to_client: {
+        Args: {
+          p_additional_fee: number
+          p_adjustment_interval_months: number
+          p_adjustment_rate: number
+          p_billing_type: string
+          p_client_id: string
+          p_description: string
+          p_discount_type: string
+          p_discount_value: number
+          p_installment_count: number
+          p_list_price: number
+          p_media_budget: number
+          p_name: string
+          p_next_due_date: string
+          p_notes: string
+          p_promotional_cycles: number
+          p_promotional_price: number
+          p_service_id: string
+          p_start_date: string
+        }
+        Returns: string
+      }
       bootstrap_identity_workspace: {
         Args: {
           p_accepted_legal_document_ids: string[]
@@ -1030,6 +1226,11 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      delete_client_record: { Args: { p_client_id: string }; Returns: string }
+      delete_workspace_record: {
+        Args: { p_record_id: string; p_record_type: string }
+        Returns: string
+      }
       get_current_account_gate: {
         Args: never
         Returns: {
@@ -1052,6 +1253,15 @@ export type Database = {
           verified_at: string
         }[]
       }
+      import_workspace_spreadsheet: {
+        Args: {
+          p_payload: Json
+          p_source_checksum: string
+          p_source_type: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       request_current_account_lifecycle: {
         Args: { p_request_type: string }
         Returns: {
@@ -1061,6 +1271,14 @@ export type Database = {
           requested_at: string
           status: string
         }[]
+      }
+      reset_current_workspace_operational_data: {
+        Args: { p_confirmation: string }
+        Returns: Json
+      }
+      settle_charge_and_schedule_next: {
+        Args: { p_charge_id: string; p_payment_method: string }
+        Returns: string
       }
       update_current_workspace_configuration: {
         Args: {

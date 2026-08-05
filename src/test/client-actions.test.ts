@@ -7,6 +7,7 @@ const clientActionMocks = vi.hoisted(() => ({
   is: vi.fn(),
   redirect: vi.fn(),
   revalidatePath: vi.fn(),
+  rpc: vi.fn(),
   select: vi.fn(),
   single: vi.fn(),
   update: vi.fn(),
@@ -18,12 +19,12 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/auth/workspace-context", () => ({
   requireWorkspaceContext: vi.fn(async () => ({
-    supabase: { from: clientActionMocks.from },
+    supabase: { from: clientActionMocks.from, rpc: clientActionMocks.rpc },
     workspaceId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   })),
 }));
 
-import { createClient, setClientStatus } from "@/app/clientes/actions";
+import { createClient, deleteClient, setClientStatus } from "@/app/clientes/actions";
 
 function validClientForm() {
   const formData = new FormData();
@@ -58,6 +59,7 @@ describe("client actions", () => {
     clientActionMocks.is.mockReturnValue({ select: clientActionMocks.select });
     clientActionMocks.select.mockReturnValue({ single: clientActionMocks.single });
     clientActionMocks.single.mockResolvedValue({ data: { id: "client-id" }, error: null });
+    clientActionMocks.rpc.mockResolvedValue({ data: "deleted", error: null });
   });
 
   it("deriva o workspace do contexto e ignora workspace forjado no formulário", async () => {
@@ -90,5 +92,15 @@ describe("client actions", () => {
       "workspace_id",
       "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     );
+  });
+
+  it("exclui pelo contrato transacional do banco", async () => {
+    const formData = new FormData();
+    formData.set("clientId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+
+    await expect(deleteClient(formData)).rejects.toThrow("REDIRECT:/clientes?status=deleted");
+    expect(clientActionMocks.rpc).toHaveBeenCalledWith("delete_client_record", {
+      p_client_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    });
   });
 });
