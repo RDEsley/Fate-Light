@@ -70,3 +70,17 @@ export async function setClientStatus(formData: FormData) {
   revalidatePath("/dashboard");
   statusRedirect("/clientes", status.data === "active" ? "activated" : "inactivated");
 }
+
+export async function deleteClient(formData: FormData) {
+  const clientId = identifierSchema.safeParse(formData.get("clientId"));
+  if (!clientId.success) statusRedirect("/clientes", "delete-error");
+  const { supabase } = await requireWorkspaceContext();
+  const { data, error } = await supabase.rpc("delete_client_record", {
+    p_client_id: clientId.data,
+  });
+  if (error || data === "not_found") statusRedirect(`/clientes/${clientId.data}`, "delete-error");
+  if (data === "blocked") statusRedirect(`/clientes/${clientId.data}`, "delete-blocked");
+  revalidatePath("/clientes");
+  revalidatePath("/dashboard");
+  statusRedirect("/clientes", "deleted");
+}

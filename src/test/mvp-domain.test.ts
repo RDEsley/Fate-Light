@@ -1,5 +1,6 @@
 import { addDays, expiryLabel, formatCurrency, monthBounds } from "@/features/mvp/format";
-import { chargeSchema, domainSchema } from "@/features/mvp/schemas";
+import { chargeSchema, clientServiceSchema, domainSchema } from "@/features/mvp/schemas";
+import { billingFrequencyLabel } from "@/features/mvp/recurrence";
 
 describe("MVP financial boundaries", () => {
   it("mantém receita própria, mídia e adicional independentes", () => {
@@ -40,7 +41,7 @@ describe("MVP financial boundaries", () => {
       domain: "HTTPS://EXEMPLO.COM.BR/pagina",
       expiresOn: "2026-08-07",
       notes: "",
-      paymentResponsibility: "Fate Eight",
+      paymentResponsibility: "Fate Light",
       registrar: "",
     });
     expect(domain.domain).toBe("exemplo.com.br");
@@ -56,5 +57,30 @@ describe("MVP financial boundaries", () => {
       end: "2026-07-31",
     });
     expect(formatCurrency(500)).toContain("500,00");
+  });
+
+  it("aceita agendas simples do diário ao anual", () => {
+    const service = clientServiceSchema.parse({
+      additionalFee: 0,
+      adjustmentIntervalMonths: "",
+      adjustmentRate: "",
+      billingType: "semiannual",
+      description: "",
+      discountType: "none",
+      discountValue: 0,
+      installmentCount: 1,
+      listPrice: 500,
+      mediaBudget: 0,
+      name: "Manutenção",
+      nextDueDate: "2027-02-03",
+      notes: "",
+      promotionalCycles: "",
+      promotionalPrice: "",
+      serviceId: "",
+      startDate: "2026-08-03",
+    });
+
+    expect(service.billingType).toBe("semiannual");
+    expect(billingFrequencyLabel(service.billingType)).toBe("A cada 6 meses");
   });
 });

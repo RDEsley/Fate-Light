@@ -3,6 +3,37 @@ export function formatCurrency(value: number | string | null) {
   return new Intl.NumberFormat("pt-BR", { currency: "BRL", style: "currency" }).format(numeric);
 }
 
+export function formatDatePtBr(value: string | null | undefined) {
+  if (!value) return "Data não informada";
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+}
+
+export function formatDateTimePtBr(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(date);
+}
+
+export function parseDatePtBr(value: string) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());
+  if (!match) return null;
+  const [, day, month, year] = match;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (
+    date.getUTCFullYear() !== Number(year) ||
+    date.getUTCMonth() !== Number(month) - 1 ||
+    date.getUTCDate() !== Number(day)
+  ) {
+    return null;
+  }
+  return `${year}-${month}-${day}`;
+}
+
 export function isoToday(reference = new Date()) {
   return reference.toISOString().slice(0, 10);
 }
