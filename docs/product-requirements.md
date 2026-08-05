@@ -60,7 +60,7 @@ Critério de aceite: rotas autenticadas rejeitam sessão ausente, inválida ou s
 
 ### RF-03 - Perfil pessoal
 
-- Editar nome, foto, telefone opcional, idioma, tema e timezone.
+- Editar nome, foto, telefone opcional, idioma, timezone e preferências de movimento.
 - Mostrar e-mail confirmado como dado de identidade.
 - Solicitar exportação dos próprios dados.
 - Solicitar exclusão da conta com confirmação reforçada e acompanhamento.
