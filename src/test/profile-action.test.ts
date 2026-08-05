@@ -26,7 +26,6 @@ function profileForm(overrides: Record<string, string> = {}) {
     fullName: "Pessoa Atualizada",
     locale: "pt-BR",
     phone: "11999999999",
-    theme: "dark",
     timezone: "America/Sao_Paulo",
     ...overrides,
   };
@@ -55,14 +54,12 @@ describe("profile action", () => {
   it("atualiza somente campos concedidos e deriva o id das claims", async () => {
     await expect(updateProfile(initialActionState, profileForm())).resolves.toMatchObject({
       status: "success",
-      theme: "dark",
     });
 
     expect(profileMocks.update).toHaveBeenCalledWith({
       full_name: "Pessoa Atualizada",
       locale: "pt-BR",
       phone: "11999999999",
-      theme: "dark",
       timezone: "America/Sao_Paulo",
     });
     expect(profileMocks.eq).toHaveBeenCalledWith("id", "verified-user-id");

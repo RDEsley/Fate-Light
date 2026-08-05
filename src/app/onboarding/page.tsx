@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { ThemeSelect } from "@/components/ui/theme-select";
+import { BrandMark } from "@/components/brand-mark";
 import { requireAccountPage } from "@/lib/auth/page-guard";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -12,32 +12,38 @@ export const metadata: Metadata = { title: "Configurar workspace" };
 export default async function OnboardingPage() {
   await requireAccountPage("onboarding");
   const supabase = await createServerSupabaseClient();
-  const { data: legalDocuments, error } = await supabase
-    .from("legal_documents")
-    .select("id, document_type, version, content_markdown")
-    .eq("status", "published")
-    .eq("is_required", true)
-    .lte("effective_at", new Date().toISOString())
-    .order("document_type");
+  const [{ data: legalDocuments, error }, { data: authData }] = await Promise.all([
+    supabase
+      .from("legal_documents")
+      .select("id, document_type, version, content_markdown")
+      .eq("status", "published")
+      .eq("is_required", true)
+      .lte("effective_at", new Date().toISOString())
+      .order("document_type"),
+    supabase.auth.getUser(),
+  ]);
 
   if (error || !legalDocuments?.length) {
     redirect("/auth/error");
   }
 
+  const metadataDisplayName = authData.user?.user_metadata?.display_name;
+  const initialDisplayName =
+    typeof metadataDisplayName === "string" ? metadataDisplayName.trim().slice(0, 120) : "";
+
   return (
     <main className="bg-canvas text-foreground min-h-screen">
       <div className="mx-auto w-full max-w-5xl px-6 py-6 sm:px-10 lg:px-12">
         <header className="border-line flex items-center justify-between gap-4 border-b pb-5">
-          <div>
-            <p className="font-semibold tracking-tight">Fate Eight</p>
-            <p className="text-muted text-xs">Configuração inicial protegida</p>
-          </div>
-          <ThemeSelect />
+          <BrandMark />
+          <span className="bg-positive-soft text-positive rounded-full px-3 py-1.5 text-xs font-black">
+            Acesso confirmado
+          </span>
         </header>
 
         <section className="py-10">
-          <p className="text-brand-strong text-sm font-semibold tracking-[0.14em] uppercase">
-            Onboarding
+          <p className="text-brand-strong text-sm font-black tracking-[0.14em] uppercase">
+            Primeiros passos · 4 etapas
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-[-0.03em]">
             Prepare seu workspace com contexto.
@@ -51,8 +57,11 @@ export default async function OnboardingPage() {
             jurídica. A produção exige versões revisadas.
           </p>
 
-          <div className="border-line bg-surface shadow-panel mt-8 rounded-2xl border p-5 sm:p-8">
-            <OnboardingForm legalDocuments={legalDocuments} />
+          <div className="panel-card mt-8">
+            <OnboardingForm
+              initialDisplayName={initialDisplayName}
+              legalDocuments={legalDocuments}
+            />
           </div>
         </section>
       </div>

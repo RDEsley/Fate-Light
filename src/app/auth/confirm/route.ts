@@ -7,13 +7,24 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 const acceptedTypes = new Set<EmailOtpType>(["email", "magiclink"]);
 
 export async function GET(request: NextRequest) {
+  const code = request.nextUrl.searchParams.get("code");
   const tokenHash = request.nextUrl.searchParams.get("token_hash");
   const type = request.nextUrl.searchParams.get("type") as EmailOtpType | null;
   const nextPath = sanitizeNextPath(request.nextUrl.searchParams.get("next"));
+  const supabase = await createServerSupabaseClient();
 
   if (tokenHash && type && acceptedTypes.has(type)) {
-    const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+
+    if (!error) {
+      return NextResponse.redirect(
+        new URL(appendNextPath("/auth/continue", nextPath), request.url),
+      );
+    }
+  }
+
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
       return NextResponse.redirect(

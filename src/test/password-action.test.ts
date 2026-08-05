@@ -30,6 +30,7 @@ function passwordForm(overrides: Record<string, string> = {}) {
   const formData = new FormData();
   const values = {
     confirmPassword: "Senha-segura-2026!",
+    displayName: "Pessoa Exemplo",
     email: "pessoa@example.test",
     mode: "login",
     next: "/dashboard",
@@ -83,10 +84,18 @@ describe("password authentication action", () => {
       email: "pessoa@example.test",
       options: {
         captchaToken: undefined,
+        data: { display_name: "Pessoa Exemplo" },
         emailRedirectTo: "https://example.invalid/auth/confirm?next=%2Fonboarding",
       },
       password: "Senha-segura-2026!",
     });
+  });
+
+  it("exige nome ou nome da empresa no cadastro", async () => {
+    await expect(
+      authenticateWithPassword(passwordForm({ displayName: "", mode: "signup" })),
+    ).rejects.toThrow("REDIRECT:/cadastro?status=invalid");
+    expect(authMocks.signUp).not.toHaveBeenCalled();
   });
 
   it("solicita confirmação quando o cadastro não retorna sessão", async () => {

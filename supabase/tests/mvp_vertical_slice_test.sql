@@ -113,7 +113,7 @@ select lives_ok(
 select lives_ok(
   $$insert into public.domains (
       workspace_id, client_id, domain, expires_on, payment_responsibility
-    ) select workspace_id, id, 'mvp-a.example', current_date + 7, 'Fate Eight Tech'
+    ) select workspace_id, id, 'mvp-a.example', current_date + 7, 'Fate Light Tech'
     from public.clients where name = 'Cliente MVP A'$$,
   'Registra domínio com vencimento'
 );

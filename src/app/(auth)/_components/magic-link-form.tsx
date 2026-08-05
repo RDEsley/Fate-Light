@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { Route } from "next";
 
-import { publicEnvironment } from "@/config/env/public";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { publicEnvironment } from "@/config/env/public";
 
 import { requestMagicLink } from "../actions";
 import { TurnstileField } from "./turnstile-field";
@@ -15,7 +16,7 @@ type MagicLinkFormProps = {
 
 const statusMessages: Record<string, string> = {
   captcha: "Conclua a verificação de segurança e tente novamente.",
-  invalid: "Informe um e-mail válido para continuar.",
+  invalid: "Revise o nome ou nome da empresa e informe um e-mail válido.",
   sent: "Se o e-mail estiver elegível, você receberá um link de acesso. Verifique também a caixa de spam.",
   "signed-out": "Sua sessão foi encerrada com segurança.",
 };
@@ -29,12 +30,16 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
   return (
     <>
       {message ? (
-        <p
-          className="border-brand/25 bg-brand-soft text-brand-strong mb-5 rounded-xl border px-4 py-3 text-sm leading-6"
-          role="status"
-        >
-          {message}
-        </p>
+        <FeedbackBanner
+          message={message}
+          tone={
+            status === "invalid" || status === "captcha"
+              ? "error"
+              : status === "signed-out"
+                ? "success"
+                : "info"
+          }
+        />
       ) : null}
 
       <form action={requestMagicLink} className="space-y-5">
@@ -50,6 +55,28 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
             type="text"
           />
         </div>
+
+        {!isLogin ? (
+          <div>
+            <label className="text-sm font-semibold" htmlFor={`${mode}-display-name`}>
+              Nome ou nome da empresa
+            </label>
+            <input
+              autoComplete="name"
+              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
+              id={`${mode}-display-name`}
+              maxLength={120}
+              minLength={2}
+              name="displayName"
+              placeholder="Como devemos chamar você?"
+              required
+              type="text"
+            />
+            <p className="text-muted mt-2 text-xs">
+              Usaremos esse nome para preparar seu primeiro acesso.
+            </p>
+          </div>
+        ) : null}
 
         <div>
           <label className="text-sm font-semibold" htmlFor={`${mode}-email`}>
@@ -70,6 +97,7 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
 
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
         <SubmitButton
+          className="w-full"
           idleLabel={isLogin ? "Receber link de acesso" : "Criar minha conta"}
           pendingLabel="Enviando link…"
         />
@@ -81,7 +109,7 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
         <span className="border-line h-px flex-1 border-t" />
       </div>
       <Link
-        className="border-line hover:bg-brand-soft block min-h-11 rounded-xl border px-5 py-3 text-center font-semibold"
+        className="cartoon-card hover:bg-brand-soft block min-h-11 px-5 py-3 text-center font-black"
         href={passwordHref}
       >
         {isLogin ? "Entrar com e-mail e senha" : "Criar conta com e-mail e senha"}

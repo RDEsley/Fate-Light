@@ -13,8 +13,17 @@ vi.mock("@/lib/supabase/server", () => ({
     rpc: workspaceMocks.rpc,
   })),
 }));
+vi.mock("@/lib/auth/workspace-context", () => ({
+  requireWorkspaceContext: vi.fn(async () => ({
+    supabase: { rpc: workspaceMocks.rpc },
+    workspaceId: "workspace-id",
+  })),
+}));
 
-import { updateWorkspaceConfiguration } from "@/app/configuracoes/empresa/actions";
+import {
+  resetWorkspaceOperationalData,
+  updateWorkspaceConfiguration,
+} from "@/app/configuracoes/empresa/actions";
 import { initialActionState } from "@/lib/forms/action-state";
 
 function workspaceForm(overrides: Record<string, string | string[]> = {}) {
@@ -80,5 +89,24 @@ describe("workspace configuration action", () => {
 
     expect(result).toMatchObject({ status: "error", message: expect.stringMatching(/11 ou 14/i) });
     expect(workspaceMocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("exige confirmação reforçada antes de limpar dados operacionais", async () => {
+    const invalid = new FormData();
+    invalid.set("confirmation", "excluir");
+    await expect(resetWorkspaceOperationalData(initialActionState, invalid)).resolves.toMatchObject(
+      {
+        status: "error",
+      },
+    );
+
+    const valid = new FormData();
+    valid.set("confirmation", "EXCLUIR TUDO");
+    await expect(resetWorkspaceOperationalData(initialActionState, valid)).resolves.toMatchObject({
+      status: "success",
+    });
+    expect(workspaceMocks.rpc).toHaveBeenCalledWith("reset_current_workspace_operational_data", {
+      p_confirmation: "EXCLUIR TUDO",
+    });
   });
 });

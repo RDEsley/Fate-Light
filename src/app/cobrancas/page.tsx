@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 
-import { cancelCharge, createCharge, markChargePaid } from "@/app/_actions/mvp";
+import {
+  cancelCharge,
+  createCharge,
+  deleteOperationalRecord,
+  markChargePaid,
+} from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
-import { formatCurrency, isoToday } from "@/features/mvp/format";
+import { ClientCombobox, DateField } from "@/components/ui/form-controls";
+import { Icon } from "@/components/ui/icon";
+import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
+
+import { DelayReasonForm } from "./delay-reason-form";
 
 export const metadata: Metadata = { title: "Cobranças" };
 
@@ -15,15 +24,34 @@ const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro"
 export default async function ChargesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ clientId?: string; serviceId?: string; status?: string }>;
+  searchParams: Promise<{
+    clientId?: string;
+    q?: string;
+    serviceId?: string;
+    state?: string;
+    status?: string;
+  }>;
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
+  const query = parameters.q?.trim().slice(0, 80) ?? "";
+  const state = ["pending", "paid", "cancelled"].includes(parameters.state ?? "")
+    ? parameters.state!
+    : "all";
+  let chargesRequest = context.supabase
+    .from("charges")
+    .select(
+      "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, clients(name)",
+    )
+    .eq("workspace_id", context.workspaceId)
+    .order("due_date", { ascending: false })
+    .limit(100);
+  if (query) chargesRequest = chargesRequest.ilike("description", `%${query}%`);
+  if (state !== "all") chargesRequest = chargesRequest.eq("status", state);
   const [{ data: clients }, { data: services }, { data: charges, error }] = await Promise.all([
     context.supabase
       .from("clients")
-      .select("id, name")
+      .select("id, name, trade_name, commercial_status")
       .eq("workspace_id", context.workspaceId)
-      .eq("commercial_status", "active")
       .is("archived_at", null)
       .order("name"),
     context.supabase
@@ -32,14 +60,7 @@ export default async function ChargesPage({
       .eq("workspace_id", context.workspaceId)
       .eq("status", "active")
       .order("name"),
-    context.supabase
-      .from("charges")
-      .select(
-        "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, gross_total, status, paid_at, payment_method, clients(name)",
-      )
-      .eq("workspace_id", context.workspaceId)
-      .order("due_date", { ascending: false })
-      .limit(100),
+    chargesRequest,
   ]);
   const today = isoToday();
   const clientNames = new Map((clients ?? []).map((client) => [client.id, client.name]));
@@ -47,35 +68,68 @@ export default async function ChargesPage({
   return (
     <AccountShell
       description="Registre recebíveis sem misturar receita da empresa com verba de mídia."
-      fullName={context.fullName}
-      theme={context.theme}
       title="Cobranças"
     >
       <MvpStatusMessage status={parameters.status} />
-      <details
-        className="border-line bg-surface mb-6 rounded-2xl border p-5"
-        open={Boolean(parameters.clientId)}
-      >
-        <summary className="cursor-pointer font-semibold">Nova cobrança</summary>
-        <form action={createCharge} className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-semibold">
-            Cliente
-            <select
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              defaultValue={parameters.clientId ?? ""}
-              name="clientId"
-              required
-            >
-              <option disabled value="">
-                Selecione
-              </option>
-              {clients?.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-          </label>
+      <form className="panel-card mb-4 flex flex-col gap-3 p-3! sm:flex-row" method="get">
+        <label className="relative flex-1">
+          <span className="sr-only">Buscar cobranças</span>
+          <Icon
+            className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            name="search"
+          />
+          <input
+            className="min-h-11 w-full rounded-xl pr-4 pl-9 text-sm"
+            defaultValue={query}
+            name="q"
+            placeholder="Buscar por descrição..."
+            type="search"
+          />
+        </label>
+        <label>
+          <span className="sr-only">Filtrar por status</span>
+          <select
+            className="min-h-11 w-full rounded-xl px-3 text-sm sm:w-40"
+            defaultValue={state}
+            name="state"
+          >
+            <option value="all">Todos os status</option>
+            <option value="pending">Pendentes</option>
+            <option value="paid">Pagas</option>
+            <option value="cancelled">Canceladas</option>
+          </select>
+        </label>
+        <button
+          className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 text-sm font-black"
+          type="submit"
+        >
+          Filtrar
+        </button>
+      </form>
+      <details className="panel-card form-disclosure mb-5" open={Boolean(parameters.clientId)}>
+        <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
+          <span className="flex items-center gap-2">
+            <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
+              <Icon className="size-4" name="plus" />
+            </span>
+            Nova cobrança
+          </span>
+          <span className="text-muted flex items-center gap-1 text-xs">
+            <span className="form-disclosure__closed-label">Abrir formulário</span>
+            <span className="form-disclosure__open-label">Fechar formulário</span>
+            <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
+          </span>
+        </summary>
+        <form action={createCharge} className="form-grid mt-4 sm:grid-cols-2">
+          <ClientCombobox
+            clients={(clients ?? []).map((client) => ({
+              id: client.id,
+              name: client.name,
+              status: client.commercial_status,
+              tradeName: client.trade_name,
+            }))}
+            defaultValue={parameters.clientId}
+          />
           <label className="text-sm font-semibold">
             Serviço opcional
             <select
@@ -100,16 +154,7 @@ export default async function ChargesPage({
               required
             />
           </label>
-          <label className="text-sm font-semibold">
-            Vencimento
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              defaultValue={today}
-              name="dueDate"
-              required
-              type="date"
-            />
-          </label>
+          <DateField defaultValue={today} label="Vencimento" name="dueDate" required />
           <label className="text-sm font-semibold">
             Receita própria
             <input
@@ -167,15 +212,21 @@ export default async function ChargesPage({
             const effectiveStatus =
               charge.status === "pending" && charge.due_date < today ? "overdue" : charge.status;
             return (
-              <article className="border-line bg-surface rounded-2xl border p-5" key={charge.id}>
+              <article
+                className={`cartoon-card p-4 sm:p-5 ${effectiveStatus === "overdue" ? "critical-card" : ""}`}
+                key={charge.id}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="font-semibold">{charge.description}</h2>
                     <p className="text-muted text-sm">
-                      {charge.clients?.name ?? "Cliente"} · vencimento {charge.due_date}
+                      {charge.clients?.name ?? "Cliente"} · vencimento{" "}
+                      {formatDatePtBr(charge.due_date)}
                     </p>
                   </div>
-                  <span className="bg-brand-soft text-brand-strong rounded-full px-3 py-1 text-xs font-semibold">
+                  <span
+                    className={`${effectiveStatus === "overdue" ? "bg-negative-soft text-negative" : effectiveStatus === "paid" ? "bg-positive-soft text-positive" : effectiveStatus === "cancelled" ? "bg-slate-100 text-slate-600" : "bg-warning-soft text-warning"} rounded-full px-3 py-1 text-xs font-black`}
+                  >
                     {
                       {
                         pending: "Pendente",
@@ -204,6 +255,18 @@ export default async function ChargesPage({
                     <dd className="font-semibold">{formatCurrency(charge.gross_total)}</dd>
                   </div>
                 </dl>
+                {effectiveStatus === "overdue" ? (
+                  charge.delay_reason ? (
+                    <div className="delay-reason-note">
+                      <Icon className="size-4" name="history" />
+                      <span>
+                        <strong>Motivo registrado:</strong> {charge.delay_reason}
+                      </span>
+                    </div>
+                  ) : (
+                    <DelayReasonForm chargeId={charge.id} />
+                  )
+                ) : null}
                 {charge.status === "pending" ? (
                   <div className="mt-4 flex flex-wrap items-end gap-4">
                     <form action={markChargePaid} className="flex flex-wrap items-end gap-3">
@@ -229,12 +292,33 @@ export default async function ChargesPage({
                         label="Cancelar cobrança"
                       />
                     </form>
+                    <form action={deleteOperationalRecord}>
+                      <input name="clientId" type="hidden" value="" />
+                      <input name="id" type="hidden" value={charge.id} />
+                      <input name="recordType" type="hidden" value="charge" />
+                      <ConfirmSubmitButton
+                        className="text-negative min-h-10 font-semibold hover:underline"
+                        confirmation="Excluir definitivamente esta cobrança ainda não paga?"
+                        label="Excluir"
+                      />
+                    </form>
                   </div>
                 ) : charge.paid_at ? (
                   <p className="text-muted mt-4 text-sm">
                     Pago em {new Date(charge.paid_at).toLocaleString("pt-BR")} via{" "}
                     {charge.payment_method}
                   </p>
+                ) : charge.status === "cancelled" ? (
+                  <form action={deleteOperationalRecord} className="mt-4">
+                    <input name="clientId" type="hidden" value="" />
+                    <input name="id" type="hidden" value={charge.id} />
+                    <input name="recordType" type="hidden" value="charge" />
+                    <ConfirmSubmitButton
+                      className="text-negative font-semibold hover:underline"
+                      confirmation="Excluir definitivamente esta cobrança cancelada?"
+                      label="Excluir cobrança"
+                    />
+                  </form>
                 ) : null}
               </article>
             );

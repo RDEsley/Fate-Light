@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { initialActionState } from "@/lib/forms/action-state";
 
 import { updateWorkspaceConfiguration } from "./actions";
@@ -31,26 +32,24 @@ type WorkspaceFormProps = {
 };
 
 const fieldClassName =
-  "border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base";
+  "border-line bg-canvas mt-1.5 min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm";
 const alertOptions = [60, 30, 15, 7, 3, 1, 0] as const;
 
 export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
   const [state, formAction] = useActionState(updateWorkspaceConfiguration, initialActionState);
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} className="space-y-5">
       {state.message ? (
-        <p
-          className="border-line bg-brand-soft text-brand-strong rounded-xl border px-4 py-3 text-sm"
-          role="status"
-        >
-          {state.message}
-        </p>
+        <FeedbackBanner
+          message={state.message}
+          tone={state.status === "error" ? "error" : "success"}
+        />
       ) : null}
 
-      <fieldset className="border-line rounded-2xl border p-5 sm:p-6">
+      <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">Identidade</legend>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold sm:col-span-2">
             Nome do workspace
             <input
@@ -93,9 +92,9 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
         </div>
       </fieldset>
 
-      <fieldset className="border-line rounded-2xl border p-5 sm:p-6">
+      <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">Endereço</legend>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold sm:col-span-2">
             Logradouro e número
             <input
@@ -167,9 +166,9 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
         </div>
       </fieldset>
 
-      <fieldset className="border-line rounded-2xl border p-5 sm:p-6">
+      <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">Preferências financeiras</legend>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold">
             Moeda
             <input
@@ -191,14 +190,10 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
           </label>
           <label className="text-sm font-semibold">
             Formato de data
-            <select
-              className={fieldClassName}
-              defaultValue={settings.date_format}
-              name="dateFormat"
-            >
-              <option value="DD/MM/YYYY">DD/MM/AAAA</option>
-              <option value="YYYY-MM-DD">AAAA-MM-DD</option>
-            </select>
+            <input name="dateFormat" type="hidden" value="DD/MM/YYYY" />
+            <span className={`${fieldClassName} flex items-center text-sm`}>
+              DD/MM/AAAA · PT-BR
+            </span>
           </label>
           <label className="text-sm font-semibold">
             Regime gerencial padrão

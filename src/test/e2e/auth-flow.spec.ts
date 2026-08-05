@@ -38,17 +38,19 @@ async function waitForMagicLink(
 function dateOffset(days: number) {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
+  const [year, month, day] = date.toISOString().slice(0, 10).split("-");
+  return `${day}/${month}/${year}`;
 }
 
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
   await panel.locator("summary").click();
-  await panel.getByLabel("Serviço").fill(values.name);
-  await panel.getByLabel("Receita própria").fill(values.own);
+  await panel.getByLabel("Nome exibido no cliente").fill(values.name);
+  await panel.getByLabel("Valor cheio").fill(values.own);
+  await panel.getByLabel("Primeiro vencimento").fill(dateOffset(7));
+  await panel.getByText("Personalizar preço e agenda").click();
   await panel.getByLabel("Verba de mídia").fill(values.media);
-  await panel.getByLabel("Próximo vencimento").fill(dateOffset(7));
-  await panel.getByRole("button", { name: "Adicionar serviço" }).click();
+  await panel.getByRole("button", { name: "Aplicar serviço e criar cobrança" }).click();
   await expect(page.getByText("Serviço adicionado ao cliente.")).toBeVisible();
 }
 
@@ -56,23 +58,25 @@ test.describe("authenticated MVP journey", () => {
   test.skip(!authE2eEnabled, "Requer Supabase local e Mailpit iniciados explicitamente.");
   test.describe.configure({ mode: "serial" });
 
-  test("executa o fluxo diário completo da Fate Eight", async ({ page, request }) => {
+  test("executa o fluxo diário completo da Fate Light", async ({ page, request }) => {
     test.setTimeout(90_000);
     const email = `mvp-${Date.now()}@example.test`;
     const password = "Mvp-Teste-2026!";
     await page.goto("/cadastro");
+    await page.getByLabel("Nome ou nome da empresa").fill("Pessoa E2E");
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel(/^Senha/).fill(password);
     await page.getByLabel("Confirmar senha").fill(password);
     await page.getByRole("button", { name: /^criar conta$/i }).click();
-    await expect(page).toHaveURL(/\/onboarding$/);
+    await expect(page).toHaveURL(/\/onboarding$/, { timeout: 15_000 });
     await page.getByLabel("Nome completo").fill("Pessoa E2E");
-    await page.getByLabel("Nome do workspace").fill("Fate Eight E2E");
-    await page.getByLabel("Razão social").fill("Fate Eight E2E LTDA");
+    await page.getByLabel("Nome do workspace").fill("Fate Light E2E");
+    await page.getByLabel("Razão social").fill("Fate Light E2E LTDA");
     for (const checkbox of await page.getByRole("checkbox", { name: /li e aceito/i }).all())
       await checkbox.check();
     await page.getByRole("button", { name: /criar workspace/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole("button", { name: /pular tutorial/i }).click();
 
     await page.getByRole("link", { name: "Novo cliente" }).click();
     await page.getByLabel("Nome", { exact: true }).fill("Cliente MVP");
@@ -115,44 +119,50 @@ test.describe("authenticated MVP journey", () => {
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Despesas" }).click();
-    await page.locator("summary").filter({ hasText: "Nova despesa" }).click();
-    await page.getByLabel("Descrição").fill("Ferramenta mensal");
-    await page.getByLabel("Valor").fill("200");
-    await page.getByLabel("Status").selectOption("paid");
-    await page.getByRole("button", { name: "Criar despesa" }).click();
+    const expensePanel = page.locator("details").filter({ hasText: "Nova despesa" });
+    await expensePanel.locator("summary").click();
+    await expensePanel.getByLabel("Descrição").fill("Ferramenta mensal");
+    await expensePanel.getByLabel("Valor").fill("200");
+    await expensePanel.locator('select[name="status"]').selectOption("paid");
+    await expensePanel.getByRole("button", { name: "Criar despesa" }).click();
     await expect(page.getByText("Ferramenta mensal")).toBeVisible();
 
     await page.getByRole("link", { name: "Domínios" }).click();
-    await page.locator("summary").filter({ hasText: "Novo domínio" }).click();
-    await page.getByLabel("Cliente").selectOption({ label: "Cliente MVP" });
-    await page.getByLabel("Domínio").fill("cliente-mvp.example");
-    await page.getByLabel("Data de expiração").fill(dateOffset(7));
-    await page.getByRole("button", { name: "Criar domínio" }).click();
+    const domainPanel = page.locator("details").filter({ hasText: "Novo domínio" });
+    await domainPanel.locator("summary").click();
+    await domainPanel.locator('select[name="clientId"]').selectOption({ label: "Cliente MVP" });
+    await domainPanel.getByLabel("Domínio").fill("cliente-mvp.example");
+    await domainPanel.getByLabel("Data de expiração").fill(dateOffset(7));
+    await domainPanel.getByRole("button", { name: "Criar domínio" }).click();
     await expect(page.getByText("Vence em até 7 dias")).toBeVisible();
 
     await page.getByRole("link", { name: "Dashboard" }).click();
-    await expect(page.getByText("Receita própria recebida").locator("..")).toContainText(
-      /R\$\s*500,00/,
-    );
-    await expect(page.getByText("Verba de mídia do mês").locator("..")).toContainText(
+    await expect(
+      page.locator("article").filter({ hasText: "Receita própria recebida" }),
+    ).toContainText(/R\$\s*500,00/);
+    await expect(page.getByText("Verba administrada").locator("..")).toContainText(
       /R\$\s*1\.000,00/,
     );
-    await expect(page.getByText("Despesas pagas no mês").locator("..")).toContainText(
+    await expect(page.locator("article").filter({ hasText: "Despesas pagas" })).toContainText(
       /R\$\s*200,00/,
     );
-    await expect(page.getByText("Resultado do mês").locator("..")).toContainText(/R\$\s*300,00/);
+    await expect(page.locator("article").filter({ hasText: "Resultado gerencial" })).toContainText(
+      /R\$\s*300,00/,
+    );
     await expect(page.getByRole("heading", { name: "Cobranças vencidas (1)" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Domínios nos próximos 30 dias (1)" }),
     ).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
+    await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("button", { name: "Sair" }).click();
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel("Senha", { exact: true }).fill(password);
     await page.getByRole("button", { name: /^entrar$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
+    await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("button", { name: "Sair" }).click();
     await page.getByRole("link", { name: /entrar com magic link/i }).click();
     await expect(page).toHaveURL(/method=magic-link/);

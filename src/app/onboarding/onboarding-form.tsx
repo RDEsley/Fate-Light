@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { initialActionState } from "@/lib/forms/action-state";
 
 import { bootstrapAccount } from "./actions";
@@ -15,30 +16,35 @@ export type LegalDocumentSummary = {
 };
 
 const fieldClassName =
-  "border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base";
+  "border-line bg-canvas mt-1.5 min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm";
 
-export function OnboardingForm({ legalDocuments }: { legalDocuments: LegalDocumentSummary[] }) {
+export function OnboardingForm({
+  initialDisplayName,
+  legalDocuments,
+}: {
+  initialDisplayName?: string;
+  legalDocuments: LegalDocumentSummary[];
+}) {
   const [state, formAction] = useActionState(bootstrapAccount, initialActionState);
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} className="space-y-5">
       {state.message ? (
-        <p
-          className="border-line bg-brand-soft text-brand-strong rounded-xl border px-4 py-3 text-sm"
-          role="alert"
-        >
-          {state.message}
-        </p>
+        <FeedbackBanner
+          message={state.message}
+          tone={state.status === "error" ? "error" : "success"}
+        />
       ) : null}
 
-      <fieldset className="border-line rounded-2xl border p-5 sm:p-6">
+      <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">1. Seu perfil</legend>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold sm:col-span-2">
             Nome completo
             <input
               autoComplete="name"
               className={fieldClassName}
+              defaultValue={initialDisplayName}
               maxLength={120}
               name="fullName"
               required
@@ -65,23 +71,22 @@ export function OnboardingForm({ legalDocuments }: { legalDocuments: LegalDocume
               <option value="UTC">UTC</option>
             </select>
           </label>
-          <label className="text-sm font-semibold">
-            Tema
-            <select className={fieldClassName} defaultValue="system" name="theme">
-              <option value="system">Usar preferência do sistema</option>
-              <option value="light">Claro</option>
-              <option value="dark">Escuro</option>
-            </select>
-          </label>
+          <input name="theme" type="hidden" value="light" />
         </div>
       </fieldset>
 
-      <fieldset className="border-line rounded-2xl border p-5 sm:p-6">
+      <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">2. Sua empresa</legend>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold sm:col-span-2">
             Nome do workspace
-            <input className={fieldClassName} maxLength={120} name="workspaceName" required />
+            <input
+              className={fieldClassName}
+              defaultValue={initialDisplayName}
+              maxLength={120}
+              name="workspaceName"
+              required
+            />
           </label>
           <label className="text-sm font-semibold sm:col-span-2">
             Razão social
@@ -105,9 +110,9 @@ export function OnboardingForm({ legalDocuments }: { legalDocuments: LegalDocume
         </div>
       </fieldset>
 
-      <fieldset className="border-line rounded-2xl border p-5 sm:p-6">
+      <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">3. Preferências iniciais</legend>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold">
             Formato de data
             <select className={fieldClassName} defaultValue="DD/MM/YYYY" name="dateFormat">

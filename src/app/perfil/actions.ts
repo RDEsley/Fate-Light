@@ -10,7 +10,6 @@ const profileSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   locale: z.literal("pt-BR"),
   phone: z.string().trim().min(7).max(32).optional().or(z.literal("")),
-  theme: z.enum(["light", "dark", "system"]),
   timezone: z.string().trim().min(1).max(64),
 });
 
@@ -22,7 +21,6 @@ export async function updateProfile(
     fullName: formData.get("fullName"),
     locale: formData.get("locale"),
     phone: formData.get("phone"),
-    theme: formData.get("theme"),
     timezone: formData.get("timezone"),
   });
 
@@ -44,7 +42,6 @@ export async function updateProfile(
       full_name: parsed.data.fullName,
       locale: parsed.data.locale,
       phone: parsed.data.phone || null,
-      theme: parsed.data.theme,
       timezone: parsed.data.timezone,
     })
     .eq("id", userId)
@@ -59,6 +56,5 @@ export async function updateProfile(
   return {
     status: "success",
     message: "Perfil atualizado com segurança.",
-    theme: parsed.data.theme,
   };
 }

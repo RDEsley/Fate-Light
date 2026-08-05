@@ -1,9 +1,9 @@
 "use client";
 
-import { useTheme } from "next-themes";
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { initialActionState } from "@/lib/forms/action-state";
 
 import { updateProfile } from "./actions";
@@ -14,48 +14,27 @@ type ProfileFormProps = {
     full_name: string;
     locale: string;
     phone: string | null;
-    theme: string;
     timezone: string;
   };
 };
 
-const fieldClassName =
-  "border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base";
+const fieldClassName = "w-full";
 
 export function ProfileForm({ email, profile }: ProfileFormProps) {
   const [state, formAction] = useActionState(updateProfile, initialActionState);
-  const { setTheme } = useTheme();
-
-  useEffect(() => {
-    if (state.status === "success" && state.theme) {
-      setTheme(state.theme);
-    }
-  }, [setTheme, state]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-4">
       {state.message ? (
-        <p
-          className="border-line bg-brand-soft text-brand-strong rounded-xl border px-4 py-3 text-sm"
-          role="status"
-        >
-          {state.message}
-        </p>
+        <FeedbackBanner
+          message={state.message}
+          tone={state.status === "error" ? "error" : "success"}
+        />
       ) : null}
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <label className="text-sm font-semibold sm:col-span-2">
-          E-mail confirmado
-          <input
-            className={`${fieldClassName} text-muted`}
-            disabled
-            readOnly
-            type="email"
-            value={email}
-          />
-        </label>
-        <label className="text-sm font-semibold sm:col-span-2">
-          Nome completo
+      <div className="profile-form-grid">
+        <label className="field">
+          <span className="field__label">Nome completo</span>
           <input
             autoComplete="name"
             className={fieldClassName}
@@ -65,8 +44,20 @@ export function ProfileForm({ email, profile }: ProfileFormProps) {
             required
           />
         </label>
-        <label className="text-sm font-semibold">
-          Telefone opcional
+        <label className="field">
+          <span className="field__label">E-mail confirmado</span>
+          <input
+            className={`${fieldClassName} text-muted`}
+            disabled
+            readOnly
+            type="email"
+            value={email}
+          />
+        </label>
+        <label className="field">
+          <span className="field__label">
+            Telefone <span className="field__optional">opcional</span>
+          </span>
           <input
             autoComplete="tel"
             className={fieldClassName}
@@ -76,14 +67,8 @@ export function ProfileForm({ email, profile }: ProfileFormProps) {
             type="tel"
           />
         </label>
-        <label className="text-sm font-semibold">
-          Idioma
-          <select className={fieldClassName} defaultValue={profile.locale} name="locale">
-            <option value="pt-BR">Português (Brasil)</option>
-          </select>
-        </label>
-        <label className="text-sm font-semibold">
-          Timezone pessoal
+        <label className="field">
+          <span className="field__label">Fuso horário</span>
           <select className={fieldClassName} defaultValue={profile.timezone} name="timezone">
             <option value="America/Sao_Paulo">São Paulo</option>
             <option value="America/Recife">Recife</option>
@@ -92,17 +77,10 @@ export function ProfileForm({ email, profile }: ProfileFormProps) {
             <option value="UTC">UTC</option>
           </select>
         </label>
-        <label className="text-sm font-semibold">
-          Tema
-          <select className={fieldClassName} defaultValue={profile.theme} name="theme">
-            <option value="system">Preferência do sistema</option>
-            <option value="light">Claro</option>
-            <option value="dark">Escuro</option>
-          </select>
-        </label>
+        <input name="locale" type="hidden" value={profile.locale} />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end border-t pt-4">
         <SubmitButton idleLabel="Salvar perfil" />
       </div>
     </form>

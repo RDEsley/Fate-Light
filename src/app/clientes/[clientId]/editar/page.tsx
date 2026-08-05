@@ -39,12 +39,10 @@ export default async function EditClientPage({ params, searchParams }: EditClien
   return (
     <AccountShell
       description="Altere somente o cadastro operacional. Histórico e autoria são preservados automaticamente."
-      fullName={context.fullName}
-      theme={context.theme}
       title={`Editar ${client.name}`}
     >
       <ClientStatusMessage status={status} />
-      <section className="border-line bg-surface shadow-panel rounded-2xl border p-6 sm:p-8">
+      <section className="panel-card mx-auto w-full max-w-4xl">
         <ClientForm
           action={updateClient}
           cancelHref={`/clientes/${client.id}` as Route}
