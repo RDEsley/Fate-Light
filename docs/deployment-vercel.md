@@ -26,7 +26,7 @@ npx vercel@latest login
 npx vercel@latest link
 ```
 
-Ao criar o projeto, selecione o repositório `RDEsley/FateEight` e use:
+Ao criar o projeto, selecione o repositório `RDEsley/Fate-Light` e use:
 
 | Campo | Valor |
 | --- | --- |
