@@ -48,7 +48,7 @@ async function addService(page: Page, values: { name: string; own: string; media
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
   await panel.getByLabel("Valor cheio").fill(values.own);
   await panel.getByLabel("Primeiro vencimento").fill(dateOffset(7));
-  await panel.getByText("Personalizar preço e agenda").click();
+  await panel.locator("details.advanced-form > summary").click();
   await panel.getByLabel("Verba de mídia").fill(values.media);
   await panel.getByRole("button", { name: "Aplicar serviço e criar cobrança" }).click();
   await expect(page.getByText("Serviço adicionado ao cliente.")).toBeVisible();
