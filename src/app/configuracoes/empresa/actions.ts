@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { ActionState } from "@/lib/forms/action-state";
+import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const optionalText = (minimum: number, maximum: number) =>
@@ -21,7 +22,7 @@ const workspaceSchema = z.object({
     .min(1)
     .transform((values) => [...new Set(values)]),
   countryCode: z.literal("BR"),
-  dateFormat: z.enum(["DD/MM/YYYY", "YYYY-MM-DD"]),
+  dateFormat: z.literal("DD/MM/YYYY"),
   legalName: z.string().trim().min(2).max(160),
   postalCode: optionalText(3, 20),
   taxId: z.string().trim().max(24).optional().or(z.literal("")),
@@ -96,4 +97,26 @@ export async function updateWorkspaceConfiguration(
 
   revalidatePath("/configuracoes/empresa");
   return { status: "success", message: "Configurações da empresa atualizadas." };
+}
+
+export async function resetWorkspaceOperationalData(
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const confirmation = z.literal("EXCLUIR TUDO").safeParse(formData.get("confirmation"));
+  if (!confirmation.success) {
+    return { status: "error", message: "Digite EXCLUIR TUDO para confirmar a limpeza." };
+  }
+  const { supabase } = await requireWorkspaceContext();
+  const { error } = await supabase.rpc("reset_current_workspace_operational_data", {
+    p_confirmation: confirmation.data,
+  });
+  if (error) {
+    return { status: "error", message: "Não foi possível excluir os dados operacionais." };
+  }
+  revalidatePath("/", "layout");
+  return {
+    status: "success",
+    message: "Dados operacionais excluídos. Sua conta e configurações foram preservadas.",
+  };
 }

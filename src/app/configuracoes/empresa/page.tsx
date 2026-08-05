@@ -2,22 +2,24 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AccountShell } from "@/app/_components/account-shell";
+import { SettingsTabs } from "@/app/_components/settings-tabs";
 import { requireAccountPage } from "@/lib/auth/page-guard";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 import { WorkspaceForm } from "./workspace-form";
+import { WorkspaceDangerZone } from "./workspace-danger-zone";
 
 export const metadata: Metadata = { title: "Configurações da empresa" };
 
 export default async function WorkspaceSettingsPage() {
-  const userId = await requireAccountPage("active");
+  await requireAccountPage("active");
   const supabase = await createServerSupabaseClient();
-  const [{ data: profile }, { data: workspace, error: workspaceError }] = await Promise.all([
-    supabase.from("profiles").select("full_name, theme").eq("id", userId).single(),
-    supabase.from("workspaces").select("id, name, currency, timezone").single(),
-  ]);
+  const { data: workspace, error: workspaceError } = await supabase
+    .from("workspaces")
+    .select("id, name, currency, timezone")
+    .single();
 
-  if (!profile || workspaceError || !workspace) {
+  if (workspaceError || !workspace) {
     redirect("/auth/error");
   }
 
@@ -36,13 +38,13 @@ export default async function WorkspaceSettingsPage() {
   return (
     <AccountShell
       description="Mantenha identidade, endereço e preferências gerenciais do workspace em uma atualização atômica."
-      fullName={profile.full_name}
-      theme={profile.theme}
       title="Configurações da empresa"
     >
-      <section className="border-line bg-surface shadow-panel rounded-2xl border p-6 sm:p-8">
+      <SettingsTabs />
+      <section className="panel-card">
         <WorkspaceForm settings={settings} workspace={workspace} />
       </section>
+      <WorkspaceDangerZone />
     </AccountShell>
   );
 }

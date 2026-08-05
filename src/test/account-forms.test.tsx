@@ -1,11 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 
-const accountFormMocks = vi.hoisted(() => ({ setTheme: vi.fn() }));
-
-vi.mock("next-themes", () => ({
-  useTheme: () => ({ setTheme: accountFormMocks.setTheme }),
-}));
 vi.mock("@/app/onboarding/actions", () => ({
   bootstrapAccount: vi.fn(async (state: unknown) => state),
 }));
@@ -24,12 +19,13 @@ import { WorkspaceForm } from "@/app/configuracoes/empresa/workspace-form";
 import { OnboardingForm } from "@/app/onboarding/onboarding-form";
 import { ProfileForm } from "@/app/perfil/profile-form";
 import { LifecycleRequestPanel } from "@/app/perfil/lifecycle-request-panel";
-import { AccountTheme } from "@/app/_components/account-theme";
+import { MotionSettings } from "@/components/motion-settings";
 
 describe("account forms", () => {
   it("exige aceite individual das versões legais no onboarding", () => {
     render(
       <OnboardingForm
+        initialDisplayName="Empresa Exemplo"
         legalDocuments={[
           {
             content_markdown: "Termos fictícios",
@@ -51,6 +47,8 @@ describe("account forms", () => {
     expect(acceptances).toHaveLength(2);
     acceptances.forEach((acceptance) => expect(acceptance).toBeRequired());
     expect(screen.queryByLabelText(/avatar|foto/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/nome completo/i)).toHaveValue("Empresa Exemplo");
+    expect(screen.getByLabelText(/nome do workspace/i)).toHaveValue("Empresa Exemplo");
   });
 
   it("mostra e-mail somente leitura e preferências textuais no perfil", () => {
@@ -61,7 +59,6 @@ describe("account forms", () => {
           full_name: "Pessoa Exemplo",
           locale: "pt-BR",
           phone: null,
-          theme: "system",
           timezone: "America/Sao_Paulo",
         }}
       />,
@@ -98,9 +95,14 @@ describe("account forms", () => {
     expect(screen.getByRole("button", { name: /salvar configurações/i })).toBeVisible();
   });
 
-  it("aplica a preferência de tema armazenada para a área autenticada", () => {
-    render(<AccountTheme theme="dark" />);
-    expect(accountFormMocks.setTheme).toHaveBeenCalledWith("dark");
+  it("permite desligar separadamente as animações da experiência", () => {
+    render(<MotionSettings />);
+    const mouse = screen.getByRole("checkbox", { name: /animações do mouse/i });
+    const system = screen.getByRole("checkbox", { name: /animações do sistema/i });
+    fireEvent.click(mouse);
+    fireEvent.click(system);
+    expect(window.localStorage.getItem("fate-light:mouse-motion")).toBe("off");
+    expect(window.localStorage.getItem("fate-light:system-motion")).toBe("off");
   });
 
   it("explica os limites e exige confirmação reforçada para exclusão", () => {

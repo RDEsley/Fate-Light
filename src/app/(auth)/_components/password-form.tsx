@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 
 import { SubmitButton } from "@/app/_components/submit-button";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { publicEnvironment } from "@/config/env/public";
 
 import { authenticateWithPassword } from "../actions";
@@ -11,7 +12,7 @@ const messages: Record<string, string> = {
   captcha: "Conclua a verificação de segurança e tente novamente.",
   "confirmation-sent": "Confira seu e-mail para confirmar a conta antes de entrar.",
   error: "Não foi possível criar a conta. Revise os dados ou tente novamente.",
-  invalid: "Revise o e-mail, a senha e a confirmação informados.",
+  invalid: "Revise o nome, o e-mail, a senha e a confirmação informados.",
   "invalid-credentials": "E-mail ou senha incorretos.",
   "signed-out": "Sua sessão foi encerrada com segurança.",
 };
@@ -33,12 +34,19 @@ export function PasswordForm({
   return (
     <>
       {message ? (
-        <p
-          className="border-brand/25 bg-brand-soft text-brand-strong mb-5 rounded-xl border px-4 py-3 text-sm leading-6"
-          role="status"
-        >
-          {message}
-        </p>
+        <FeedbackBanner
+          message={message}
+          tone={
+            status === "invalid" ||
+            status === "invalid-credentials" ||
+            status === "error" ||
+            status === "captcha"
+              ? "error"
+              : status === "signed-out"
+                ? "success"
+                : "info"
+          }
+        />
       ) : null}
       <form action={authenticateWithPassword} className="space-y-5">
         <input name="mode" type="hidden" value={mode} />
@@ -53,6 +61,24 @@ export function PasswordForm({
             type="text"
           />
         </div>
+        {!isLogin ? (
+          <label className="block text-sm font-semibold">
+            Nome ou nome da empresa
+            <input
+              autoComplete="name"
+              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
+              maxLength={120}
+              minLength={2}
+              name="displayName"
+              placeholder="Como devemos chamar você?"
+              required
+              type="text"
+            />
+            <span className="text-muted mt-2 block text-xs">
+              Usaremos esse nome para preparar seu primeiro acesso.
+            </span>
+          </label>
+        ) : null}
         <label className="block text-sm font-semibold">
           E-mail
           <input
@@ -96,6 +122,7 @@ export function PasswordForm({
         ) : null}
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
         <SubmitButton
+          className="w-full"
           idleLabel={isLogin ? "Entrar" : "Criar conta"}
           pendingLabel={isLogin ? "Entrando…" : "Criando conta…"}
         />
@@ -111,7 +138,7 @@ export function PasswordForm({
         <span className="border-line h-px flex-1 border-t" />
       </div>
       <Link
-        className="border-line hover:bg-brand-soft block min-h-11 rounded-xl border px-5 py-3 text-center font-semibold"
+        className="cartoon-card hover:bg-brand-soft block min-h-11 px-5 py-3 text-center font-black"
         href={magicLinkHref}
       >
         {isLogin ? "Entrar com magic link" : "Criar conta com magic link"}

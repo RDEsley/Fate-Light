@@ -9,26 +9,37 @@ import { getAccountDestination } from "@/lib/auth/account-gate";
 import { sanitizeNextPath } from "@/lib/auth/redirects";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const magicLinkRequestSchema = z.object({
-  captchaToken: z.string().max(4096).optional(),
-  email: z.string().trim().email().max(254),
-  mode: z.enum(["login", "signup"]),
-  next: z.string().max(2048).optional(),
-  website: z.string().max(256),
-});
+const magicLinkRequestSchema = z
+  .object({
+    captchaToken: z.string().max(4096).optional(),
+    displayName: z.string().trim().max(120),
+    email: z.string().trim().email().max(254),
+    mode: z.enum(["login", "signup"]),
+    next: z.string().max(2048).optional(),
+    website: z.string().max(256),
+  })
+  .refine((value) => value.mode === "login" || value.displayName.length >= 2, {
+    path: ["displayName"],
+  });
 
 const passwordRequestSchema = z
   .object({
     captchaToken: z.string().max(4096).optional(),
     confirmPassword: z.string().max(72).optional(),
+    displayName: z.string().trim().max(120),
     email: z.string().trim().email().max(254),
     mode: z.enum(["login", "signup"]),
     next: z.string().max(2048).optional(),
     password: z.string().min(8).max(72),
     website: z.string().max(256),
   })
-  .refine((value) => value.mode === "login" || value.password === value.confirmPassword, {
-    path: ["confirmPassword"],
+  .superRefine((value, context) => {
+    if (value.mode === "signup" && value.displayName.length < 2) {
+      context.addIssue({ code: "custom", path: ["displayName"] });
+    }
+    if (value.mode === "signup" && value.password !== value.confirmPassword) {
+      context.addIssue({ code: "custom", path: ["confirmPassword"] });
+    }
   });
 
 type AuthStatus =
@@ -46,6 +57,7 @@ export async function requestMagicLink(formData: FormData) {
   const mode = rawMode === "signup" ? "signup" : "login";
   const parsed = magicLinkRequestSchema.safeParse({
     captchaToken: formData.get("captchaToken") || undefined,
+    displayName: formData.get("displayName") ?? "",
     email: formData.get("email"),
     mode,
     next: formData.get("next") || undefined,
@@ -77,6 +89,9 @@ export async function requestMagicLink(formData: FormData) {
       email: parsed.data.email,
       options: {
         captchaToken: parsed.data.captchaToken,
+        ...(parsed.data.mode === "signup"
+          ? { data: { display_name: parsed.data.displayName } }
+          : {}),
         emailRedirectTo: confirmationUrl.toString(),
         shouldCreateUser: parsed.data.mode === "signup",
       },
@@ -93,6 +108,7 @@ export async function authenticateWithPassword(formData: FormData) {
   const parsed = passwordRequestSchema.safeParse({
     captchaToken: formData.get("captchaToken") || undefined,
     confirmPassword: formData.get("confirmPassword") || undefined,
+    displayName: formData.get("displayName") ?? "",
     email: formData.get("email"),
     mode,
     next: formData.get("next") || undefined,
@@ -141,6 +157,7 @@ export async function authenticateWithPassword(formData: FormData) {
       password: parsed.data.password,
       options: {
         captchaToken: parsed.data.captchaToken,
+        data: { display_name: parsed.data.displayName },
         emailRedirectTo: confirmationUrl.toString(),
       },
     });

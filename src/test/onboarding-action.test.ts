@@ -43,7 +43,7 @@ function onboardingForm(overrides: Record<string, string | string[]> = {}) {
     legalName: "Empresa Exemplo LTDA",
     phone: "",
     taxId: "12.345.678/0001-95",
-    theme: "system",
+    theme: "light",
     timezone: "America/Sao_Paulo",
     tradeName: "Empresa Exemplo",
     workspaceName: "Empresa Exemplo",

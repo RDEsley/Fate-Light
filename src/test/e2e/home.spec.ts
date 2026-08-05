@@ -7,7 +7,7 @@ test("abre o acesso seguro sem violações automáticas de acessibilidade", asyn
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: /clareza financeira começa por um acesso seguro/i,
+      name: /sua rotina financeira pode ser leve/i,
     }),
   ).toBeVisible();
 
@@ -36,9 +36,13 @@ for (const protectedRoute of [
   "/dashboard",
   "/clientes",
   "/clientes/novo",
+  "/servicos",
   "/cobrancas",
   "/despesas",
   "/dominios",
+  "/alertas",
+  "/historico",
+  "/importar",
 ] as const) {
   test(`${protectedRoute} rejeita sessão ausente`, async ({ page }) => {
     await page.goto(protectedRoute);

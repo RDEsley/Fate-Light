@@ -9,9 +9,13 @@ const protectedPrefixes = [
   "/configuracoes",
   "/dashboard",
   "/clientes",
+  "/servicos",
   "/cobrancas",
   "/despesas",
   "/dominios",
+  "/alertas",
+  "/historico",
+  "/importar",
 ] as const;
 const guestOnlyPaths = new Set(["/login", "/cadastro"]);
 

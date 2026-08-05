@@ -28,6 +28,7 @@ import { requestMagicLink, signOut } from "@/app/(auth)/actions";
 function magicLinkForm(overrides: Record<string, string> = {}) {
   const formData = new FormData();
   const values = {
+    displayName: "Pessoa Exemplo",
     email: "pessoa@example.test",
     mode: "login",
     next: "/perfil",
@@ -74,6 +75,18 @@ describe("magic link action", () => {
         options: expect.objectContaining({ shouldCreateUser: true }),
       }),
     );
+    expect(authMocks.signInWithOtp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ data: { display_name: "Pessoa Exemplo" } }),
+      }),
+    );
+  });
+
+  it("exige nome ou nome da empresa no cadastro", async () => {
+    await expect(
+      requestMagicLink(magicLinkForm({ displayName: "", mode: "signup" })),
+    ).rejects.toThrow("REDIRECT:/cadastro?status=invalid&method=magic-link");
+    expect(authMocks.signInWithOtp).not.toHaveBeenCalled();
   });
 
   it("mantém resposta genérica quando o provedor recusa a solicitação", async () => {

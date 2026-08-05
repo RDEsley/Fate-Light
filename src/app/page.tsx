@@ -1,100 +1,107 @@
 import Link from "next/link";
 
-import { ThemeSelect } from "@/components/ui/theme-select";
+import { BrandMark } from "@/components/brand-mark";
+import { Icon, type IconName } from "@/components/ui/icon";
 
-const accessHighlights = [
+const highlights: { description: string; icon: IconName; title: string }[] = [
   {
-    title: "Acesso flexível",
-    description: "Entre com senha ou escolha receber um magic link no seu e-mail.",
+    icon: "bell",
+    title: "Atenção no que vence",
+    description: "Cobranças, despesas e domínios aparecem antes de virarem urgência.",
   },
   {
-    title: "Dados isolados",
-    description: "Cada workspace possui autorização própria aplicada no banco.",
+    icon: "wallet",
+    title: "Valores sem confusão",
+    description: "Receita própria e verba de mídia ficam visualmente separadas.",
   },
   {
-    title: "Acesso verificável",
-    description: "Sessão, estado da conta e destino são validados no servidor.",
+    icon: "users",
+    title: "Operação no contexto",
+    description: "Cada registro continua ligado ao cliente e ao seu workspace.",
   },
-] as const;
+];
 
 export default function Home() {
   return (
-    <main className="bg-canvas text-foreground min-h-screen">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-6 sm:px-10 lg:px-12">
-        <header className="border-line flex items-center justify-between gap-4 border-b pb-5">
-          <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="bg-brand text-brand-contrast grid size-10 place-items-center rounded-xl font-bold shadow-sm"
+    <main className="text-foreground min-h-screen overflow-hidden">
+      <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-7 lg:px-10">
+        <header className="flex items-center justify-between">
+          <BrandMark />
+          <div className="flex items-center gap-2">
+            <Link
+              className="hover:bg-brand-soft min-h-11 rounded-xl px-4 py-3 text-sm font-black"
+              href="/login"
             >
-              8
-            </span>
-            <div>
-              <p className="font-semibold tracking-tight">Fate Eight</p>
-              <p className="text-muted text-xs">Gestão financeira com contexto</p>
-            </div>
+              Entrar
+            </Link>
+            <Link
+              className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-4 py-2.5 text-sm font-black shadow-[2px_2px_0_rgba(37,50,58,.14)]"
+              href="/cadastro"
+            >
+              Criar conta
+            </Link>
           </div>
-          <ThemeSelect />
         </header>
 
-        <section className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.25fr_1fr] lg:py-24">
-          <div>
-            <p className="border-brand/25 bg-brand-soft text-brand-strong mb-5 inline-flex rounded-full border px-3 py-1 text-sm font-semibold">
-              Gestão financeira operacional
+        <section className="grid min-h-[calc(100vh-8rem)] items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr]">
+          <div className="relative z-10">
+            <p className="bg-warning-soft text-warning border-warning/25 inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-black">
+              <Icon className="size-4" name="sparkles" /> Gestão financeira sem cara de planilha
             </p>
-            <h1 className="max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-6xl">
-              Clareza financeira começa por um acesso seguro.
+            <h1 className="mt-6 max-w-3xl text-5xl leading-[.98] font-black tracking-[-0.055em] sm:text-6xl xl:text-7xl">
+              Sua rotina financeira pode ser <span className="text-brand-strong">leve.</span>
             </h1>
             <p className="text-muted mt-6 max-w-2xl text-lg leading-8">
-              Use e-mail e senha ou magic link para acessar um workspace isolado e organizar sua
-              operação financeira.
+              A Fate Light reúne clientes, cobranças, despesas e vencimentos em uma experiência
+              clara, visual e gostosa de usar. Clareza financeira. Caminho Certo.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                className="bg-brand text-brand-contrast min-h-11 rounded-xl px-5 py-3 text-center font-semibold"
+                className="bg-brand text-brand-contrast border-brand-strong flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-6 font-black shadow-[3px_3px_0_rgba(37,50,58,.14)]"
                 href="/cadastro"
               >
-                Criar conta
+                Começar agora <Icon className="size-4 -rotate-90" name="arrow-down" />
               </Link>
               <Link
-                className="border-line bg-surface hover:bg-brand-soft min-h-11 rounded-xl border px-5 py-3 text-center font-semibold transition-colors"
+                className="cartoon-card flex min-h-12 items-center justify-center px-6 font-black"
                 href="/login"
               >
-                Entrar
+                Já tenho uma conta
               </Link>
             </div>
           </div>
 
-          <aside
-            aria-label="Proteções do acesso"
-            className="border-line bg-surface shadow-panel rounded-2xl border p-6 sm:p-8"
-          >
-            <p className="text-brand-strong text-sm font-semibold tracking-[0.14em] uppercase">
-              Segurança por padrão
-            </p>
-            <ul className="mt-6 space-y-6">
-              {accessHighlights.map((item, index) => (
-                <li className="grid grid-cols-[2rem_1fr] gap-3" key={item.title}>
-                  <span
-                    aria-hidden="true"
-                    className="bg-brand-soft text-brand-strong grid size-8 place-items-center rounded-lg text-sm font-bold"
+          <aside className="relative mx-auto w-full max-w-xl">
+            <span className="border-violet/25 absolute -top-12 -right-10 size-32 rounded-full border-2 border-dashed" />
+            <div className="cartoon-card relative overflow-hidden bg-white p-5 sm:p-7">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <p className="font-black">Hoje na sua operação</p>
+                  <p className="text-muted text-xs">Clareza antes da correria</p>
+                </div>
+                <span className="bg-positive-soft text-positive rounded-full px-3 py-1 text-xs font-black">
+                  Em ordem
+                </span>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {highlights.map((item, index) => (
+                  <article
+                    className={`${index === 0 ? "sm:col-span-2" : ""} rounded-2xl border-2 border-slate-700/10 bg-[#f8f8f3] p-4`}
+                    key={item.title}
                   >
-                    {index + 1}
-                  </span>
-                  <div>
-                    <h2 className="font-semibold">{item.title}</h2>
+                    <span
+                      className={`${["bg-negative-soft text-negative", "bg-brand-soft text-brand-strong", "bg-violet-soft text-violet"][index]} grid size-10 place-items-center rounded-xl`}
+                    >
+                      <Icon name={item.icon} />
+                    </span>
+                    <h2 className="mt-4 font-black">{item.title}</h2>
                     <p className="text-muted mt-1 text-sm leading-6">{item.description}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </article>
+                ))}
+              </div>
+            </div>
           </aside>
         </section>
-
-        <footer className="border-line text-muted flex flex-col gap-2 border-t py-5 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <p>Desenvolvido pela Fate Eight Tech</p>
-          <p>Autenticação segura, workspace isolado.</p>
-        </footer>
       </div>
     </main>
   );

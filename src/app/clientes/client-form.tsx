@@ -19,11 +19,11 @@ type ClientFormProps = {
 };
 
 const fieldClassName =
-  "border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base";
+  "border-line bg-canvas mt-1.5 min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm";
 
 export function ClientForm({ action, cancelHref, clientId, submitLabel, values }: ClientFormProps) {
   return (
-    <form action={action} className="grid gap-5 sm:grid-cols-2">
+    <form action={action} className="form-grid sm:grid-cols-2">
       {clientId ? <input name="clientId" type="hidden" value={clientId} /> : null}
       <label className="text-sm font-semibold">
         Nome
@@ -74,7 +74,7 @@ export function ClientForm({ action, cancelHref, clientId, submitLabel, values }
       <label className="text-sm font-semibold sm:col-span-2">
         Observações
         <textarea
-          className={`${fieldClassName} min-h-32`}
+          className={`${fieldClassName} min-h-20`}
           defaultValue={values?.notes ?? ""}
           maxLength={5000}
           name="notes"
