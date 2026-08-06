@@ -68,7 +68,7 @@ describe("account forms", () => {
     expect(screen.getByRole("button", { name: /salvar perfil/i })).toBeVisible();
   });
 
-  it("mantém moeda bloqueada e permite configurar alertas do workspace", () => {
+  it("mantém moeda bloqueada e preserva a antecedência salva dos alertas", () => {
     render(
       <WorkspaceForm
         settings={{
@@ -91,8 +91,11 @@ describe("account forms", () => {
     );
 
     expect(screen.getByDisplayValue("BRL")).toBeDisabled();
-    expect(screen.getByRole("checkbox", { name: /30 dias/i })).toBeChecked();
     expect(screen.getByRole("button", { name: /salvar configurações/i })).toBeVisible();
+    // A escolha da antecedência foi para o perfil; aqui os valores só seguem ocultos
+    // para a RPC de configuração, que recebe todos os campos de uma vez.
+    expect(screen.queryByRole("checkbox", { name: /30 dias/i })).not.toBeInTheDocument();
+    expect(document.querySelectorAll('input[type="hidden"][name="alertOffsets"]')).toHaveLength(2);
   });
 
   it("permite desligar separadamente as animações da experiência", () => {

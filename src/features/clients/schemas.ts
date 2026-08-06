@@ -13,6 +13,57 @@ const websiteSchema = z.union([
     .pipe(z.string().regex(/^[a-z0-9]([a-z0-9.-]{1,251}[a-z0-9])?$/)),
 ]);
 
+/** Diferente do site principal, um link extra preserva o caminho depois da barra. */
+const linkUrlSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .transform((value) => value.replace(/^https?:\/\//, "").replace(/\/+$/, ""))
+  .pipe(
+    z
+      .string()
+      .regex(/^[a-z0-9]([a-z0-9.-]{1,251}[a-z0-9])?(\/\S*)?$/)
+      .max(253),
+  );
+
+export const maxClientLinks = 3;
+
+export type ClientLink = { label: string; url: string };
+
+/**
+ * Links extras chegam como pares `linkLabel`/`linkUrl` repetidos. Uma linha só conta
+ * quando tem rótulo e endereço: preencher metade é engano, não intenção.
+ */
+export function parseClientLinks(formData: FormData): ClientLink[] {
+  const labels = formData.getAll("linkLabel").map((value) => String(value).trim());
+  const urls = formData.getAll("linkUrl").map((value) => String(value).trim());
+  const links: ClientLink[] = [];
+
+  for (let index = 0; index < Math.max(labels.length, urls.length); index += 1) {
+    const label = (labels[index] ?? "").slice(0, 40);
+    const parsedUrl = linkUrlSchema.safeParse(urls[index] ?? "");
+    if (!label || !parsedUrl.success) continue;
+    links.push({ label, url: parsedUrl.data });
+    if (links.length === maxClientLinks) break;
+  }
+
+  return links;
+}
+
+/** Lê os links vindos do banco descartando o que não couber no formato esperado. */
+export function readClientLinks(value: unknown): ClientLink[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (entry): entry is ClientLink =>
+        typeof entry === "object" &&
+        entry !== null &&
+        typeof (entry as ClientLink).label === "string" &&
+        typeof (entry as ClientLink).url === "string",
+    )
+    .slice(0, maxClientLinks);
+}
+
 const clientFormSchema = z
   .object({
     companyName: z.string().trim().max(160),
@@ -49,6 +100,7 @@ export function parseClientForm(formData: FormData) {
     commercial_status: parsed.data.status,
     email: optional(parsed.data.email),
     kind: "company",
+    links: parseClientLinks(formData),
     name: parsed.data.name,
     notes: optional(parsed.data.notes),
     phone: optional(parsed.data.phone),

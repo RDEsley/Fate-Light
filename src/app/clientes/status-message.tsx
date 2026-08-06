@@ -9,6 +9,8 @@ const messages: Record<string, string> = {
   "delete-error": "Não foi possível excluir este registro.",
   error: "Não foi possível concluir a operação.",
   invalid: "Revise os campos informados.",
+  "prior-revenue-deleted": "Lançamento de histórico anterior removido.",
+  "prior-revenue-updated": "Lançamento de histórico anterior atualizado.",
   restored: "Cliente desarquivado e de volta à operação.",
   "service-created": "Serviço aplicado e cobrança criada.",
   "service-delete-blocked":

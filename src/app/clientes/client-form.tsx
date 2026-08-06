@@ -6,17 +6,25 @@ import { DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
 import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
+import type { ClientLink } from "@/features/clients/schemas";
 import { clientStatusOptions } from "@/features/clients/status";
 import { isoToday } from "@/features/mvp/format";
+
+import { ClientLinksField } from "./client-links-field";
+import { PriorRevenueEntries, type PriorRevenueEntry } from "./prior-revenue-entries";
 
 type ClientFormProps = {
   action: (formData: FormData) => Promise<void>;
   cancelHref: Route;
   clientId?: string;
+  deletePriorRevenueAction?: (formData: FormData) => Promise<void>;
+  priorRevenueEntries?: PriorRevenueEntry[];
   submitLabel: string;
+  updatePriorRevenueAction?: (formData: FormData) => Promise<void>;
   values?: {
     companyName: string | null;
     email: string | null;
+    links: ClientLink[];
     name: string;
     notes: string | null;
     phone: string | null;
@@ -25,7 +33,16 @@ type ClientFormProps = {
   };
 };
 
-export function ClientForm({ action, cancelHref, clientId, submitLabel, values }: ClientFormProps) {
+export function ClientForm({
+  action,
+  cancelHref,
+  clientId,
+  deletePriorRevenueAction,
+  priorRevenueEntries,
+  submitLabel,
+  updatePriorRevenueAction,
+  values,
+}: ClientFormProps) {
   const editing = Boolean(clientId);
 
   return (
@@ -80,8 +97,17 @@ export function ClientForm({ action, cancelHref, clientId, submitLabel, values }
               name="website"
               placeholder="Ex.: padariadojoao.com.br"
             />
-            <span className="field__hint">Pode colar com https://, o sistema limpa sozinho.</span>
           </label>
+        </div>
+        <div className="border-line mt-4 border-t pt-4">
+          <p className="field__label flex items-center">
+            Outros links deste cliente
+            <FieldHint>
+              Painel do registrador, pasta de materiais, rede social — o que você abre com
+              frequência. Aparecem como atalhos no card do cliente.
+            </FieldHint>
+          </p>
+          <ClientLinksField links={values?.links} />
         </div>
       </section>
 
@@ -137,7 +163,7 @@ export function ClientForm({ action, cancelHref, clientId, submitLabel, values }
         </div>
       </section>
 
-      <details className="panel-card form-disclosure">
+      <details className="panel-card form-disclosure" open={Boolean(priorRevenueEntries?.length)}>
         <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
           <span className="flex items-center gap-2">
             <span className="bg-positive-soft text-positive grid size-8 place-items-center rounded-lg">
@@ -156,6 +182,17 @@ export function ClientForm({ action, cancelHref, clientId, submitLabel, values }
           única cobrança quitada, então o total dele fica correto no painel e no histórico sem que
           você precise lançar mês a mês.
         </p>
+        {clientId &&
+        priorRevenueEntries?.length &&
+        updatePriorRevenueAction &&
+        deletePriorRevenueAction ? (
+          <PriorRevenueEntries
+            clientId={clientId}
+            deleteAction={deletePriorRevenueAction}
+            entries={priorRevenueEntries}
+            updateAction={updatePriorRevenueAction}
+          />
+        ) : null}
         <div className="form-grid mt-3 sm:grid-cols-2">
           <label className="field">
             <span className="field__label">
@@ -183,11 +220,8 @@ export function ClientForm({ action, cancelHref, clientId, submitLabel, values }
         ) : null}
       </details>
 
-      <div className="flex flex-wrap justify-end gap-3">
-        <Link
-          className="border-line hover:bg-brand-soft rounded-xl border px-5 py-3 font-semibold"
-          href={cancelHref}
-        >
+      <div className="flex flex-wrap items-end justify-end gap-3">
+        <Link className="modal-cancel inline-flex items-center justify-center" href={cancelHref}>
           Cancelar
         </Link>
         <SoftSubmitButton

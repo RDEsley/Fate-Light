@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { AccountShell } from "@/app/_components/account-shell";
+import { SettingsTabs } from "@/app/_components/settings-tabs";
 import { ClientCombobox } from "@/components/ui/form-controls";
 import { Icon, type IconName } from "@/components/ui/icon";
+import { SelectField } from "@/components/ui/select-field";
 import { formatDateTimePtBr } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
@@ -16,6 +19,15 @@ const entityOptions = [
   ["expense", "Despesas"],
   ["domain", "Domínios"],
 ] as const;
+
+const entityDescriptions: Record<string, string> = {
+  all: "Todos os registros do workspace",
+  charge: "Emissão, pagamento e cancelamento",
+  client: "Cadastro e situação comercial",
+  client_service: "Aplicação, pausa e encerramento",
+  domain: "Acompanhamento e expiração",
+  expense: "Lançamento e quitação",
+};
 
 const entityMeta: Record<string, { icon: IconName; label: string }> = {
   charge: { icon: "receipt", label: "Cobrança" },
@@ -49,7 +61,7 @@ export default async function HistoryPage({
     eventsRequest,
     context.supabase
       .from("clients")
-      .select("id, name, trade_name, commercial_status")
+      .select("id, name, trade_name, email, commercial_status")
       .eq("workspace_id", context.workspaceId)
       .is("archived_at", null)
       .order("name"),
@@ -60,92 +72,107 @@ export default async function HistoryPage({
       description="Acompanhe decisões, pagamentos e mudanças sem perder o contexto de cada cliente."
       title="Histórico"
     >
-      <form className="panel-card history-filters mb-5" method="get">
-        <label className="relative text-sm font-semibold">
-          <span className="field__label">Buscar no histórico</span>
-          <span className="relative block">
-            <Icon
-              className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-              name="search"
+      <div className="settings-layout">
+        <aside className="settings-layout__nav">
+          <SettingsTabs />
+        </aside>
+        <div className="settings-layout__content">
+          <form className="panel-card history-filters mb-5" method="get">
+            <label className="field">
+              <span className="field__label">Buscar no histórico</span>
+              <span className="relative block">
+                <Icon
+                  className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+                  name="search"
+                />
+                <input
+                  className="w-full pl-9!"
+                  defaultValue={query}
+                  maxLength={80}
+                  name="q"
+                  placeholder="Pagamento, serviço, domínio..."
+                  type="search"
+                />
+              </span>
+            </label>
+            <SelectField
+              defaultValue={entityType}
+              label="Tipo de atividade"
+              name="type"
+              options={entityOptions.map(([value, label]) => ({
+                description: entityDescriptions[value],
+                label,
+                value,
+              }))}
             />
-            <input
-              className="w-full pl-9"
-              defaultValue={query}
-              maxLength={80}
-              name="q"
-              placeholder="Pagamento, serviço, domínio..."
-              type="search"
+            <ClientCombobox
+              clients={(clients ?? []).map((client) => ({
+                email: client.email,
+                id: client.id,
+                name: client.name,
+                status: client.commercial_status,
+                tradeName: client.trade_name,
+              }))}
+              defaultFilter="all"
+              defaultValue={parameters.clientId}
+              label="Cliente"
+              optional
             />
-          </span>
-        </label>
-        <label className="text-sm font-semibold">
-          Tipo de atividade
-          <select defaultValue={entityType} name="type">
-            {entityOptions.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <ClientCombobox
-          clients={(clients ?? []).map((client) => ({
-            id: client.id,
-            name: client.name,
-            status: client.commercial_status,
-            tradeName: client.trade_name,
-          }))}
-          defaultFilter="all"
-          defaultValue={parameters.clientId}
-          label="Cliente"
-          optional
-        />
-        <button className="primary-action self-end" type="submit">
-          Filtrar
-        </button>
-      </form>
+            <button className="primary-action history-filters__submit" type="submit">
+              Filtrar
+            </button>
+          </form>
 
-      {error ? (
-        <p className="panel-card" role="alert">
-          Não foi possível carregar o histórico.
-        </p>
-      ) : events?.length ? (
-        <ol className="activity-timeline">
-          {events.map((event) => {
-            const meta = entityMeta[event.entity_type] ?? {
-              icon: "history" as const,
-              label: "Atividade",
-            };
-            return (
-              <li key={event.id}>
-                <span className="activity-timeline__icon">
-                  <Icon className="size-4" name={meta.icon} />
-                </span>
-                <article className="cartoon-card">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <span className="activity-timeline__type">{meta.label}</span>
-                      <h2>{event.summary}</h2>
-                    </div>
-                    <time dateTime={event.occurred_at}>
-                      {formatDateTimePtBr(event.occurred_at)}
-                    </time>
-                  </div>
-                  {event.clients?.name ? (
-                    <p className="text-muted mt-2 text-sm">Cliente: {event.clients.name}</p>
-                  ) : null}
-                </article>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        <section className="panel-card py-10 text-center">
-          <Icon className="text-brand mx-auto size-7" name="history" />
-          <h2 className="mt-3 text-lg font-black">Nenhuma atividade encontrada</h2>
-          <p className="text-muted mt-1 text-sm">Ajuste os filtros ou comece a operar o sistema.</p>
-        </section>
-      )}
+          {error ? (
+            <p className="panel-card" role="alert">
+              Não foi possível carregar o histórico.
+            </p>
+          ) : events?.length ? (
+            <ol className="activity-timeline">
+              {events.map((event) => {
+                const meta = entityMeta[event.entity_type] ?? {
+                  icon: "history" as const,
+                  label: "Atividade",
+                };
+                return (
+                  <li key={event.id}>
+                    <span className="activity-timeline__icon">
+                      <Icon className="size-4" name={meta.icon} />
+                    </span>
+                    <article className="cartoon-card">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <span className="activity-timeline__type">{meta.label}</span>
+                          <h2>{event.summary}</h2>
+                        </div>
+                        <time dateTime={event.occurred_at}>
+                          {formatDateTimePtBr(event.occurred_at)}
+                        </time>
+                      </div>
+                      {event.clients?.name && event.client_id ? (
+                        <Link
+                          className="text-brand-strong mt-2 inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+                          href={`/clientes/${event.client_id}`}
+                        >
+                          <Icon className="size-3.5" name="user" /> {event.clients.name}
+                        </Link>
+                      ) : null}
+                    </article>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <section className="panel-card py-10 text-center">
+              <Icon className="text-brand mx-auto size-7" name="history" />
+              <h2 className="mt-3 text-lg font-black">Nenhuma atividade encontrada</h2>
+              <p className="text-muted mt-1 text-sm">
+                Ajuste os filtros ou comece a operar o sistema.
+              </p>
+            </section>
+          )}
+        </div>
+      </div>
     </AccountShell>
   );
 }

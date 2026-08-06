@@ -4,8 +4,9 @@ import Link from "next/link";
 import { AccountShell } from "@/app/_components/account-shell";
 import { Icon } from "@/components/ui/icon";
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
+import { readClientLinks } from "@/features/clients/schemas";
 import { clientStatusInfo } from "@/features/clients/status";
-import { addDays, formatCurrency, isoToday } from "@/features/mvp/format";
+import { formatCurrency } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { restoreClient } from "./actions";
@@ -34,13 +35,16 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const firstRow = (query.page - 1) * pageSize;
   const showingArchived = query.state === "archived";
+  // A ordenação combina situação e dinheiro: ativos primeiro, e dentro de cada situação
+  // quem mais rendeu na frente, com o cliente mais antigo desempatando. Ordenar e paginar
+  // sobre a view garante que isso valha para a lista inteira, não só para a página aberta.
   let request = supabase
-    .from("clients")
-    .select(
-      "id, name, trade_name, email, phone, website, notes, commercial_status, client_services(status, start_date, ended_at), charges(status, due_date, company_revenue), domains(status, expires_on)",
-      { count: "exact" },
-    )
+    .from("client_directory")
+    .select("*", { count: "exact" })
     .eq("workspace_id", workspaceId)
+    .order("status_rank")
+    .order("lifetime_revenue", { ascending: false })
+    .order("first_service_start", { nullsFirst: false })
     .order("name")
     .range(firstRow, firstRow + pageSize - 1);
   request = showingArchived
@@ -53,8 +57,6 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const { data: clients, error, count } = await request;
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const today = isoToday();
-  const nextMonth = addDays(today, 30);
 
   return (
     <AccountShell
@@ -126,30 +128,24 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ) : clients?.length ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {clients.map((client) => {
-            const status = clientStatusInfo(client.commercial_status);
-            const activeServices = client.client_services.filter(
-              (service) => service.status === "active",
-            );
-            const overdueCharges = client.charges.filter(
-              (charge) => charge.status === "pending" && charge.due_date < today,
-            ).length;
-            const expiringDomains = client.domains.filter(
-              (domain) => domain.status === "active" && domain.expires_on <= nextMonth,
-            ).length;
-            const earned = client.charges
-              .filter((charge) => charge.status === "paid")
-              .reduce((total, charge) => total + Number(charge.company_revenue), 0);
-            const firstStart = client.client_services
-              .map((service) => service.start_date)
-              .sort()[0];
+            // Toda coluna de view chega anulável para o gerador de tipos; na prática
+            // id e nome vêm de colunas NOT NULL da tabela base.
+            const clientId = client.id ?? "";
+            const clientName = client.name ?? "";
+            const status = clientStatusInfo(client.commercial_status ?? "inactive");
+            const activeServices = client.active_services ?? 0;
+            const overdueCharges = client.overdue_charges ?? 0;
+            const expiringDomains = client.expiring_domains ?? 0;
+            const earned = Number(client.lifetime_revenue ?? 0);
+            const firstStart = client.first_service_start;
             return (
               <article
                 className="cartoon-card client-summary-card flex min-h-52 flex-col p-4 sm:p-5"
-                key={client.id}
+                key={clientId}
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className="bg-brand-soft text-brand-strong border-brand/20 grid size-11 place-items-center rounded-2xl border font-black">
-                    {client.name.slice(0, 1).toUpperCase()}
+                    {clientName.slice(0, 1).toUpperCase()}
                   </span>
                   <span className={status.className}>
                     <Icon className="size-3.5" name={status.icon} />
@@ -158,16 +154,16 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                 </div>
                 <Link
                   className="hover:text-brand-strong mt-4 text-lg font-black tracking-[-0.02em]"
-                  href={`/clientes/${client.id}`}
+                  href={`/clientes/${clientId}`}
                 >
-                  {client.name}
+                  {clientName}
                 </Link>
                 {client.trade_name ? (
                   <p className="text-muted mt-1 text-sm">{client.trade_name}</p>
                 ) : null}
                 <div className="client-card-signals" aria-label="Resumo operacional">
-                  <span title={`${activeServices.length} serviço(s) ativo(s)`}>
-                    <Icon name="briefcase" /> {activeServices.length}
+                  <span title={`${activeServices} serviço(s) ativo(s)`}>
+                    <Icon name="briefcase" /> {activeServices}
                   </span>
                   {overdueCharges ? (
                     <span
@@ -196,7 +192,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                     </span>
                   ) : null}
                 </div>
-                {client.email || client.phone || client.website || client.notes ? (
+                {client.email ||
+                client.phone ||
+                client.website ||
+                client.notes ||
+                readClientLinks(client.links).length ? (
                   <div className="client-card-contact">
                     {client.email ? (
                       <a href={`mailto:${client.email}`} title={client.email}>
@@ -221,10 +221,22 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                         <span className="truncate">{client.website}</span>
                       </a>
                     ) : null}
+                    {readClientLinks(client.links).map((link) => (
+                      <a
+                        href={`https://${link.url}`}
+                        key={link.url}
+                        rel="noreferrer noopener"
+                        target="_blank"
+                        title={link.url}
+                      >
+                        <Icon className="size-3.5" name="link" />
+                        <span className="truncate">{link.label}</span>
+                      </a>
+                    ))}
                     {client.notes ? (
                       <Link
                         className="client-card-contact__note"
-                        href={`/clientes/${client.id}#observacoes`}
+                        href={`/clientes/${clientId}#observacoes`}
                       >
                         <Icon className="size-3.5" name="info" />
                         <span className="truncate">Tem observações</span>
@@ -235,13 +247,13 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                 <div className="border-line mt-auto flex items-center justify-between gap-3 border-t pt-4">
                   <Link
                     className="text-brand-strong text-sm font-black"
-                    href={`/clientes/${client.id}`}
+                    href={`/clientes/${clientId}`}
                   >
                     Abrir cliente →
                   </Link>
                   {showingArchived ? (
                     <form action={restoreClient}>
-                      <input name="clientId" type="hidden" value={client.id} />
+                      <input name="clientId" type="hidden" value={clientId} />
                       <button
                         className="text-muted hover:text-foreground text-xs font-bold"
                         type="submit"

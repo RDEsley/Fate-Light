@@ -18,11 +18,28 @@ const labels = {
   services: "Serviços",
 };
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  const kilobytes = bytes / 1024;
+  if (kilobytes < 1024) return `${kilobytes.toFixed(0)} KB`;
+  return `${(kilobytes / 1024).toFixed(1)} MB`;
+}
+
 export function ImportWorkbook() {
   const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState(initialState);
   const [pending, setPending] = useState<"confirm" | "preview" | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+
+  const clearFile = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (inputRef.current) inputRef.current.value = "";
+    setFile(null);
+    setState(initialState);
+  };
 
   const run = async (mode: "confirm" | "preview") => {
     if (!formRef.current) return;
@@ -55,21 +72,49 @@ export function ImportWorkbook() {
           }
         />
       ) : null}
-      <label className="import-dropzone">
-        <span className="bg-brand-soft text-brand-strong grid size-12 place-items-center rounded-2xl">
-          <Icon name="upload" />
-        </span>
-        <span>
-          <strong className="block">Escolha sua planilha</strong>
-          <span className="text-muted mt-1 block text-sm">
-            Excel .xlsx ou CSV, até 4 MB e 1.000 registros.
-          </span>
-        </span>
+      <label className="import-dropzone" data-filled={file ? "true" : undefined}>
+        {file ? (
+          <>
+            <span className="bg-positive-soft text-positive grid size-12 place-items-center rounded-2xl">
+              <Icon name="check" />
+            </span>
+            <span className="min-w-0">
+              <strong className="block truncate">{file.name}</strong>
+              <span className="text-muted mt-1 block text-sm">
+                {formatFileSize(file.size)} · clique para trocar
+              </span>
+            </span>
+            <button
+              aria-label="Remover arquivo selecionado"
+              className="import-dropzone__clear"
+              onClick={clearFile}
+              type="button"
+            >
+              <Icon className="size-4" name="x" />
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="bg-brand-soft text-brand-strong grid size-12 place-items-center rounded-2xl">
+              <Icon name="upload" />
+            </span>
+            <span>
+              <strong className="block">Escolha sua planilha</strong>
+              <span className="text-muted mt-1 block text-sm">
+                Excel .xlsx ou CSV, até 4 MB e 1.000 registros.
+              </span>
+            </span>
+          </>
+        )}
         <input
           accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-          className="mt-4 block w-full text-sm"
+          className="sr-only"
           name="file"
-          onChange={() => setState(initialState)}
+          onChange={(event) => {
+            setState(initialState);
+            setFile(event.target.files?.[0] ?? null);
+          }}
+          ref={inputRef}
           required
           type="file"
         />

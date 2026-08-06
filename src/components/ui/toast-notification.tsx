@@ -1,10 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 import { Icon } from "./icon";
 
 const duration = 6500;
+
+const noopSubscribe = () => () => {};
+
+/** `true` só depois da hidratação, sem passar por um efeito com setState — evita
+ * cascata de render e funciona porque o snapshot do servidor sempre é `false`. */
+function useMounted() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+}
 
 export function ToastNotification({
   message,
@@ -15,6 +28,13 @@ export function ToastNotification({
 }) {
   const [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(true);
+  // O toast é fixo à viewport, mas o card que o chama sempre vive dentro do wrapper
+  // animado de entrada da página (`data-animate="enter"`). Enquanto esse wrapper anima
+  // seu transform, ele vira containing block e o toast passa a ancorar nele em vez da
+  // tela — daí aparecer deslocado logo que a página carrega. Um portal para fora dessa
+  // árvore resolve isso de vez, não importa o que anime ao redor de quem o chamou. Só
+  // pode existir depois da hidratação, porque o portal precisa do DOM real.
+  const mounted = useMounted();
   const remaining = useRef(duration);
   const startedAt = useRef(0);
   const timer = useRef<number | undefined>(undefined);
@@ -30,7 +50,7 @@ export function ToastNotification({
     return () => window.clearTimeout(timer.current);
   }, []);
 
-  if (!visible) return null;
+  if (!visible || !mounted) return null;
 
   const pause = () => {
     if (paused) return;
@@ -48,7 +68,7 @@ export function ToastNotification({
   const title = tone === "error" ? "Não deu certo" : tone === "warning" ? "Atenção" : "Tudo certo";
   const icon = tone === "success" ? "check" : "alert";
 
-  return (
+  return createPortal(
     <aside
       className="status-toast"
       data-paused={paused}
@@ -75,6 +95,7 @@ export function ToastNotification({
         <Icon className="size-4" name="x" />
       </button>
       <span className="status-toast__progress" style={{ animationDuration: `${duration}ms` }} />
-    </aside>
+    </aside>,
+    document.getElementById("portal-root") ?? document.body,
   );
 }

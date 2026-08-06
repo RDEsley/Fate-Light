@@ -53,6 +53,40 @@ export function addDays(date: string, days: number) {
   return value.toISOString().slice(0, 10);
 }
 
+const hostPattern = /^[a-z0-9]([a-z0-9.-]{1,251}[a-z0-9])?\.[a-z]{2,}$/i;
+
+/** Verdadeiro quando o texto parece um domínio (tem ponto, sem espaço), não só um nome. */
+export function looksLikeHost(value: string | null) {
+  return Boolean(value && hostPattern.test(value.trim()));
+}
+
+export type DashboardPeriod = "30d" | "7d" | "90d" | "all" | "month";
+
+/**
+ * Janela de datas do dashboard. `start`/`end` valem para o que foi pago ou gerado no
+ * período — não passam de hoje, porque nada é recebido no futuro. `dueEnd` é só para
+ * vencimento (cobrança pendente): em "Todo o período" fica sem teto, senão uma cobrança
+ * vencendo daqui a meses ficaria de fora mesmo sem nenhum filtro de tempo selecionado —
+ * era exatamente isso que fazia "Receita própria pendente" somar cobrança de fora do mês
+ * escolhido, já que ela nunca respeitava `start`/`end` antes desta função existir.
+ */
+export function dashboardPeriodBounds(period: DashboardPeriod, today = isoToday()) {
+  const month = monthBounds(new Date(`${today}T00:00:00.000Z`));
+  const start =
+    period === "all"
+      ? "0001-01-01"
+      : period === "7d"
+        ? addDays(today, -6)
+        : period === "30d"
+          ? addDays(today, -29)
+          : period === "90d"
+            ? addDays(today, -89)
+            : month.start;
+  const end = period === "month" ? month.end : today;
+  const dueEnd = period === "all" ? "9999-12-31" : end;
+  return { dueEnd, end, start };
+}
+
 export function expiryLabel(date: string, today = isoToday()) {
   if (date < today) return { label: "Vencido", tone: "danger" as const };
   if (date === today) return { label: "Vence hoje", tone: "danger" as const };

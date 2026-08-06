@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 
-import { cancelDomain, createDomain, deleteOperationalRecord } from "@/app/_actions/mvp";
+import { createDomain } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
-import { SubmitButton } from "@/app/_components/submit-button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ClientCombobox, DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
-import { expiryLabel, formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
+import { addDays, formatCurrency, isoToday } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
+import { DomainCard } from "./domain-card";
+import { DomainForm } from "./domain-form";
+
 export const metadata: Metadata = { title: "Domínios" };
+
+const stateFilters = [
+  ["all", "Todos"],
+  ["expiring", "Vencendo"],
+  ["active", "Ativos"],
+  ["cancelled", "Cancelados"],
+] as const;
 
 export default async function DomainsPage({
   searchParams,
@@ -19,28 +26,54 @@ export default async function DomainsPage({
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
   const query = parameters.q?.trim().slice(0, 80) ?? "";
-  const state = ["active", "cancelled"].includes(parameters.state ?? "")
+  const state = stateFilters.some(([value]) => value === parameters.state)
     ? parameters.state!
     : "all";
+  const today = isoToday();
+  const nextMonth = addDays(today, 30);
+
   let domainsRequest = context.supabase
     .from("domains")
     .select(
-      "id, domain, registrar, expires_on, auto_renew, cost, payment_responsibility, status, clients(name)",
+      "id, client_id, domain, registrar, expires_on, auto_renew, cost, payment_responsibility, status, notes, clients(name)",
     )
     .eq("workspace_id", context.workspaceId)
     .order("expires_on");
   if (query) domainsRequest = domainsRequest.ilike("domain", `%${query}%`);
-  if (state !== "all") domainsRequest = domainsRequest.eq("status", state);
+  if (state === "active" || state === "cancelled") {
+    domainsRequest = domainsRequest.eq("status", state);
+  }
+  if (state === "expiring") {
+    domainsRequest = domainsRequest.eq("status", "active").lte("expires_on", nextMonth);
+  }
+
   const [{ data: clients }, { data: domains, error }] = await Promise.all([
     context.supabase
       .from("clients")
-      .select("id, name, trade_name, commercial_status")
+      .select("id, name, trade_name, email, website, commercial_status")
       .eq("workspace_id", context.workspaceId)
       .is("archived_at", null)
       .order("name"),
     domainsRequest,
   ]);
-  const today = isoToday();
+
+  const clientOptions = (clients ?? []).map((client) => ({
+    email: client.email,
+    id: client.id,
+    name: client.name,
+    status: client.commercial_status,
+    tradeName: client.trade_name,
+    website: client.website,
+  }));
+
+  const rows = domains ?? [];
+  const active = rows.filter((domain) => domain.status === "active");
+  const overdue = active.filter((domain) => domain.expires_on < today).length;
+  const dueToday = active.filter((domain) => domain.expires_on === today).length;
+  const dueThisWeek = active.filter(
+    (domain) => domain.expires_on > today && domain.expires_on <= addDays(today, 7),
+  ).length;
+  const totalCost = active.reduce((total, domain) => total + Number(domain.cost ?? 0), 0);
 
   return (
     <AccountShell
@@ -48,8 +81,16 @@ export default async function DomainsPage({
       title="Domínios"
     >
       <MvpStatusMessage status={parameters.status} />
-      <form className="panel-card mb-4 flex flex-col gap-3 p-3! sm:flex-row" method="get">
-        <label className="relative flex-1">
+
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard label="Vencidos" tone="negative" value={String(overdue)} />
+        <SummaryCard label="Vencem hoje" tone="warning" value={String(dueToday)} />
+        <SummaryCard label="Nesta semana" tone="warning" value={String(dueThisWeek)} />
+        <SummaryCard label="Custo anual" tone="brand" value={formatCurrency(totalCost)} />
+      </div>
+
+      <form className="panel-card mb-4 grid gap-3 p-3! sm:grid-cols-[1fr_auto]" method="get">
+        <label className="relative text-sm font-semibold">
           <span className="sr-only">Buscar domínios</span>
           <Icon
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -63,25 +104,29 @@ export default async function DomainsPage({
             type="search"
           />
         </label>
-        <label>
-          <span className="sr-only">Filtrar por status</span>
-          <select
-            className="min-h-11 w-full rounded-xl px-3 text-sm sm:w-40"
-            defaultValue={state}
-            name="state"
-          >
-            <option value="all">Todos os status</option>
-            <option value="active">Ativos</option>
-            <option value="cancelled">Cancelados</option>
-          </select>
-        </label>
         <button
           className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 text-sm font-black"
           type="submit"
         >
           Filtrar
         </button>
+        <div className="client-filter-pills sm:col-span-2">
+          {stateFilters.map(([value, label]) => (
+            <a
+              aria-current={state === value ? "page" : undefined}
+              href={
+                query
+                  ? `/dominios?q=${encodeURIComponent(query)}&state=${value}`
+                  : `/dominios?state=${value}`
+              }
+              key={value}
+            >
+              {label}
+            </a>
+          ))}
+        </div>
       </form>
+
       <details className="panel-card form-disclosure mb-5">
         <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
           <span className="flex items-center gap-2">
@@ -96,150 +141,69 @@ export default async function DomainsPage({
             <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
           </span>
         </summary>
-        <form action={createDomain} className="form-grid mt-4 sm:grid-cols-2">
-          <ClientCombobox
-            clients={(clients ?? []).map((client) => ({
-              id: client.id,
-              name: client.name,
-              status: client.commercial_status,
-              tradeName: client.trade_name,
-            }))}
-            defaultFilter="all"
-          />
-          <label className="text-sm font-semibold">
-            Domínio
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              name="domain"
-              placeholder="exemplo.com.br"
-              required
-            />
-          </label>
-          <label className="text-sm font-semibold">
-            Registrador opcional
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              maxLength={120}
-              name="registrar"
-            />
-          </label>
-          <DateField defaultValue={today} label="Data de expiração" name="expiresOn" required />
-          <label className="text-sm font-semibold">
-            Custo opcional
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              min="0"
-              name="cost"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <label className="text-sm font-semibold">
-            Responsável pelo pagamento
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              defaultValue="Empresa"
-              maxLength={120}
-              name="paymentResponsibility"
-              required
-            />
-          </label>
-          <label className="flex items-center gap-3 text-sm sm:col-span-2">
-            <input name="autoRenew" type="checkbox" /> Renovação automática
-          </label>
-          <label className="text-sm font-semibold sm:col-span-2">
-            Observações
-            <textarea
-              className="border-line bg-canvas mt-2 min-h-24 w-full rounded-xl border px-4 py-3"
-              maxLength={5000}
-              name="notes"
-            />
-          </label>
-          <div className="sm:col-span-2">
-            <SubmitButton idleLabel="Criar domínio" />
-          </div>
-        </form>
+        <DomainForm action={createDomain} clients={clientOptions} />
       </details>
+
       {error ? (
-        <p role="alert">Não foi possível carregar os domínios.</p>
-      ) : domains?.length ? (
+        <p className="panel-card" role="alert">
+          Não foi possível carregar os domínios.
+        </p>
+      ) : rows.length ? (
         <div className="grid gap-4 md:grid-cols-2">
-          {domains.map((domain) => {
-            const expiry =
-              domain.status === "cancelled"
-                ? { label: "Cancelado", tone: "ok" as const }
-                : expiryLabel(domain.expires_on, today);
-            return (
-              <article className="cartoon-card p-4 sm:p-5" key={domain.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="font-semibold">{domain.domain}</h2>
-                    <p className="text-muted text-sm">{domain.clients?.name ?? "Cliente"}</p>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${expiry.tone === "danger" ? "bg-red-100 text-red-800" : expiry.tone === "warning" ? "bg-amber-100 text-amber-900" : "bg-brand-soft text-brand-strong"}`}
-                  >
-                    {expiry.label}
-                  </span>
-                </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <dt className="text-muted">Expira em</dt>
-                    <dd>{formatDatePtBr(domain.expires_on)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Renovação</dt>
-                    <dd>{domain.auto_renew ? "Automática" : "Manual"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Custo</dt>
-                    <dd>{domain.cost === null ? "Não informado" : formatCurrency(domain.cost)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Pagamento</dt>
-                    <dd>{domain.payment_responsibility}</dd>
-                  </div>
-                </dl>
-                {domain.registrar ? (
-                  <p className="text-muted mt-4 text-sm">Registrador: {domain.registrar}</p>
-                ) : null}
-                {domain.status === "active" ? (
-                  <form action={cancelDomain} className="mt-4">
-                    <input name="id" type="hidden" value={domain.id} />
-                    <ConfirmDialog
-                      className="font-semibold hover:underline"
-                      confirmLabel="Cancelar acompanhamento"
-                      confirmation="O domínio para de gerar alertas de expiração, mas continua no histórico."
-                      icon="x"
-                      label="Cancelar domínio"
-                      title={domain.domain}
-                      tone="default"
-                    />
-                  </form>
-                ) : (
-                  <form action={deleteOperationalRecord} className="mt-4">
-                    <input name="clientId" type="hidden" value="" />
-                    <input name="id" type="hidden" value={domain.id} />
-                    <input name="recordType" type="hidden" value="domain" />
-                    <ConfirmDialog
-                      className="text-negative font-semibold hover:underline"
-                      confirmLabel="Excluir domínio"
-                      confirmation="O domínio cancelado some do sistema sem deixar registro."
-                      icon="trash"
-                      label="Excluir domínio"
-                      title={domain.domain}
-                    />
-                  </form>
-                )}
-              </article>
-            );
-          })}
+          {rows.map((domain) => (
+            <DomainCard
+              cancelled={domain.status === "cancelled"}
+              clientName={domain.clients?.name ?? "Cliente"}
+              clients={clientOptions}
+              key={domain.id}
+              today={today}
+              domain={{
+                autoRenew: domain.auto_renew,
+                clientId: domain.client_id,
+                cost: domain.cost === null ? null : Number(domain.cost),
+                domain: domain.domain,
+                expiresOn: domain.expires_on,
+                id: domain.id,
+                notes: domain.notes,
+                paymentResponsibility: domain.payment_responsibility,
+                registrar: domain.registrar,
+              }}
+            />
+          ))}
         </div>
       ) : (
-        <section className="border-line bg-surface rounded-2xl border p-8 text-center">
-          <h2 className="text-xl font-semibold">Nenhum domínio</h2>
+        <section className="panel-card py-10 text-center">
+          <Icon className="text-brand mx-auto size-7" name="globe" />
+          <h2 className="mt-3 text-lg font-black">Nenhum domínio por aqui</h2>
+          <p className="text-muted mt-1 text-sm">
+            {query || state !== "all"
+              ? "Nenhum domínio corresponde ao filtro atual."
+              : "Cadastre o primeiro domínio para ser avisado antes de qualquer expiração."}
+          </p>
         </section>
       )}
     </AccountShell>
+  );
+}
+
+function SummaryCard({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone: "brand" | "negative" | "warning";
+  value: string;
+}) {
+  const tones = {
+    brand: "bg-brand-soft text-brand-strong border-brand/25",
+    negative: "bg-negative-soft text-negative border-negative/25",
+    warning: "bg-warning-soft text-warning border-warning/25",
+  };
+  return (
+    <article className={`cartoon-card flex items-center justify-between p-4 ${tones[tone]}`}>
+      <span className="text-sm font-bold">{label}</span>
+      <strong className="text-xl font-black tabular-nums">{value}</strong>
+    </article>
   );
 }

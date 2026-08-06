@@ -39,7 +39,21 @@ export default async function ServicesPage({
     .order("name");
   if (query) request = request.ilike("name", `%${query}%`);
   if (state !== "all") request = request.eq("active", state === "active");
-  const { data: services, error } = await request;
+  const [{ data: services, error }, { data: linkedServices }] = await Promise.all([
+    request,
+    // Saber quem já usa cada item do catálogo permite oferecer a saída certa na exclusão
+    // (desvincular) em vez de apenas bloquear e deixar o usuário sem alternativa.
+    context.supabase
+      .from("client_services")
+      .select("service_id")
+      .eq("workspace_id", context.workspaceId)
+      .not("service_id", "is", null),
+  ]);
+  const usageByService = new Map<string, number>();
+  for (const link of linkedServices ?? []) {
+    if (!link.service_id) continue;
+    usageByService.set(link.service_id, (usageByService.get(link.service_id) ?? 0) + 1);
+  }
 
   return (
     <AccountShell
@@ -147,14 +161,29 @@ export default async function ServicesPage({
                 </form>
                 <form action={deleteCatalogService}>
                   <input name="id" type="hidden" value={service.id} />
-                  <ConfirmDialog
-                    className="service-action service-action--danger"
-                    confirmLabel="Excluir do catálogo"
-                    confirmation="O serviço sai do catálogo para sempre. Se algum cliente estiver usando ele, a exclusão é bloqueada — nesse caso, inative em vez de excluir."
-                    icon="trash"
-                    label="Excluir"
-                    title={`Excluir ${service.name}`}
-                  />
+                  {usageByService.get(service.id) ? (
+                    <>
+                      <input name="detach" type="hidden" value="on" />
+                      <ConfirmDialog
+                        className="service-action service-action--danger"
+                        confirmLabel="Desvincular e excluir"
+                        confirmation={`${usageByService.get(service.id)} cliente(s) usam este serviço. Eles continuam com o serviço ativo e o valor combinado; apenas o item do catálogo é removido.`}
+                        icon="trash"
+                        label="Excluir"
+                        title={`Excluir ${service.name} do catálogo`}
+                        tone="default"
+                      />
+                    </>
+                  ) : (
+                    <ConfirmDialog
+                      className="service-action service-action--danger"
+                      confirmLabel="Excluir do catálogo"
+                      confirmation="O serviço sai do catálogo para sempre. Nenhum cliente usa ele hoje, então nada mais é afetado."
+                      icon="trash"
+                      label="Excluir"
+                      title={`Excluir ${service.name}`}
+                    />
+                  )}
                 </form>
               </div>
             </article>

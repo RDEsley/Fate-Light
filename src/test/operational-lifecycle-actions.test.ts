@@ -119,6 +119,22 @@ describe("operational lifecycle actions", () => {
       `REDIRECT:/clientes/${clientId}?status=deleted`,
     );
     expect(lifecycleMocks.rpc).toHaveBeenCalledWith("delete_client_service_cascade", {
+      p_force: false,
+      p_service_id: recordId,
+    });
+  });
+
+  it("só força a exclusão quando o formulário pede explicitamente", async () => {
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+    formData.set("force", "on");
+
+    await expect(deleteClientService(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=deleted`,
+    );
+    expect(lifecycleMocks.rpc).toHaveBeenCalledWith("delete_client_service_cascade", {
+      p_force: true,
       p_service_id: recordId,
     });
   });

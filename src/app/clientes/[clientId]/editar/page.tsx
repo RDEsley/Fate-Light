@@ -4,9 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { AccountShell } from "@/app/_components/account-shell";
+import { readClientLinks } from "@/features/clients/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
-import { updateClient } from "../../actions";
+import { deletePriorRevenueEntry, updateClient, updatePriorRevenueEntry } from "../../actions";
 import { ClientForm } from "../../client-form";
 import { ClientStatusMessage } from "../../status-message";
 
@@ -26,12 +27,24 @@ export default async function EditClientPage({ params, searchParams }: EditClien
   const clientId = z.string().uuid().safeParse(rawClientId);
   if (!clientId.success) notFound();
 
-  const { data: client, error } = await context.supabase
-    .from("clients")
-    .select("id, name, trade_name, email, phone, website, commercial_status, notes, archived_at")
-    .eq("id", clientId.data)
-    .eq("workspace_id", context.workspaceId)
-    .single();
+  const [{ data: client, error }, { data: priorRevenueCharges }] = await Promise.all([
+    context.supabase
+      .from("clients")
+      .select(
+        "id, name, trade_name, email, phone, website, links, commercial_status, notes, archived_at",
+      )
+      .eq("id", clientId.data)
+      .eq("workspace_id", context.workspaceId)
+      .single(),
+    context.supabase
+      .from("charges")
+      .select("id, company_revenue, due_date")
+      .eq("client_id", clientId.data)
+      .eq("workspace_id", context.workspaceId)
+      .eq("payment_method", "Histórico")
+      .is("client_service_id", null)
+      .order("due_date", { ascending: false }),
+  ]);
 
   if (error || !client) notFound();
   if (client.archived_at) redirect(`/clientes/${client.id}`);
@@ -47,10 +60,18 @@ export default async function EditClientPage({ params, searchParams }: EditClien
           action={updateClient}
           cancelHref={`/clientes/${client.id}` as Route}
           clientId={client.id}
+          deletePriorRevenueAction={deletePriorRevenueEntry}
+          priorRevenueEntries={(priorRevenueCharges ?? []).map((charge) => ({
+            amount: Number(charge.company_revenue),
+            date: charge.due_date,
+            id: charge.id,
+          }))}
           submitLabel="Salvar cliente"
+          updatePriorRevenueAction={updatePriorRevenueEntry}
           values={{
             companyName: client.trade_name,
             email: client.email,
+            links: readClientLinks(client.links),
             name: client.name,
             notes: client.notes,
             phone: client.phone,

@@ -16,6 +16,14 @@ vi.mock("@/lib/supabase/server", () => ({
     from: vi.fn(() => ({ update: profileMocks.update })),
   })),
 }));
+// A antecedência dos alertas mora no mesmo módulo e depende do workspace, que é
+// `server-only` — sem o mock o import inteiro falha no ambiente de teste.
+vi.mock("@/lib/auth/workspace-context", () => ({
+  requireWorkspaceContext: vi.fn(async () => ({
+    supabase: { from: vi.fn(() => ({ update: profileMocks.update })) },
+    workspaceId: "workspace-id",
+  })),
+}));
 
 import { updateProfile } from "@/app/perfil/actions";
 import { initialActionState } from "@/lib/forms/action-state";

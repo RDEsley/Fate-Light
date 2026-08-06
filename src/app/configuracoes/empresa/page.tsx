@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AccountShell } from "@/app/_components/account-shell";
 import { SettingsTabs } from "@/app/_components/settings-tabs";
+import { Icon } from "@/components/ui/icon";
 import { requireAccountPage } from "@/lib/auth/page-guard";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -40,11 +42,32 @@ export default async function WorkspaceSettingsPage() {
       description="Mantenha identidade, endereço e preferências gerenciais do workspace em uma atualização atômica."
       title="Configurações da empresa"
     >
-      <SettingsTabs />
-      <section className="panel-card">
-        <WorkspaceForm settings={settings} workspace={workspace} />
-      </section>
-      <WorkspaceDangerZone />
+      <div className="settings-layout">
+        <aside className="settings-layout__nav">
+          <SettingsTabs />
+          <Link className="profile-company-link" href="/perfil">
+            <span className="bg-brand-soft text-brand-strong grid size-9 place-items-center rounded-lg">
+              <Icon className="size-4" name="user" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <strong className="block text-sm">Ir para o perfil</strong>
+              <span className="text-muted mt-0.5 block text-xs">
+                Identidade, contato e privacidade
+              </span>
+            </span>
+            <span aria-hidden="true" className="text-muted">
+              →
+            </span>
+          </Link>
+        </aside>
+
+        <div className="settings-layout__content">
+          <section className="panel-card">
+            <WorkspaceForm settings={settings} workspace={workspace} />
+          </section>
+          <WorkspaceDangerZone />
+        </div>
+      </div>
     </AccountShell>
   );
 }

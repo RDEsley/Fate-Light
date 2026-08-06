@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Icon, type IconName } from "./icon";
 import { Modal, type ModalTone } from "./modal";
@@ -8,12 +8,16 @@ import { Modal, type ModalTone } from "./modal";
 /**
  * Botão de envio que abre uma confirmação própria em vez do diálogo nativo do navegador.
  * Quando `requiredPhrase` é informada, o envio só libera após a digitação exata da frase.
+ * `holdSeconds` mantém o botão travado por alguns segundos: em exclusão irreversível o
+ * tempo de leitura é parte da proteção, não enfeite.
  */
 export function ConfirmDialog({
   cancelLabel = "Voltar",
+  children,
   className,
   confirmLabel,
   confirmation,
+  holdSeconds = 0,
   icon,
   label,
   requiredPhrase,
@@ -21,9 +25,11 @@ export function ConfirmDialog({
   tone = "danger",
 }: {
   cancelLabel?: string;
+  children?: ReactNode;
   className?: string;
   confirmLabel?: string;
   confirmation: string;
+  holdSeconds?: number;
   icon?: IconName;
   label: string;
   requiredPhrase?: string;
@@ -34,12 +40,35 @@ export function ConfirmDialog({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [typed, setTyped] = useState("");
+  const [remaining, setRemaining] = useState(holdSeconds);
+
+  useEffect(() => {
+    if (!open || !holdSeconds) return;
+    const timer = window.setInterval(() => {
+      setRemaining((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [holdSeconds, open]);
+
+  // A contagem reinicia na abertura, não dentro do efeito: reabrir o diálogo tem de
+  // cobrar a espera de novo, e zerar aqui evita render em cascata.
+  const start = () => {
+    setRemaining(holdSeconds);
+    setOpen(true);
+  };
 
   const close = () => {
     setOpen(false);
     setTyped("");
   };
-  const unlocked = !requiredPhrase || typed.trim() === requiredPhrase;
+  const phraseOk = !requiredPhrase || typed.trim() === requiredPhrase;
+  const unlocked = phraseOk && remaining === 0;
 
   const confirm = () => {
     if (!unlocked) return;
@@ -51,7 +80,7 @@ export function ConfirmDialog({
 
   return (
     <>
-      <button className={className} onClick={() => setOpen(true)} ref={triggerRef} type="button">
+      <button className={className} onClick={start} ref={triggerRef} type="button">
         {label}
       </button>
       <Modal
@@ -74,11 +103,16 @@ export function ConfirmDialog({
               onClick={confirm}
               type="button"
             >
-              {submitting ? "Confirmando…" : (confirmLabel ?? label)}
+              {submitting
+                ? "Confirmando…"
+                : remaining > 0
+                  ? `Aguarde ${remaining}s…`
+                  : (confirmLabel ?? label)}
             </button>
           </>
         }
       >
+        {children}
         {requiredPhrase ? (
           <label className="field">
             <span className="field__label">

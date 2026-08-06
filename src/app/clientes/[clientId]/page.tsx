@@ -79,7 +79,7 @@ export default async function ClientDetailsPage({
       .order("name"),
     context.supabase
       .from("charges")
-      .select("company_revenue, status")
+      .select("client_service_id, company_revenue, status")
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
   ]);
@@ -93,6 +93,28 @@ export default async function ClientDetailsPage({
   const pending = (charges ?? [])
     .filter((charge) => charge.status === "pending")
     .reduce((total, charge) => total + Number(charge.company_revenue), 0);
+  // O card de cada serviço precisa saber o que a exclusão levaria junto, então os totais
+  // são agrupados por serviço aqui, uma vez, em vez de refiltrar dentro do componente.
+  const chargeTotals = new Map<
+    string,
+    { paidCharges: number; paidRevenue: number; pendingCharges: number }
+  >();
+  for (const charge of charges ?? []) {
+    if (!charge.client_service_id) continue;
+    const totals = chargeTotals.get(charge.client_service_id) ?? {
+      paidCharges: 0,
+      paidRevenue: 0,
+      pendingCharges: 0,
+    };
+    if (charge.status === "paid") {
+      totals.paidCharges += 1;
+      totals.paidRevenue += Number(charge.company_revenue);
+    } else if (charge.status === "pending") {
+      totals.pendingCharges += 1;
+    }
+    chargeTotals.set(charge.client_service_id, totals);
+  }
+  const emptyTotals = { paidCharges: 0, paidRevenue: 0, pendingCharges: 0 };
   const catalogOptions = (catalog ?? []).map((service) => ({
     adjustmentIntervalMonths: service.default_adjustment_interval_months,
     adjustmentRate:
@@ -272,6 +294,7 @@ export default async function ClientDetailsPage({
                   nextAdjustmentDate: service.next_adjustment_date,
                   nextDueDate: service.next_due_date,
                   notes: service.notes,
+                  ...(chargeTotals.get(service.id) ?? emptyTotals),
                   promotionalCycles: service.promotional_cycles,
                   promotionalCyclesUsed: service.promotional_cycles_used,
                   promotionalPrice:
