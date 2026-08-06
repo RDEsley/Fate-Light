@@ -60,6 +60,7 @@ export function ServiceCard({
   clientId: string;
   duration: string;
   service: ClientServiceValues & {
+    duePendingCharges: number;
     nextAdjustmentDate: string | null;
     paidCharges: number;
     paidRevenue: number;
@@ -222,7 +223,7 @@ export function ServiceCard({
             />
           </form>
         ) : null}
-        {service.pendingCharges > 0 ? (
+        {service.duePendingCharges > 0 ? (
           <form action={settleServiceCharges}>
             <input name="clientId" type="hidden" value={clientId} />
             <input name="id" type="hidden" value={service.id} />
@@ -230,7 +231,7 @@ export function ServiceCard({
             <ConfirmDialog
               className="service-action"
               confirmLabel="Marcar como pago"
-              confirmation={`As ${service.pendingCharges} cobrança(s) pendentes deste serviço passam a constar como pagas na data de hoje. Use quando o cliente já acertou tudo.`}
+              confirmation={`As ${service.duePendingCharges} cobrança(s) já vencidas ou vencendo hoje passam a constar como pagas. Ciclos futuros continuam pendentes e não são afetados.`}
               icon="check"
               label="Quitar pendências"
               title={`Quitar ${service.name}`}
