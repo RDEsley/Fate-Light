@@ -109,3 +109,14 @@ O diálogo de exclusão forçada perdeu a frase digitada: com contagem de impact
 botão travado por três segundos já lidos antes de liberar, exigir também o nome
 do serviço era atrito redundante, não proteção adicional. A decisão de banco
 (exclusão forçada com `p_force`) continua igual; só a interface simplificou.
+
+## Atualização em 2026-08-06 (2)
+
+`settle_client_service_charges` marcava como pagas **todas** as cobranças
+pendentes do serviço, inclusive ciclos futuros já gerados e ainda longe do
+vencimento. Um serviço com vários ciclos pendentes inflava a receita recebida
+do dashboard no mês do clique com dinheiro que, pela própria data de
+vencimento, era de meses ou anos à frente — "Quitar pendências" parecia
+adiantar cobrança que ninguém tinha pago de verdade. A função passa a exigir
+`due_date <= current_date`; ciclos futuros continuam pendentes e são
+liquidados normalmente quando o vencimento chega.

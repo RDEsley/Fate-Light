@@ -7,7 +7,7 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon } from "@/components/ui/icon";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
-import { formatCurrency } from "@/features/mvp/format";
+import { formatCurrency, isoToday } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
@@ -79,7 +79,7 @@ export default async function ClientDetailsPage({
       .order("name"),
     context.supabase
       .from("charges")
-      .select("client_service_id, company_revenue, status")
+      .select("client_service_id, company_revenue, status, due_date")
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
   ]);
@@ -87,6 +87,7 @@ export default async function ClientDetailsPage({
 
   const statusInfo = clientStatusInfo(client.archived_at ? "archived" : client.commercial_status);
   const archived = Boolean(client.archived_at);
+  const today = isoToday();
   const earned = (charges ?? [])
     .filter((charge) => charge.status === "paid")
     .reduce((total, charge) => total + Number(charge.company_revenue), 0);
@@ -97,11 +98,12 @@ export default async function ClientDetailsPage({
   // são agrupados por serviço aqui, uma vez, em vez de refiltrar dentro do componente.
   const chargeTotals = new Map<
     string,
-    { paidCharges: number; paidRevenue: number; pendingCharges: number }
+    { duePendingCharges: number; paidCharges: number; paidRevenue: number; pendingCharges: number }
   >();
   for (const charge of charges ?? []) {
     if (!charge.client_service_id) continue;
     const totals = chargeTotals.get(charge.client_service_id) ?? {
+      duePendingCharges: 0,
       paidCharges: 0,
       paidRevenue: 0,
       pendingCharges: 0,
@@ -111,10 +113,13 @@ export default async function ClientDetailsPage({
       totals.paidRevenue += Number(charge.company_revenue);
     } else if (charge.status === "pending") {
       totals.pendingCharges += 1;
+      // "Quitar pendências" só liquida o que já venceu — um ciclo futuro marcado
+      // pago hoje inflaria a receita recebida do mês com dinheiro de meses à frente.
+      if (charge.due_date <= today) totals.duePendingCharges += 1;
     }
     chargeTotals.set(charge.client_service_id, totals);
   }
-  const emptyTotals = { paidCharges: 0, paidRevenue: 0, pendingCharges: 0 };
+  const emptyTotals = { duePendingCharges: 0, paidCharges: 0, paidRevenue: 0, pendingCharges: 0 };
   const catalogOptions = (catalog ?? []).map((service) => ({
     adjustmentIntervalMonths: service.default_adjustment_interval_months,
     adjustmentRate:

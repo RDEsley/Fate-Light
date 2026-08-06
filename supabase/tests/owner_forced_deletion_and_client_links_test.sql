@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(12);
 
 insert into auth.users (id, email)
 values ('65656565-6565-4565-8565-656565656565', 'forced@example.test');
@@ -102,18 +102,37 @@ select set_config(
   true
 );
 
-select ok(
-  (select public.settle_client_service_charges(
-    current_setting('test.forced_service')::uuid, 'Boleto') >= 1),
-  'Liquida em lote as cobranças pendentes do serviço'
+-- settle_charge_and_schedule_next já agendou o próximo ciclo mensal, com vencimento no
+-- futuro: liquidação em lote não deve tocar nele.
+select results_eq(
+  $$select public.settle_client_service_charges(
+    current_setting('test.forced_service')::uuid, 'Boleto')$$,
+  $$values (0)$$,
+  'Não liquida cobrança futura ainda não vencida'
+);
+
+insert into public.charges (
+  workspace_id, client_id, client_service_id, description, due_date, company_revenue, status
+) values (
+  current_setting('test.forced_workspace')::uuid,
+  '65656565-0001-4565-8565-656565656565',
+  current_setting('test.forced_service')::uuid,
+  'Cobrança vencida do serviço', current_date - 5, 100, 'pending'
+);
+
+select results_eq(
+  $$select public.settle_client_service_charges(
+    current_setting('test.forced_service')::uuid, 'Boleto')$$,
+  $$values (1)$$,
+  'Liquida a cobrança já vencida do serviço'
 );
 
 select results_eq(
   $$select count(*) from public.charges
     where client_service_id = current_setting('test.forced_service')::uuid
       and status = 'pending'$$,
-  array[0::bigint],
-  'Nenhuma cobrança do serviço permanece pendente'
+  array[1::bigint],
+  'O ciclo futuro auto-agendado segue pendente depois da liquidação'
 );
 
 -- Com força, o dono remove serviço e cobranças pagas.
