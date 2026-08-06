@@ -118,6 +118,32 @@ Consolidada em 2026-08-05:
   automaticamente no catálogo do workspace, reaproveitando por nome em vez de duplicar.
 - Detalhes no [ADR 0015](adr/0015-client-states-and-service-lifecycle-experience.md).
 
+## Exclusão forçada pelo dono e links do cliente
+
+Consolidada em 2026-08-05:
+
+- Excluir um serviço com cobrança paga passa a ser possível **em modo forçado**, com o
+  impacto exibido e botão travado por três segundos. Sem força, o bloqueio da ADR-0015
+  continua valendo.
+- Domínio passa a ser excluível diretamente, sem precisar cancelar antes.
+- Excluir serviço do catálogo em uso passa a **desvincular** os serviços dos clientes em
+  vez de bloquear; nada do trabalho já feito é apagado.
+- O cliente ganha até três links extras nomeados (`clients.links`), além do site principal.
+- Encerrar um serviço pode liquidar as cobranças pendentes em lote, de forma opcional.
+- Detalhes no [ADR 0016](adr/0016-owner-forced-deletion-and-client-links.md).
+
+## Edição e exclusão do lançamento de receita anterior ao sistema
+
+Consolidada em 2026-08-06:
+
+- O formulário de cliente passa a listar os lançamentos de "histórico anterior ao
+  sistema" já gravados, com valor e data, em vez de só um campo em branco que duplicava
+  o valor a cada reabertura.
+- Editar atualiza a cobrança existente; excluir usa uma exceção estreita em
+  `delete_workspace_record`, restrita ao marcador exato desse tipo de lançamento —
+  nenhuma outra cobrança paga passa a ser excluível por causa disso.
+- Detalhes no [ADR 0017](adr/0017-editable-prior-revenue-entry.md).
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |
@@ -137,6 +163,8 @@ Consolidada em 2026-08-05:
 | ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
 | ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha | Aceita | [ADR](adr/0014-temporary-email-confirmation-waiver.md) |
 | ADR-0015 | Estados do cliente, pausa de serviço e ciclos promocionais gratuitos | Aceita | [ADR](adr/0015-client-states-and-service-lifecycle-experience.md) |
+| ADR-0016 | Exclusão forçada pelo dono, links do cliente e liquidação em lote | Aceita | [ADR](adr/0016-owner-forced-deletion-and-client-links.md) |
+| ADR-0017 | Edição e exclusão do lançamento de receita anterior ao sistema | Aceita | [ADR](adr/0017-editable-prior-revenue-entry.md) |
 
 ## Outras decisões consolidadas
 
