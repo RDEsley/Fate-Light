@@ -2,8 +2,6 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import { Icon } from "./icon";
-
 /**
  * Explicação curta acionada por um `?` ao lado do rótulo. Abre no hover e no foco,
  * para funcionar igualmente no mouse, no teclado e na leitura de tela.
@@ -54,7 +52,7 @@ export function FieldHint({
         onFocus={() => setOpen(true)}
         type="button"
       >
-        <Icon className="size-3.5" name="help" />
+        ?
       </button>
       {open ? (
         <span className="field-hint__bubble" id={hintId} role="tooltip">

@@ -64,16 +64,24 @@ export async function updateCatalogService(formData: FormData) {
   finish("service-updated");
 }
 
-/** Remove um serviço do catálogo; a função do banco bloqueia se algum cliente o utiliza. */
+/**
+ * Remove um serviço do catálogo. Sem `detach`, o banco bloqueia enquanto algum cliente o
+ * utiliza; com `detach`, os serviços dos clientes seguem ativos e apenas perdem o vínculo.
+ */
 export async function deleteCatalogService(formData: FormData) {
   const id = identifierSchema.safeParse(formData.get("id"));
   if (!id.success) finish("service-error");
   const { supabase } = await requireWorkspaceContext();
-  const { data, error } = await supabase.rpc("delete_catalog_service", { p_service_id: id.data });
+  const detach = formData.get("detach") === "on";
+  const { data, error } = await supabase.rpc("delete_catalog_service", {
+    p_detach: detach,
+    p_service_id: id.data,
+  });
   if (error || data === "not_found") finish("service-error");
   if (data === "blocked") finish("service-delete-blocked");
   revalidatePath("/servicos");
-  finish("service-deleted");
+  revalidatePath("/clientes");
+  finish(detach ? "service-detached" : "service-deleted");
 }
 
 export async function toggleCatalogService(formData: FormData) {

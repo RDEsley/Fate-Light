@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AccountShell } from "@/app/_components/account-shell";
 import { Icon } from "@/components/ui/icon";
 import { getAttentionItems } from "@/features/alerts/attention";
+import { addDays, isoToday, parseDatePtBr } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export const metadata: Metadata = { title: "Alertas" };
@@ -13,14 +14,30 @@ export default async function AlertsPage() {
   const items = await getAttentionItems(context);
   const urgent = items.filter(({ severity }) => severity === "danger");
   const upcoming = items.filter(({ severity }) => severity === "warning");
+  // "Esta semana" recorta os próximos sete dias dentro do que já está no radar, sem
+  // consultar o banco de novo: a data exibida no meta é a mesma usada aqui.
+  const weekLimit = addDays(isoToday(), 7);
+  const thisWeek = upcoming.filter((item) => {
+    const date = parseDatePtBr(item.meta.split("·").pop()?.trim() ?? "");
+    return Boolean(date && date <= weekLimit);
+  });
 
   return (
     <AccountShell
+      actions={
+        <Link
+          className="border-line bg-surface hover:bg-brand-soft inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-bold"
+          href="/configuracoes/empresa#alertas"
+        >
+          <Icon className="size-4" name="settings" /> Config. de alertas
+        </Link>
+      }
       description="Veja o que venceu e o que está chegando antes de virar um problema."
       title="Central de alertas"
     >
-      <div className="mb-5 grid gap-3 sm:grid-cols-3">
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard color="negative" label="Atrasados" value={urgent.length} />
+        <SummaryCard color="warning" label="Esta semana" value={thisWeek.length} />
         <SummaryCard color="warning" label="Próximos" value={upcoming.length} />
         <SummaryCard color="brand" label="Total aberto" value={items.length} />
       </div>
@@ -28,7 +45,11 @@ export default async function AlertsPage() {
       {items.length ? (
         <div className="space-y-6">
           <AlertGroup items={urgent} title="Precisa de ação agora" />
-          <AlertGroup items={upcoming} title="No radar" />
+          <AlertGroup items={thisWeek} title="Esta semana" />
+          <AlertGroup
+            items={upcoming.filter((item) => !thisWeek.includes(item))}
+            title="Mais adiante"
+          />
         </div>
       ) : (
         <section className="panel-card py-12 text-center">

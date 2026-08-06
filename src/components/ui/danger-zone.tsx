@@ -31,8 +31,8 @@ export function DangerZone({
       </summary>
       <div className="mt-4">
         <div className="section-heading mb-4">
-          <span className="section-heading__icon bg-negative-soft text-negative">
-            <Icon name="alert" />
+          <span className="section-heading__icon bg-brand-soft text-brand-strong">
+            <Icon name="settings" />
           </span>
           <div>
             <h2>{title}</h2>

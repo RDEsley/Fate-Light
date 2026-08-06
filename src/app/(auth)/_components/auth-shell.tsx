@@ -52,7 +52,7 @@ export function AuthShell({ children, description, eyebrow, title }: AuthShellPr
           <p className="text-muted text-xs">Desenvolvido pela Fate Light Tech.</p>
         </aside>
 
-        <section className="flex min-w-0 flex-col p-5 sm:p-8 lg:p-12">
+        <section className="flex min-w-0 flex-col overflow-y-auto p-5 sm:p-8 lg:p-10">
           <header className="flex items-center justify-between lg:justify-end">
             <span className="lg:hidden">
               <BrandMark />
@@ -61,15 +61,15 @@ export function AuthShell({ children, description, eyebrow, title }: AuthShellPr
               Voltar ao início
             </Link>
           </header>
-          <div className="mx-auto my-auto w-full max-w-md py-10">
+          <div className="mx-auto my-auto w-full max-w-md py-6">
             <p className="text-brand-strong text-xs font-black tracking-[0.14em] uppercase">
               {eyebrow}
             </p>
-            <h1 className="mt-3 text-3xl leading-tight font-black tracking-[-0.04em] sm:text-4xl">
+            <h1 className="mt-2 text-2xl leading-tight font-black tracking-[-0.04em] sm:text-3xl">
               {title}
             </h1>
-            <p className="text-muted mt-3 text-sm leading-6 sm:text-base">{description}</p>
-            <div className="mt-7">{children}</div>
+            <p className="text-muted mt-2 text-sm leading-6">{description}</p>
+            <div className="mt-5">{children}</div>
           </div>
         </section>
       </div>

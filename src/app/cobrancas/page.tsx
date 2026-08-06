@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 
 import { createCharge, deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
@@ -48,16 +49,34 @@ export default async function ChargesPage({
   const state = ["pending", "paid", "cancelled"].includes(parameters.state ?? "")
     ? parameters.state!
     : "all";
-  let chargesRequest = context.supabase
-    .from("charges")
-    .select(
-      "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name)",
-    )
-    .eq("workspace_id", context.workspaceId)
-    .order("due_date", { ascending: false })
-    .limit(100);
-  if (query) chargesRequest = chargesRequest.ilike("description", `%${query}%`);
-  if (state !== "all") chargesRequest = chargesRequest.eq("status", state);
+  const chargeColumns =
+    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name)";
+
+  // Duas consultas de propósito: pendentes sobem ordenadas pelo vencimento mais próximo,
+  // resolvidas descem ordenadas pela mais recente. Um único `order` não expressa isso, e
+  // ordenar só no cliente deixaria o corte de 100 registros descartar pendências antigas.
+  const buildRequest = (pending: boolean) => {
+    let request = context.supabase
+      .from("charges")
+      .select(chargeColumns)
+      .eq("workspace_id", context.workspaceId)
+      .order("due_date", { ascending: pending })
+      .limit(pending ? 200 : 100);
+    if (query) request = request.ilike("description", `%${query}%`);
+    return pending ? request.eq("status", "pending") : request.neq("status", "pending");
+  };
+
+  const chargesRequest =
+    state === "all"
+      ? Promise.all([buildRequest(true), buildRequest(false)]).then(([open, resolved]) => ({
+          data: [...(open.data ?? []), ...(resolved.data ?? [])],
+          error: open.error ?? resolved.error,
+        }))
+      : buildRequest(state === "pending").then((result) => ({
+          data: (result.data ?? []).filter((charge) => charge.status === state),
+          error: result.error,
+        }));
+
   const [{ data: clients }, { data: services }, { data: charges, error }] = await Promise.all([
     context.supabase
       .from("clients")
@@ -256,90 +275,121 @@ export default async function ChargesPage({
         <p role="alert">Não foi possível carregar as cobranças.</p>
       ) : charges?.length ? (
         <div className="charge-list">
-          {charges.map((charge) => {
+          {charges.map((charge, index) => {
             const effectiveStatus =
               charge.status === "pending" && charge.due_date < today ? "overdue" : charge.status;
+            // A primeira cobrança já resolvida marca a fronteira entre "a fazer" e
+            // "feito" — é o que mostra para onde a cobrança recém-paga foi.
+            const startsResolved =
+              charge.status !== "pending" && charges[index - 1]?.status === "pending";
             return (
-              <article
-                className={`charge-card ${effectiveStatus === "overdue" ? "critical-card" : ""}`}
-                id={`charge-${charge.id}`}
-                key={charge.id}
-              >
-                <div className="charge-card__head">
-                  <div className="min-w-0">
-                    <h2>{charge.description}</h2>
-                    <p>
-                      {charge.clients?.name ?? "Cliente"} · vencimento{" "}
-                      {formatDatePtBr(charge.due_date)}
-                    </p>
-                  </div>
-                  <span className={`charge-status charge-status--${effectiveStatus}`}>
-                    {statusLabels[effectiveStatus]}
-                  </span>
-                </div>
-
-                <dl className="charge-card__values">
-                  <div>
-                    <dt>Receita própria</dt>
-                    <dd>{formatCurrency(charge.company_revenue)}</dd>
-                  </div>
-                  <div>
-                    <dt>Mídia</dt>
-                    <dd>{formatCurrency(charge.media_budget)}</dd>
-                  </div>
-                  <div>
-                    <dt>Adicional</dt>
-                    <dd>{formatCurrency(charge.additional_fee)}</dd>
-                  </div>
-                  <div>
-                    <dt>Total bruto</dt>
-                    <dd className="font-black">
-                      {Number(charge.gross_total) === 0
-                        ? "Cortesia"
-                        : formatCurrency(charge.gross_total)}
-                    </dd>
-                  </div>
-                </dl>
-
-                {effectiveStatus === "overdue" ? (
-                  charge.delay_reason ? (
-                    <div className="delay-reason-note">
-                      <Icon className="size-4" name="history" />
-                      <span>
-                        <strong>Motivo registrado:</strong> {charge.delay_reason}
-                      </span>
-                    </div>
-                  ) : (
-                    <DelayReasonForm chargeId={charge.id} />
-                  )
+              <Fragment key={charge.id}>
+                {startsResolved ? (
+                  <p className="charge-list__divider">
+                    <Icon className="size-4" name="check" /> Resolvidas
+                  </p>
                 ) : null}
-
-                {charge.status === "cancelled" && charge.cancel_reason ? (
-                  <div className="delay-reason-note">
-                    <Icon className="size-4" name="x" />
-                    <span>
-                      <strong>
-                        {cancellationLabels.get(charge.cancel_reason_code ?? "") ?? "Cancelada"}:
-                      </strong>{" "}
-                      {charge.cancel_reason}
+                <article
+                  className={`charge-card ${effectiveStatus === "overdue" ? "critical-card" : ""}`}
+                  id={`charge-${charge.id}`}
+                >
+                  <div className="charge-card__head">
+                    <div className="min-w-0">
+                      <h2>{charge.description}</h2>
+                      <p>
+                        {charge.clients?.name ?? "Cliente"} · vencimento{" "}
+                        {formatDatePtBr(charge.due_date)}
+                      </p>
+                    </div>
+                    <span className={`charge-status charge-status--${effectiveStatus}`}>
+                      {statusLabels[effectiveStatus]}
                     </span>
                   </div>
-                ) : null}
 
-                {charge.status === "pending" ? (
-                  <div className="charge-card__actions">
-                    <form action={markChargePaid} className="charge-settle">
-                      <input name="id" type="hidden" value={charge.id} />
-                      <SelectField
-                        defaultValue="Pix"
-                        label="Forma de pagamento"
-                        name="paymentMethod"
-                        options={paymentOptions}
-                      />
-                      <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
-                    </form>
-                    <div className="charge-card__secondary">
-                      <CancelChargeForm chargeId={charge.id} description={charge.description} />
+                  <dl className="charge-card__values">
+                    <div>
+                      <dt>Receita própria</dt>
+                      <dd>{formatCurrency(charge.company_revenue)}</dd>
+                    </div>
+                    <div>
+                      <dt>Mídia</dt>
+                      <dd>{formatCurrency(charge.media_budget)}</dd>
+                    </div>
+                    <div>
+                      <dt>Adicional</dt>
+                      <dd>{formatCurrency(charge.additional_fee)}</dd>
+                    </div>
+                    <div>
+                      <dt>Total bruto</dt>
+                      <dd className="font-black">
+                        {Number(charge.gross_total) === 0
+                          ? "Cortesia"
+                          : formatCurrency(charge.gross_total)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  {effectiveStatus === "overdue" ? (
+                    charge.delay_reason ? (
+                      <div className="delay-reason-note">
+                        <Icon className="size-4" name="history" />
+                        <span>
+                          <strong>Motivo registrado:</strong> {charge.delay_reason}
+                        </span>
+                      </div>
+                    ) : (
+                      <DelayReasonForm chargeId={charge.id} />
+                    )
+                  ) : null}
+
+                  {charge.status === "cancelled" && charge.cancel_reason ? (
+                    <div className="delay-reason-note">
+                      <Icon className="size-4" name="x" />
+                      <span>
+                        <strong>
+                          {cancellationLabels.get(charge.cancel_reason_code ?? "") ?? "Cancelada"}:
+                        </strong>{" "}
+                        {charge.cancel_reason}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {charge.status === "pending" ? (
+                    <div className="charge-card__actions">
+                      <form action={markChargePaid} className="charge-settle">
+                        <input name="id" type="hidden" value={charge.id} />
+                        <SelectField
+                          defaultValue="Pix"
+                          label="Forma de pagamento"
+                          name="paymentMethod"
+                          options={paymentOptions}
+                        />
+                        <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
+                      </form>
+                      <div className="charge-card__secondary">
+                        <CancelChargeForm chargeId={charge.id} description={charge.description} />
+                        <form action={deleteOperationalRecord}>
+                          <input name="clientId" type="hidden" value="" />
+                          <input name="id" type="hidden" value={charge.id} />
+                          <input name="recordType" type="hidden" value="charge" />
+                          <ConfirmDialog
+                            className="charge-action charge-action--danger"
+                            confirmLabel="Excluir cobrança"
+                            confirmation="A cobrança some do sistema sem deixar registro. Se ela existiu de verdade, prefira cancelar para manter o histórico."
+                            icon="trash"
+                            label="Excluir"
+                            title={charge.description}
+                          />
+                        </form>
+                      </div>
+                    </div>
+                  ) : charge.paid_at ? (
+                    <p className="charge-card__footnote">
+                      <Icon className="size-4" name="check" /> Pago em{" "}
+                      {new Date(charge.paid_at).toLocaleString("pt-BR")} via {charge.payment_method}
+                    </p>
+                  ) : charge.status === "cancelled" ? (
+                    <div className="charge-card__actions">
                       <form action={deleteOperationalRecord}>
                         <input name="clientId" type="hidden" value="" />
                         <input name="id" type="hidden" value={charge.id} />
@@ -347,37 +397,16 @@ export default async function ChargesPage({
                         <ConfirmDialog
                           className="charge-action charge-action--danger"
                           confirmLabel="Excluir cobrança"
-                          confirmation="A cobrança some do sistema sem deixar registro. Se ela existiu de verdade, prefira cancelar para manter o histórico."
+                          confirmation="A cobrança cancelada some do sistema sem deixar registro."
                           icon="trash"
-                          label="Excluir"
+                          label="Excluir cobrança"
                           title={charge.description}
                         />
                       </form>
                     </div>
-                  </div>
-                ) : charge.paid_at ? (
-                  <p className="charge-card__footnote">
-                    <Icon className="size-4" name="check" /> Pago em{" "}
-                    {new Date(charge.paid_at).toLocaleString("pt-BR")} via {charge.payment_method}
-                  </p>
-                ) : charge.status === "cancelled" ? (
-                  <div className="charge-card__actions">
-                    <form action={deleteOperationalRecord}>
-                      <input name="clientId" type="hidden" value="" />
-                      <input name="id" type="hidden" value={charge.id} />
-                      <input name="recordType" type="hidden" value="charge" />
-                      <ConfirmDialog
-                        className="charge-action charge-action--danger"
-                        confirmLabel="Excluir cobrança"
-                        confirmation="A cobrança cancelada some do sistema sem deixar registro."
-                        icon="trash"
-                        label="Excluir cobrança"
-                        title={charge.description}
-                      />
-                    </form>
-                  </div>
-                ) : null}
-              </article>
+                  ) : null}
+                </article>
+              </Fragment>
             );
           })}
         </div>

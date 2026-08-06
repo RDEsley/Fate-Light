@@ -62,24 +62,26 @@ em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 
 ## ✨ Funcionalidades
 
-| Área              | Recursos disponíveis                                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e alertas de vencimento             |
-| 👥 **Clientes**   | Seis situações comerciais, site com link, observações em destaque, arquivamento, histórico anterior e exclusão protegida       |
-| 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, edição do serviço aplicado, pausa reversível, encerramento, promoções e nove cadências |
-| 💳 **Cobranças**  | Geração automática, baixa com próxima recorrência, motivo de atraso e de cancelamento, registro de cobrança já paga            |
-| 🧾 **Despesas**   | Categorias operacionais, despesas fixas ou variáveis, cliente opcional, baixa e exclusão de registros não pagos                |
-| 🌐 **Domínios**   | Cliente ativo ou inativo, registrador, expiração, renovação, custo, responsável, cancelamento e exclusão segura                |
-| 🔔 **Alertas**    | Cobranças, despesas, domínios e revisões de reajuste com prioridade visual, central de notificações e lembretes                |
-| 🕘 **Histórico**  | Linha do tempo pesquisável por cliente e tipo, preservando alterações, baixas, atrasos, encerramentos e reativações            |
-| 📥 **Importação** | Prévia e confirmação transacional de planilhas Excel/CSV, modelo oficial, formato legado e proteção contra duplicidade         |
-| 🔐 **Conta**      | Login por e-mail e senha, opção de magic link, onboarding, perfil, acessibilidade, configurações e solicitações de privacidade |
+| Área              | Recursos disponíveis                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e alertas de vencimento                         |
+| 👥 **Clientes**   | Seis situações comerciais, site e até três links extras, observações em destaque, arquivamento, histórico anterior e ordenação por receita |
+| 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, edição do serviço aplicado, pausa reversível, encerramento, promoções e nove cadências             |
+| 💳 **Cobranças**  | Geração automática, baixa com próxima recorrência, motivo de atraso e de cancelamento, registro de cobrança já paga                        |
+| 🧾 **Despesas**   | Categorias operacionais, despesas fixas ou variáveis, cliente opcional, baixa e exclusão de registros não pagos                            |
+| 🌐 **Domínios**   | Painel de vencimentos, edição, exclusão, registrador como link, sugestão a partir do cliente e atalho para o cadastro dele                 |
+| 🔔 **Alertas**    | Antecedência configurável no perfil, faixas de atrasado/hoje/esta semana e link direto para o item citado                                  |
+| 🕘 **Histórico**  | Linha do tempo dentro do perfil, pesquisável por cliente e tipo, preservando baixas, atrasos, encerramentos e reativações                  |
+| 📥 **Importação** | Prévia e confirmação transacional de planilhas Excel/CSV, modelo oficial, formato legado e proteção contra duplicidade                     |
+| 🔐 **Conta**      | Login por e-mail e senha, opção de magic link, onboarding, perfil, acessibilidade, configurações e solicitações de privacidade             |
 
 ### Situações do cliente e do serviço
 
 O cliente tem seis situações: **Orçamento**, **Pendente**, **Ativo**, **Inativo**, **Lista negra** e
 **Arquivado**. Só Orçamento, Pendente e Ativo recebem serviços novos. Arquivar preserva todo o
-histórico e é a saída recomendada quando a exclusão está bloqueada.
+histórico e é a saída recomendada quando a exclusão está bloqueada. A lista ordena por situação
+primeiro — ativos no topo, lista negra no fim — e, dentro de cada uma, por quanto o cliente já
+rendeu, com o mais antigo desempatando.
 
 O serviço aplicado a um cliente tem três estados, e a diferença importa:
 
@@ -91,15 +93,20 @@ O serviço aplicado a um cliente tem três estados, e a diferença importa:
 
 ### Experiência de uso
 
-- diálogos de confirmação próprios em todo o sistema — nenhum `window.confirm` nativo, e exclusões
-  irreversíveis exigem digitar o nome do registro;
+- diálogos de confirmação próprios em todo o sistema — nenhum `window.confirm` nativo; exclusões
+  irreversíveis travam o botão por alguns segundos, e as mais sensíveis (conta, workspace) também
+  exigem digitar uma frase;
 - avisos em vez de bloqueios: campos importantes em branco geram uma lista do que faltou, e o
   segundo clique envia assim mesmo;
 - erros de formulário apontam o campo exato em português, sem perder o que foi digitado;
 - explicações contextuais em `?` ao lado dos rótulos que costumam gerar dúvida;
 - selects que medem o espaço disponível e abrem para cima quando não cabem abaixo;
 - alerta como guia: clicar leva à cobrança citada, com rolagem suave e destaque temporário da borda;
-- dashboard com filtro de período, menu lateral recolhível e navegação adaptada para celular;
+- tour de primeiro acesso que escurece a tela, ilumina a funcionalidade explicada e navega junto;
+- exclusão irreversível exige leitura: o diálogo mostra quanto sai do histórico, pede o nome
+  digitado e mantém o botão travado por três segundos;
+- dashboard com cards que levam à origem do número, filtro de período, menu lateral recolhível e
+  navegação adaptada para celular;
 - notificações e avisos ancorados no canto superior direito, logo abaixo do bloco da conta;
 - clique com efeito de onda de água, desativável junto com as demais animações;
 - botão global de acessibilidade com texto maior, contraste reforçado e destaque de links;
@@ -357,11 +364,13 @@ diretamente com o responsável pelo projeto.
 - Não há anexos, notificações por e-mail, push ou Cron; os alertas ficam disponíveis dentro do sistema.
 - A importação aceita `.xlsx` e `.csv` de até 4 MB e 1.000 registros por lote; arquivos maiores devem
   ser divididos.
-- A exclusão operacional é conservadora: clientes com vínculos, cobranças ou despesas pagas e
-  domínios não cancelados são preservados como histórico. Excluir um serviço remove junto as
-  cobranças **não pagas** dele; havendo qualquer pagamento confirmado, a exclusão é bloqueada e o
-  caminho é encerrar.
-- Serviços do catálogo em uso por algum cliente não podem ser excluídos, apenas inativados.
+- A exclusão é conservadora por padrão, mas o dono decide: clientes com vínculos e cobranças pagas
+  seguem protegidos, e excluir um serviço remove apenas as cobranças **não pagas** dele. Havendo
+  pagamento confirmado, a exclusão é bloqueada — e só prossegue no modo forçado, que exibe quanto
+  de receita sai do histórico e trava o botão por três segundos. Encerrar continua sendo o caminho
+  recomendado.
+- Serviços do catálogo em uso podem ser removidos com **desvínculo**: o item some do catálogo e os
+  clientes seguem com o serviço ativo e o valor combinado.
 - Pedidos de exportação e exclusão registram a solicitação, mas não executam jobs automaticamente.
 - Os documentos legais incluídos no seed são fictícios e precisam de revisão antes da produção.
 - SMTP, Turnstile e URLs de redirecionamento devem ser configurados no ambiente hospedado.

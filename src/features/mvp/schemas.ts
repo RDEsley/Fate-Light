@@ -146,7 +146,13 @@ export const domainSchema = z.object({
   expiresOn: z.string().date(),
   notes: optionalText(5000),
   paymentResponsibility: z.string().trim().min(2).max(120),
-  registrar: optionalText(120),
+  // Aceita tanto o nome do registrador ("GoDaddy") quanto o link do site; se vier com
+  // protocolo, limpamos para poder detectar e linkar automaticamente na exibição.
+  registrar: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/^https?:\/\//i, "").replace(/\/+$/, ""))
+    .pipe(z.string().max(120)),
 });
 
 export const paymentSchema = z.object({

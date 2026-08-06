@@ -1,4 +1,10 @@
-import { addDays, expiryLabel, formatCurrency, monthBounds } from "@/features/mvp/format";
+import {
+  addDays,
+  dashboardPeriodBounds,
+  expiryLabel,
+  formatCurrency,
+  monthBounds,
+} from "@/features/mvp/format";
 import { chargeSchema, clientServiceSchema, domainSchema } from "@/features/mvp/schemas";
 import { billingFrequencyLabel } from "@/features/mvp/recurrence";
 
@@ -89,6 +95,28 @@ describe("MVP financial boundaries", () => {
       end: "2026-07-31",
     });
     expect(formatCurrency(500)).toContain("500,00");
+  });
+
+  it("limita o vencimento pendente do dashboard ao período escolhido", () => {
+    const today = "2026-08-06";
+    // "Este mês" cobre o mês inteiro, mas não uma cobrança de daqui a 4 meses — era
+    // esse teto ausente que fazia "Receita própria pendente" somar qualquer vencimento.
+    const month = dashboardPeriodBounds("month", today);
+    expect(month).toEqual({ dueEnd: "2026-08-31", end: "2026-08-31", start: "2026-08-01" });
+    expect("2026-12-06" >= month.start && "2026-12-06" <= month.dueEnd).toBe(false);
+
+    // "Todo o período" não pode ter teto de vencimento, senão a mesma cobrança futura
+    // ficaria de fora mesmo sem filtro de tempo nenhum selecionado.
+    const all = dashboardPeriodBounds("all", today);
+    expect(all.end).toBe(today);
+    expect("2026-12-06" <= all.dueEnd).toBe(true);
+
+    // Períodos de N dias olham pra trás a partir de hoje.
+    expect(dashboardPeriodBounds("7d", today)).toEqual({
+      dueEnd: today,
+      end: today,
+      start: "2026-07-31",
+    });
   });
 
   it("aceita agendas simples do diário ao anual", () => {

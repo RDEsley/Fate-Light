@@ -7,6 +7,7 @@ import { formatDatePtBr, isoToday, parseDatePtBr } from "@/features/mvp/format";
 import { Icon } from "./icon";
 
 export type ClientOption = {
+  email?: string | null;
   id: string;
   name: string;
   status: string;
@@ -15,12 +16,21 @@ export type ClientOption = {
 
 type ClientFilter = "active" | "all" | "inactive";
 
+const statusLabels: Record<string, string> = {
+  active: "Ativo",
+  blacklist: "Lista negra",
+  budget: "Orçamento",
+  inactive: "Inativo",
+  pending: "Pendente",
+};
+
 export function ClientCombobox({
   clients,
   defaultFilter = "active",
   defaultValue = "",
   label = "Cliente",
   name = "clientId",
+  onSelect,
   optional = false,
 }: {
   clients: ClientOption[];
@@ -28,6 +38,7 @@ export function ClientCombobox({
   defaultValue?: string;
   label?: string;
   name?: string;
+  onSelect?: (client: ClientOption | null) => void;
   optional?: boolean;
 }) {
   const listId = useId();
@@ -59,10 +70,34 @@ export function ClientCombobox({
       .slice(0, 60);
   }, [clients, filter, query]);
 
+  // Nomes iguais são comuns (duas filiais, dois "Studio X"). Quando isso acontece, o
+  // rótulo secundário deixa de ser opcional: é o único jeito de saber quem é quem.
+  const duplicatedNames = useMemo(() => {
+    const seen = new Set<string>();
+    const repeated = new Set<string>();
+    for (const client of clients) {
+      const key = client.name.toLocaleLowerCase("pt-BR");
+      if (seen.has(key)) repeated.add(key);
+      seen.add(key);
+    }
+    return repeated;
+  }, [clients]);
+
+  const describe = (client: ClientOption) => {
+    const status = statusLabels[client.status] ?? "Inativo";
+    const detail = client.tradeName || client.email;
+    if (detail) return `${status} · ${detail}`;
+    if (duplicatedNames.has(client.name.toLocaleLowerCase("pt-BR"))) {
+      return `${status} · sem dado para diferenciar (código ${client.id.slice(0, 8)})`;
+    }
+    return status;
+  };
+
   const selectClient = (client: ClientOption) => {
     setQuery(client.name);
     setSelectedId(client.id);
     setOpen(false);
+    onSelect?.(client);
   };
 
   return (
@@ -128,6 +163,7 @@ export function ClientCombobox({
                   setQuery("");
                   setSelectedId("");
                   setOpen(false);
+                  onSelect?.(null);
                 }}
                 role="option"
                 type="button"
@@ -148,7 +184,7 @@ export function ClientCombobox({
                 <span className="client-combobox__avatar">{client.name.slice(0, 1)}</span>
                 <span className="min-w-0 flex-1 text-left">
                   <strong className="block truncate">{client.name}</strong>
-                  <small>{client.status === "active" ? "Ativo" : "Inativo"}</small>
+                  <small className="block truncate">{describe(client)}</small>
                 </span>
               </button>
             ))}

@@ -1,81 +1,216 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import type { Route } from "next";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 
-const steps: { description: string; icon: IconName; title: string }[] = [
+type TourStep = {
+  description: string;
+  /** Rota visitada antes de destacar o alvo, para o tour mostrar a tela de que fala. */
+  href?: Route;
+  icon: IconName;
+  /** Valor de `data-tour` do elemento destacado; sem alvo, o passo é centralizado. */
+  target?: string;
+  title: string;
+};
+
+const steps: TourStep[] = [
   {
     description:
-      "A barra lateral organiza sua rotina. Recolha quando quiser ganhar ainda mais espaço.",
-    icon: "menu",
-    title: "Tudo no lugar certo",
+      "Este é o seu painel. Ele reúne o que entrou, o que saiu e o que precisa de ação, sempre no período que você escolher.",
+    href: "/dashboard",
+    icon: "dashboard",
+    target: "nav-dashboard",
+    title: "Tudo começa aqui",
   },
   {
-    description: "O sino reúne cobranças, despesas e domínios que precisam da sua atenção.",
+    description:
+      "Cadastre o cliente uma vez. É dele que nascem os serviços, e dos serviços nascem as cobranças — você não lança nada duas vezes.",
+    href: "/clientes",
+    icon: "users",
+    target: "nav-clientes",
+    title: "Primeiro o cliente",
+  },
+  {
+    description:
+      "Ao aplicar um serviço no card do cliente, o sistema cria a cobrança e já agenda a próxima do ciclo. Essa é a engrenagem principal.",
+    href: "/servicos",
+    icon: "briefcase",
+    target: "nav-servicos",
+    title: "Depois o serviço",
+  },
+  {
+    description:
+      "As cobranças aparecem aqui prontas. As pendentes ficam no topo pela ordem de vencimento; ao receber, elas descem para as resolvidas.",
+    href: "/cobrancas",
+    icon: "receipt",
+    target: "nav-cobrancas",
+    title: "As cobranças se cuidam",
+  },
+  {
+    description:
+      "O sino avisa antes do vencimento e leva direto ao item citado. Você escolhe a antecedência no seu perfil.",
     icon: "bell",
-    title: "Nada passa despercebido",
-  },
-  {
-    description: "Use os atalhos do dashboard para registrar o trabalho sem procurar por telas.",
-    icon: "sparkles",
-    title: "Menos cliques, mais controle",
+    target: "notifications",
+    title: "Nada vence sem aviso",
   },
 ];
 
+const storageKey = "fate-light:tour-complete";
+const stepStorageKey = "fate-light:tour-step";
+const padding = 8;
+
+type Spotlight = { height: number; left: number; top: number; width: number };
+
 export function ProductTour() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [step, setStep] = useState<number | null>(null);
+  const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
 
   useEffect(() => {
+    // Adiado por um tick: ler storage antes da hidratação causaria divergência entre o
+    // HTML do servidor e o do cliente.
     const timeout = window.setTimeout(() => {
-      if (window.localStorage.getItem("fate-light:tour-complete") !== "yes") setStep(0);
+      if (window.localStorage.getItem(storageKey) === "yes") return;
+      // Não há layout persistente entre as rotas autenticadas: cada navegação remonta
+      // este componente do zero. Sem isso, "Próximo" navegava e o passo voltava pro 1 —
+      // o sessionStorage guarda em qual passo o usuário estava só para esta aba.
+      const saved = window.sessionStorage.getItem(stepStorageKey);
+      const parsed = saved === null ? NaN : Number(saved);
+      setStep(Number.isInteger(parsed) && parsed >= 0 && parsed < steps.length ? parsed : 0);
     }, 0);
     return () => window.clearTimeout(timeout);
   }, []);
 
-  if (step === null) return null;
-  const current = steps[step];
-  const close = () => {
-    window.localStorage.setItem("fate-light:tour-complete", "yes");
+  const current = step === null ? null : steps[step];
+
+  const finish = useCallback(() => {
+    window.localStorage.setItem(storageKey, "yes");
+    window.sessionStorage.removeItem(stepStorageKey);
     setStep(null);
+  }, []);
+
+  const measure = useCallback(() => {
+    if (!current?.target) {
+      setSpotlight(null);
+      return;
+    }
+    const element = document.querySelector<HTMLElement>(`[data-tour="${current.target}"]`);
+    if (!element) {
+      setSpotlight(null);
+      return;
+    }
+    const rect = element.getBoundingClientRect();
+    setSpotlight({
+      height: rect.height + padding * 2,
+      left: rect.left - padding,
+      top: rect.top - padding,
+      width: rect.width + padding * 2,
+    });
+  }, [current]);
+
+  useEffect(() => {
+    if (step === null) return;
+    // Remedir depois da navegação: o alvo do passo pode só existir na tela de destino.
+    const frame = window.requestAnimationFrame(measure);
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [measure, pathname, step]);
+
+  useEffect(() => {
+    if (step === null) return;
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") finish();
+    };
+    document.addEventListener("keydown", closeWithEscape);
+    return () => document.removeEventListener("keydown", closeWithEscape);
+  }, [finish, step]);
+
+  if (step === null || !current) return null;
+
+  const goTo = (next: number) => {
+    window.sessionStorage.setItem(stepStorageKey, String(next));
+    const destination = steps[next];
+    if (destination?.href && destination.href !== pathname) router.push(destination.href);
+    setStep(next);
   };
 
+  const last = step === steps.length - 1;
+
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-end bg-slate-950/25 p-4 backdrop-blur-[2px] sm:place-items-center">
+    <div className="tour" role="presentation">
+      {spotlight ? (
+        <span
+          aria-hidden="true"
+          className="tour__spotlight"
+          style={{
+            height: spotlight.height,
+            left: spotlight.left,
+            top: spotlight.top,
+            width: spotlight.width,
+          }}
+        />
+      ) : (
+        <span aria-hidden="true" className="tour__scrim" />
+      )}
+
       <section
         aria-labelledby="tour-title"
         aria-modal="true"
-        className="cartoon-card w-full max-w-md overflow-hidden bg-white"
+        className="tour__card"
+        data-centered={spotlight ? undefined : "true"}
         role="dialog"
+        style={
+          spotlight
+            ? {
+                left: Math.min(Math.max(12, spotlight.left), Math.max(12, window.innerWidth - 360)),
+                top: Math.min(
+                  spotlight.top + spotlight.height + 12,
+                  Math.max(12, window.innerHeight - 260),
+                ),
+              }
+            : undefined
+        }
       >
-        <div className="bg-brand-soft relative overflow-hidden p-6">
-          <span className="border-brand/30 absolute -top-8 -right-5 size-24 rounded-full border-2 border-dashed" />
-          <span className="bg-brand text-brand-contrast grid size-12 place-items-center rounded-2xl border-2 border-slate-700 shadow-[3px_3px_0_rgba(37,50,58,.16)]">
-            <Icon className="size-6" name={current.icon} />
-          </span>
-          <p className="text-brand-strong mt-5 text-xs font-bold tracking-[0.12em] uppercase">
-            Primeiros passos · {step + 1} de {steps.length}
-          </p>
-          <h2 className="mt-2 text-2xl font-black tracking-[-0.03em]" id="tour-title">
-            {current.title}
-          </h2>
-          <p className="text-muted mt-2 leading-6">{current.description}</p>
+        <span className="tour__icon">
+          <Icon className="size-5" name={current.icon} />
+        </span>
+        <p className="tour__eyebrow">
+          Primeiros passos · {step + 1} de {steps.length}
+        </p>
+        <h2 id="tour-title">{current.title}</h2>
+        <p className="tour__text">{current.description}</p>
+        <div className="tour__dots" aria-hidden="true">
+          {steps.map((entry, index) => (
+            <span data-active={index === step ? "true" : undefined} key={entry.title} />
+          ))}
         </div>
-        <div className="flex items-center justify-between gap-3 p-5">
-          <button
-            className="text-muted min-h-11 px-3 text-sm font-bold"
-            onClick={close}
-            type="button"
-          >
-            Pular tutorial
+        <div className="tour__actions">
+          <button className="tour__skip" onClick={finish} type="button">
+            {last ? "Fechar" : "Pular tutorial"}
           </button>
-          <button
-            className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 font-bold shadow-[2px_2px_0_rgba(37,50,58,.16)]"
-            onClick={() => (step === steps.length - 1 ? close() : setStep(step + 1))}
-            type="button"
-          >
-            {step === steps.length - 1 ? "Começar" : "Próximo"}
-          </button>
+          <div className="flex gap-2">
+            {step > 0 ? (
+              <button className="modal-cancel" onClick={() => goTo(step - 1)} type="button">
+                Voltar
+              </button>
+            ) : null}
+            <button
+              className="modal-confirm"
+              onClick={() => (last ? finish() : goTo(step + 1))}
+              type="button"
+            >
+              {last ? "Começar a usar" : "Próximo"}
+            </button>
+          </div>
         </div>
       </section>
     </div>

@@ -48,7 +48,7 @@ export function PasswordForm({
           }
         />
       ) : null}
-      <form action={authenticateWithPassword} className="space-y-5">
+      <form action={authenticateWithPassword} className="space-y-4">
         <input name="mode" type="hidden" value={mode} />
         <input name="next" type="hidden" value={nextPath} />
         <div className="absolute -left-[10000px]" aria-hidden="true">
@@ -128,11 +128,11 @@ export function PasswordForm({
         />
       </form>
       {isLogin ? (
-        <p className="text-muted mt-4 text-center text-sm">
+        <p className="text-muted mt-3 text-center text-sm">
           Sua conta ainda não tem senha? Use o magic link abaixo.
         </p>
       ) : null}
-      <div className="my-6 flex items-center gap-3" aria-hidden="true">
+      <div className="my-4 flex items-center gap-3" aria-hidden="true">
         <span className="border-line h-px flex-1 border-t" />
         <span className="text-muted text-xs uppercase">ou</span>
         <span className="border-line h-px flex-1 border-t" />
@@ -143,7 +143,7 @@ export function PasswordForm({
       >
         {isLogin ? "Entrar com magic link" : "Criar conta com magic link"}
       </Link>
-      <p className="text-muted mt-6 text-center text-sm leading-6">
+      <p className="text-muted mt-4 text-center text-sm leading-6">
         {isLogin ? "Ainda não tem uma conta?" : "Já possui uma conta?"}{" "}
         <Link
           className="text-brand-strong font-semibold underline-offset-4 hover:underline"

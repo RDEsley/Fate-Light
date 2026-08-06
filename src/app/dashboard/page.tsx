@@ -6,10 +6,11 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { Icon, type IconName } from "@/components/ui/icon";
 import {
   addDays,
+  dashboardPeriodBounds,
   formatCurrency,
   formatDatePtBr,
   isoToday,
-  monthBounds,
+  type DashboardPeriod,
 } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
@@ -36,22 +37,11 @@ export default async function DashboardPage({
     searchParams,
     requireWorkspaceContext(),
   ]);
-  const period = periods.some(({ value }) => value === requestedPeriod)
-    ? requestedPeriod!
+  const period: DashboardPeriod = periods.some(({ value }) => value === requestedPeriod)
+    ? (requestedPeriod as DashboardPeriod)
     : "month";
   const today = isoToday();
-  const month = monthBounds();
-  const start =
-    period === "all"
-      ? "0001-01-01"
-      : period === "7d"
-        ? addDays(today, -6)
-        : period === "30d"
-          ? addDays(today, -29)
-          : period === "90d"
-            ? addDays(today, -89)
-            : month.start;
-  const end = period === "month" ? month.end : today;
+  const { dueEnd, end, start } = dashboardPeriodBounds(period, today);
   const nextWeek = addDays(today, 7);
   const nextMonth = addDays(today, 30);
   const [
@@ -95,9 +85,17 @@ export default async function DashboardPage({
       charge.paid_at.slice(0, 10) <= end,
   );
   const chargesInPeriod = allCharges.filter(
-    (charge) => charge.due_date >= start && charge.due_date <= end,
+    (charge) => charge.due_date >= start && charge.due_date <= dueEnd,
   );
+  // Todo pendente, sem limite de data: alimenta "vencidas" e "próximos 7 dias", que são
+  // sobre agora, não sobre o período escolhido no topo da página.
   const pending = allCharges.filter((charge) => charge.status === "pending");
+  // Só o que vence dentro do período escolhido: é o que o card "Receita própria
+  // pendente" mostra, e antes dessa distinção ele somava pendência de qualquer data,
+  // inclusive de meses futuros, mesmo com "Este mês" selecionado.
+  const pendingInPeriod = pending.filter(
+    (charge) => charge.due_date >= start && charge.due_date <= dueEnd,
+  );
   const paidExpenses = (expenses ?? []).filter(
     (expense) =>
       expense.status === "paid" &&
@@ -110,7 +108,7 @@ export default async function DashboardPage({
     (charge) => Number(charge.company_revenue) + Number(charge.additional_fee),
   );
   const ownPending = sum(
-    pending,
+    pendingInPeriod,
     (charge) => Number(charge.company_revenue) + Number(charge.additional_fee),
   );
   const mediaPeriod = sum(chargesInPeriod, (charge) => charge.media_budget);
@@ -215,8 +213,13 @@ export default async function DashboardPage({
         </div>
       </section>
 
-      <section aria-label="Resumo financeiro" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section
+        aria-label="Resumo financeiro"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        data-animate="stagger"
+      >
         <KpiCard
+          href="/cobrancas?state=paid"
           icon="arrow-up"
           label="Receita própria recebida"
           tone="positive"
@@ -224,13 +227,15 @@ export default async function DashboardPage({
           helper="Caixa · pagamentos confirmados"
         />
         <KpiCard
+          href="/cobrancas?state=pending"
           icon="receipt"
           label="Receita própria pendente"
           tone="warning"
           value={formatCurrency(ownPending)}
-          helper={`${pending.length} cobrança${pending.length === 1 ? "" : "s"} aberta${pending.length === 1 ? "" : "s"}`}
+          helper={`${pendingInPeriod.length} cobrança${pendingInPeriod.length === 1 ? "" : "s"} aberta${pendingInPeriod.length === 1 ? "" : "s"} no período`}
         />
         <KpiCard
+          href="/despesas?state=paid"
           icon="arrow-down"
           label="Despesas pagas"
           tone="negative"
@@ -238,6 +243,7 @@ export default async function DashboardPage({
           helper="Custos pagos no período"
         />
         <KpiCard
+          href="/historico"
           icon={result >= 0 ? "sparkles" : "alert"}
           label="Resultado gerencial"
           tone={result >= 0 ? "positive" : "negative"}
@@ -291,16 +297,19 @@ export default async function DashboardPage({
               <p>Atalhos para a rotina de hoje.</p>
             </div>
           </div>
-          <div className="mt-5 grid gap-2">
+          <div className="mt-5 grid gap-2" data-animate="stagger">
             <QuickAction href="/clientes/novo" icon="users" label="Novo cliente" color="brand" />
             <QuickAction href="/cobrancas" icon="receipt" label="Nova cobrança" color="warning" />
             <QuickAction href="/despesas" icon="wallet" label="Nova despesa" color="negative" />
             <QuickAction href="/dominios" icon="globe" label="Acompanhar domínio" color="violet" />
           </div>
-          <div className="mt-5 rounded-xl bg-[#f1f3ef] p-4">
+          <Link
+            className="mt-5 block rounded-xl bg-[#f1f3ef] p-4 hover:bg-[#e9ece5]"
+            href="/clientes?state=active"
+          >
             <p className="text-muted text-xs font-bold uppercase">Clientes ativos</p>
             <p className="mt-1 text-2xl font-black tabular-nums">{activeClients ?? 0}</p>
-          </div>
+          </Link>
         </section>
       </div>
 
@@ -350,6 +359,7 @@ export default async function DashboardPage({
 
 function KpiCard({
   helper,
+  href,
   icon,
   label,
   prominent,
@@ -357,6 +367,7 @@ function KpiCard({
   value,
 }: {
   helper: string;
+  href: Route;
   icon: IconName;
   label: string;
   prominent?: boolean;
@@ -369,7 +380,10 @@ function KpiCard({
     warning: "bg-warning-soft text-warning",
   };
   return (
-    <article className={`cartoon-card p-4 sm:p-5 ${prominent ? "border-brand-strong/40" : ""}`}>
+    <Link
+      className={`cartoon-card block p-4 sm:p-5 ${prominent ? "border-brand-strong/40" : ""}`}
+      href={href}
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="text-muted text-xs font-bold">{label}</p>
         <span className={`${colors[tone]} grid size-9 place-items-center rounded-xl`}>
@@ -382,7 +396,7 @@ function KpiCard({
         {value}
       </p>
       <p className="text-muted mt-2 text-xs">{helper}</p>
-    </article>
+    </Link>
   );
 }
 
@@ -441,7 +455,7 @@ function QuickAction({
   };
   return (
     <Link
-      className="hover:border-line flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-2 font-bold hover:bg-[#f1f3ef]"
+      className="quick-action hover:border-line flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-2 font-bold hover:bg-[#f1f3ef]"
       href={href}
     >
       <span className={`${colors[color]} grid size-9 place-items-center rounded-xl`}>

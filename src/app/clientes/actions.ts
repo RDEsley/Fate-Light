@@ -76,6 +76,66 @@ export async function updateClient(formData: FormData) {
   statusRedirect(`/clientes/${clientId.data}`, "updated");
 }
 
+/**
+ * Corrige um lançamento de "histórico anterior ao sistema" já gravado, em vez de criar
+ * outro — reabrir o formulário e preencher de novo duplicava o valor (ADR-0017).
+ */
+export async function updatePriorRevenueEntry(formData: FormData) {
+  const clientId = identifierSchema.safeParse(formData.get("clientId"));
+  const chargeId = identifierSchema.safeParse(formData.get("id"));
+  if (!clientId.success || !chargeId.success) statusRedirect("/clientes", "error");
+  const prior = parsePriorRevenue(formData);
+  const path = `/clientes/${clientId.data}/editar`;
+  if (!prior) statusRedirect(path, "invalid");
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("charges")
+    .update({
+      company_revenue: prior.priorRevenue,
+      due_date: prior.priorRevenueDate,
+      paid_at: new Date(`${prior.priorRevenueDate}T12:00:00.000Z`).toISOString(),
+    })
+    .eq("id", chargeId.data)
+    .eq("client_id", clientId.data)
+    .eq("workspace_id", workspaceId)
+    .eq("payment_method", "Histórico")
+    .is("client_service_id", null)
+    .select("id")
+    .single();
+  if (error || !data) statusRedirect(path, "error");
+  revalidatePath(`/clientes/${clientId.data}`);
+  revalidatePath(path);
+  revalidatePath("/cobrancas");
+  revalidatePath("/historico");
+  revalidatePath("/dashboard");
+  statusRedirect(path, "prior-revenue-updated");
+}
+
+/**
+ * Exclui um lançamento de histórico anterior digitado errado. `delete_workspace_record`
+ * só libera essa exclusão para o marcador exato gravado por `recordPriorRevenue`
+ * (ADR-0017) — qualquer outra cobrança paga continua bloqueada.
+ */
+export async function deletePriorRevenueEntry(formData: FormData) {
+  const clientId = identifierSchema.safeParse(formData.get("clientId"));
+  const chargeId = identifierSchema.safeParse(formData.get("id"));
+  if (!clientId.success || !chargeId.success) statusRedirect("/clientes", "delete-error");
+  const { supabase } = await requireWorkspaceContext();
+  const { data, error } = await supabase.rpc("delete_workspace_record", {
+    p_record_id: chargeId.data,
+    p_record_type: "charge",
+  });
+  const path = `/clientes/${clientId.data}/editar`;
+  if (error || data === "not_found") statusRedirect(path, "delete-error");
+  if (data === "blocked") statusRedirect(path, "delete-blocked");
+  revalidatePath(`/clientes/${clientId.data}`);
+  revalidatePath(path);
+  revalidatePath("/cobrancas");
+  revalidatePath("/historico");
+  revalidatePath("/dashboard");
+  statusRedirect(path, "prior-revenue-deleted");
+}
+
 export async function setClientStatus(formData: FormData) {
   const clientId = identifierSchema.safeParse(formData.get("clientId"));
   const status = clientStatusSchema.safeParse(formData.get("clientStatus"));

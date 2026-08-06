@@ -22,7 +22,9 @@ export function DelayReasonForm({ chargeId }: { chargeId: string }) {
   return (
     <details className="delay-reason-disclosure">
       <summary>
-        <Icon className="size-4" name="alert" /> Registrar motivo do atraso
+        <Icon className="size-4" name="alert" />
+        <span className="flex-1">Registrar motivo do atraso</span>
+        <Icon className="delay-reason-disclosure__chevron size-4" name="chevron-down" />
       </summary>
       <form action={recordChargeDelayReason} className="form-grid mt-3 sm:grid-cols-2">
         <input name="id" type="hidden" value={chargeId} />

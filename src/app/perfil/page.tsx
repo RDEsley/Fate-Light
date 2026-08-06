@@ -7,10 +7,12 @@ import { SettingsTabs } from "@/app/_components/settings-tabs";
 import { MotionSettings } from "@/components/motion-settings";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { Icon } from "@/components/ui/icon";
+import { fallbackAlertOffsets } from "@/features/alerts/offsets";
 import { requireAccountPage } from "@/lib/auth/page-guard";
 import { getInitials } from "@/lib/profile/initials";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+import { AlertPreferences } from "./alert-preferences";
 import { LifecycleRequestPanel } from "./lifecycle-request-panel";
 import { ProfileForm } from "./profile-form";
 
@@ -27,6 +29,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     { data: claimsData },
     { data: profile, error },
     { data: lifecycleRequests, error: lifecycleError },
+    { data: settings },
   ] = await Promise.all([
     supabase.auth.getClaims(),
     supabase
@@ -35,6 +38,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       .eq("id", userId)
       .single(),
     supabase.rpc("get_current_account_lifecycle_requests"),
+    supabase.from("workspace_settings").select("default_alert_offsets").maybeSingle(),
   ]);
 
   if (error || lifecycleError || !profile) {
@@ -109,6 +113,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             </div>
             <ProfileForm email={email} profile={profile} />
           </section>
+
+          <AlertPreferences offsets={settings?.default_alert_offsets ?? fallbackAlertOffsets} />
 
           <MotionSettings />
 

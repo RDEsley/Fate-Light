@@ -1,7 +1,9 @@
 import "server-only";
 
 import type { Route } from "next";
+import { cache } from "react";
 
+import { alertHorizon } from "@/features/alerts/offsets";
 import { addDays, formatDatePtBr, isoToday } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
@@ -13,12 +15,31 @@ export type AttentionItem = {
   title: string;
 };
 
-export async function getAttentionItems(
+function dueLabel(date: string, today: string) {
+  if (date < today) return "vencido";
+  if (date === today) return "vence hoje";
+  return `vence em ${formatDatePtBr(date)}`;
+}
+
+/**
+ * `cache` porque o AppShell monta o sino em toda página e a central de alertas pede a
+ * mesma lista de novo: sem isso a tela de alertas fazia dez consultas para mostrar uma.
+ * A chave é o workspace — o contexto em si já vem memoizado por requisição.
+ */
+export const getAttentionItems = cache(async function getAttentionItems(
   context: Awaited<ReturnType<typeof requireWorkspaceContext>>,
 ) {
   const today = isoToday();
-  const nextWeek = addDays(today, 7);
-  const nextMonth = addDays(today, 30);
+  // A antecedência configurada em Configurações da empresa passa a valer de verdade;
+  // antes a consulta usava 7 e 30 dias fixos e a preferência do usuário não fazia nada.
+  const { data: settings } = await context.supabase
+    .from("workspace_settings")
+    .select("default_alert_offsets")
+    .eq("workspace_id", context.workspaceId)
+    .maybeSingle();
+  const horizon = alertHorizon(settings?.default_alert_offsets);
+  const limit = addDays(today, horizon);
+
   const [{ data: charges }, { data: expenses }, { data: domains }, { data: adjustments }] =
     await Promise.all([
       context.supabase
@@ -26,7 +47,7 @@ export async function getAttentionItems(
         .select("id, description, due_date, clients(name)")
         .eq("workspace_id", context.workspaceId)
         .eq("status", "pending")
-        .lte("due_date", nextWeek)
+        .lte("due_date", limit)
         .order("due_date")
         .limit(20),
       context.supabase
@@ -34,7 +55,7 @@ export async function getAttentionItems(
         .select("id, description, due_date")
         .eq("workspace_id", context.workspaceId)
         .eq("status", "pending")
-        .lte("due_date", nextWeek)
+        .lte("due_date", limit)
         .order("due_date")
         .limit(20),
       context.supabase
@@ -42,7 +63,7 @@ export async function getAttentionItems(
         .select("id, domain, expires_on, clients(name)")
         .eq("workspace_id", context.workspaceId)
         .eq("status", "active")
-        .lte("expires_on", nextMonth)
+        .lte("expires_on", limit)
         .order("expires_on")
         .limit(20),
       context.supabase
@@ -52,7 +73,7 @@ export async function getAttentionItems(
         .eq("workspace_id", context.workspaceId)
         .eq("status", "active")
         .not("next_adjustment_date", "is", null)
-        .lte("next_adjustment_date", nextMonth)
+        .lte("next_adjustment_date", limit)
         .order("next_adjustment_date")
         .limit(20),
     ]);
@@ -63,31 +84,37 @@ export async function getAttentionItems(
       href: `/cobrancas?focus=${charge.id}` as Route,
       id: `charge-${charge.id}`,
       meta: `${charge.clients?.name ?? "Cliente"} · ${formatDatePtBr(charge.due_date)}`,
-      severity: charge.due_date < today ? ("danger" as const) : ("warning" as const),
+      severity: charge.due_date <= today ? ("danger" as const) : ("warning" as const),
       title:
         charge.due_date < today
           ? `Cobrança vencida: ${charge.description}`
-          : `Cobrança próxima: ${charge.description}`,
+          : charge.due_date === today
+            ? `Cobrança vence hoje: ${charge.description}`
+            : `Cobrança próxima: ${charge.description}`,
     })),
     ...(expenses ?? []).map((expense) => ({
-      href: "/despesas" as const,
+      href: `/despesas?focus=${expense.id}` as Route,
       id: `expense-${expense.id}`,
       meta: `Vencimento ${formatDatePtBr(expense.due_date)}`,
-      severity: expense.due_date < today ? ("danger" as const) : ("warning" as const),
+      severity: expense.due_date <= today ? ("danger" as const) : ("warning" as const),
       title:
         expense.due_date < today
           ? `Despesa vencida: ${expense.description}`
-          : `Despesa próxima: ${expense.description}`,
+          : expense.due_date === today
+            ? `Despesa vence hoje: ${expense.description}`
+            : `Despesa próxima: ${expense.description}`,
     })),
     ...(domains ?? []).map((domain) => ({
-      href: "/dominios" as const,
+      href: `/dominios?focus=${domain.id}` as Route,
       id: `domain-${domain.id}`,
       meta: `${domain.clients?.name ?? "Cliente"} · ${formatDatePtBr(domain.expires_on)}`,
-      severity: domain.expires_on < today ? ("danger" as const) : ("warning" as const),
+      severity: domain.expires_on <= today ? ("danger" as const) : ("warning" as const),
       title:
         domain.expires_on < today
           ? `Domínio expirado: ${domain.domain}`
-          : `Domínio perto de expirar: ${domain.domain}`,
+          : domain.expires_on === today
+            ? `Domínio expira hoje: ${domain.domain}`
+            : `Domínio ${dueLabel(domain.expires_on, today)}: ${domain.domain}`,
     })),
     ...(adjustments ?? []).map((service) => ({
       href: `/clientes/${service.client_id}` as Route,
@@ -105,4 +132,4 @@ export async function getAttentionItems(
     if (left.severity !== right.severity) return left.severity === "danger" ? -1 : 1;
     return left.meta.localeCompare(right.meta, "pt-BR");
   });
-}
+});

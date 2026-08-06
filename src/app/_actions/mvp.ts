@@ -62,13 +62,40 @@ export async function setClientServiceState(formData: FormData) {
   );
 }
 
-/** Remove o serviço e as cobranças ainda não pagas; qualquer pagamento confirmado bloqueia. */
+/**
+ * Liquida de uma vez as cobranças pendentes de um serviço, para o encerramento em que o
+ * cliente já acertou tudo. Não agenda o próximo ciclo: o serviço está sendo fechado.
+ */
+export async function settleServiceCharges(formData: FormData) {
+  const clientId = identifierSchema.safeParse(formData.get("clientId"));
+  const id = identifierSchema.safeParse(formData.get("id"));
+  if (!clientId.success || !id.success) statusRedirect("/clientes", "service-error");
+  const { supabase } = await requireWorkspaceContext();
+  const method = String(formData.get("paymentMethod") ?? "").trim() || "Acerto final";
+  const { error } = await supabase.rpc("settle_client_service_charges", {
+    p_payment_method: method,
+    p_service_id: id.data,
+  });
+  const path = `/clientes/${clientId.data}`;
+  if (error) statusRedirect(path, "service-error");
+  revalidatePath(path);
+  revalidatePath("/cobrancas");
+  revalidatePath("/historico");
+  revalidatePath("/dashboard");
+  statusRedirect(path, "service-settled");
+}
+
+/**
+ * Remove o serviço e suas cobranças. Sem `force`, qualquer pagamento confirmado bloqueia;
+ * com `force`, o dono já assumiu na interface que a receita sai do histórico (ADR-0016).
+ */
 export async function deleteClientService(formData: FormData) {
   const clientId = identifierSchema.safeParse(formData.get("clientId"));
   const id = identifierSchema.safeParse(formData.get("id"));
   if (!clientId.success || !id.success) statusRedirect("/clientes", "delete-error");
   const { supabase } = await requireWorkspaceContext();
   const { data, error } = await supabase.rpc("delete_client_service_cascade", {
+    p_force: formData.get("force") === "on",
     p_service_id: id.data,
   });
   const path = `/clientes/${clientId.data}`;
@@ -76,6 +103,7 @@ export async function deleteClientService(formData: FormData) {
   if (data === "blocked") statusRedirect(path, "service-delete-blocked");
   revalidatePath(path);
   revalidatePath("/cobrancas");
+  revalidatePath("/historico");
   revalidatePath("/dashboard");
   statusRedirect(path, "deleted");
 }
@@ -186,7 +214,9 @@ export async function markChargePaid(formData: FormData) {
   revalidatePath("/cobrancas");
   revalidatePath("/historico");
   revalidatePath("/dashboard");
-  statusRedirect(`/cobrancas?focus=${values.data.id}`, "paid");
+  // Sem `focus`: a cobrança acabou de descer para o bloco das resolvidas, e arrastar a
+  // tela até lá tiraria o usuário de onde ele estava trabalhando.
+  statusRedirect("/cobrancas", "paid");
 }
 
 export async function recordChargeDelayReason(formData: FormData) {
@@ -321,6 +351,55 @@ export async function createDomain(formData: FormData) {
   revalidatePath("/dominios");
   revalidatePath("/dashboard");
   statusRedirect("/dominios", "created");
+}
+
+export async function updateDomain(formData: FormData) {
+  const id = identifierSchema.safeParse(formData.get("id"));
+  const values = domainSchema.safeParse({
+    autoRenew: formData.get("autoRenew") === "on",
+    clientId: formData.get("clientId"),
+    cost: formData.get("cost"),
+    domain: formData.get("domain"),
+    expiresOn: formData.get("expiresOn"),
+    notes: formData.get("notes"),
+    paymentResponsibility: formData.get("paymentResponsibility"),
+    registrar: formData.get("registrar"),
+  });
+  if (!id.success || !values.success) statusRedirect("/dominios", "invalid");
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("domains")
+    .update({
+      auto_renew: values.data.autoRenew,
+      client_id: values.data.clientId,
+      cost: values.data.cost === "" ? null : values.data.cost,
+      domain: values.data.domain,
+      expires_on: values.data.expiresOn,
+      notes: optional(values.data.notes),
+      payment_responsibility: values.data.paymentResponsibility,
+      registrar: optional(values.data.registrar),
+    })
+    .eq("id", id.data)
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .single();
+  if (error || !data) statusRedirect("/dominios", "error");
+  revalidatePath("/dominios");
+  revalidatePath("/dashboard");
+  statusRedirect("/dominios", "domain-updated");
+}
+
+/** Exclusão direta do domínio: diferente de cobrança, não há valor financeiro a preservar. */
+export async function deleteDomain(formData: FormData) {
+  const id = identifierSchema.safeParse(formData.get("id"));
+  if (!id.success) statusRedirect("/dominios", "delete-error");
+  const { supabase } = await requireWorkspaceContext();
+  const { data, error } = await supabase.rpc("delete_domain_record", { p_domain_id: id.data });
+  if (error || data !== "deleted") statusRedirect("/dominios", "delete-error");
+  revalidatePath("/dominios");
+  revalidatePath("/historico");
+  revalidatePath("/dashboard");
+  statusRedirect("/dominios", "domain-deleted");
 }
 
 export async function cancelDomain(formData: FormData) {

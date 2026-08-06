@@ -1,5 +1,10 @@
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
-import { parseClientForm, parsePriorRevenue } from "@/features/clients/schemas";
+import {
+  parseClientForm,
+  parseClientLinks,
+  parsePriorRevenue,
+  readClientLinks,
+} from "@/features/clients/schemas";
 
 function clientForm(overrides: Record<string, string> = {}) {
   const formData = new FormData();
@@ -23,6 +28,7 @@ describe("client domain boundaries", () => {
       commercial_status: "active",
       email: "cliente@example.test",
       kind: "company",
+      links: [],
       name: "Cliente Exemplo",
       notes: "Uso operacional.",
       phone: "81999999999",
@@ -36,6 +42,37 @@ describe("client domain boundaries", () => {
 
   it("rejeita telefone curto", () => {
     expect(parseClientForm(clientForm({ phone: "123" }))).toBeNull();
+  });
+
+  it("normaliza os links extras e ignora linhas incompletas", () => {
+    const formData = clientForm();
+    formData.append("linkLabel", "Painel");
+    formData.append("linkUrl", " HTTPS://Painel.Exemplo.com.br/cliente/ ");
+    formData.append("linkLabel", "Sem endereço");
+    formData.append("linkUrl", "");
+    formData.append("linkLabel", "");
+    formData.append("linkUrl", "orfao.exemplo.com");
+
+    expect(parseClientLinks(formData)).toEqual([
+      { label: "Painel", url: "painel.exemplo.com.br/cliente" },
+    ]);
+  });
+
+  it("limita os links extras a três", () => {
+    const formData = clientForm();
+    for (const index of [1, 2, 3, 4]) {
+      formData.append("linkLabel", `Link ${index}`);
+      formData.append("linkUrl", `link${index}.exemplo.com`);
+    }
+
+    expect(parseClientLinks(formData)).toHaveLength(3);
+  });
+
+  it("descarta links malformados vindos do banco", () => {
+    expect(readClientLinks([{ label: "Ok", url: "ok.com" }, { label: 4 }, null, "texto"])).toEqual([
+      { label: "Ok", url: "ok.com" },
+    ]);
+    expect(readClientLinks(null)).toEqual([]);
   });
 
   it("aceita as novas situações comerciais e recusa valores forjados", () => {

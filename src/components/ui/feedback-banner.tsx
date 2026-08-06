@@ -1,5 +1,3 @@
-import { Icon } from "./icon";
-
 export function FeedbackBanner({
   message,
   tone = "success",
@@ -13,8 +11,6 @@ export function FeedbackBanner({
     success: "border-positive/25 bg-positive-soft text-positive",
     warning: "border-warning/25 bg-warning-soft text-warning",
   };
-  const icon =
-    tone === "error" || tone === "warning" ? "alert" : tone === "success" ? "check" : "sparkles";
   const titles = {
     error: "Vamos corrigir isso",
     info: "Para você saber",
@@ -24,16 +20,11 @@ export function FeedbackBanner({
 
   return (
     <div
-      className={`${styles[tone]} feedback-banner mb-5 flex items-start gap-3 rounded-xl border-2 px-4 py-3 text-sm`}
+      className={`${styles[tone]} feedback-banner mb-5 rounded-xl border-2 px-4 py-3 text-sm leading-5`}
       role={tone === "error" ? "alert" : "status"}
     >
-      <span className="feedback-banner__icon">
-        <Icon className="size-4" name={icon} />
-      </span>
-      <span className="leading-5">
-        <strong className="block font-black">{titles[tone]}</strong>
-        <span className="mt-0.5 block font-semibold opacity-85">{message}</span>
-      </span>
+      <strong className="block font-black">{titles[tone]}</strong>
+      <span className="mt-0.5 block font-semibold opacity-85">{message}</span>
     </div>
   );
 }

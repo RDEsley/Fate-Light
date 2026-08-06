@@ -21,11 +21,11 @@ const navigation: { href: Route; icon: IconName; label: string }[] = [
   { href: "/despesas", icon: "wallet", label: "Despesas" },
   { href: "/dominios", icon: "globe", label: "Domínios" },
   { href: "/alertas", icon: "bell", label: "Alertas" },
-  { href: "/historico", icon: "history", label: "Histórico" },
   { href: "/importar", icon: "upload", label: "Importar dados" },
 ];
 
 export function AppFrame({
+  actions,
   attentionItems,
   children,
   description,
@@ -33,6 +33,7 @@ export function AppFrame({
   title,
   workspaceName,
 }: {
+  actions?: ReactNode;
   attentionItems: AttentionItem[];
   children: ReactNode;
   description: string;
@@ -116,6 +117,7 @@ export function AppFrame({
               <Link
                 aria-current={active ? "page" : undefined}
                 className={`group relative flex min-h-12 items-center gap-4 rounded-xl border-2 px-4 font-bold ${active ? "border-brand-strong/35 bg-brand-soft text-brand-strong shadow-[2px_2px_0_rgba(22,155,136,.12)]" : "text-muted hover:border-line hover:text-foreground border-transparent hover:bg-white"}`}
+                data-tour={`nav-${item.href.slice(1)}`}
                 href={item.href}
                 key={item.href}
                 onClick={() => setMobileOpen(false)}
@@ -186,7 +188,7 @@ export function AppFrame({
           {/* O painel de notificações ancora na borda direita deste grupo, e não no sino,
               para abrir sempre logo abaixo do bloco da conta. */}
           <div className="relative ml-auto flex items-center gap-2">
-            <details className="group">
+            <details className="group" data-tour="notifications">
               <summary
                 aria-label={`Notificações: ${unreadCount} novas, ${attentionItems.length} abertas`}
                 className="cartoon-card relative grid size-10 cursor-pointer place-items-center"
@@ -290,14 +292,20 @@ export function AppFrame({
           className="mx-auto w-full max-w-[92rem] px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:pt-8 lg:pb-10"
           id="conteudo"
         >
-          <div className="mb-6 max-w-3xl" data-animate="enter">
-            <p className="text-brand-strong flex items-center gap-2 text-xs font-black tracking-[0.13em] uppercase">
-              <span className="bg-brand size-2 rounded-full" /> {workspaceName}
-            </p>
-            <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">{title}</h1>
-            <p className="text-muted mt-2 max-w-2xl text-sm leading-6 sm:text-base">
-              {description}
-            </p>
+          <div
+            className="mb-6 flex flex-wrap items-start justify-between gap-4"
+            data-animate="enter"
+          >
+            <div className="max-w-3xl">
+              <p className="text-brand-strong flex items-center gap-2 text-xs font-black tracking-[0.13em] uppercase">
+                <span className="bg-brand size-2 rounded-full" /> {workspaceName}
+              </p>
+              <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">{title}</h1>
+              <p className="text-muted mt-2 max-w-2xl text-sm leading-6 sm:text-base">
+                {description}
+              </p>
+            </div>
+            {actions ? <div className="shrink-0">{actions}</div> : null}
           </div>
           <div data-animate="enter">{children}</div>
         </section>

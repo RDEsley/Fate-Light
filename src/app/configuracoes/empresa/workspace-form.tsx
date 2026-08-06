@@ -33,7 +33,6 @@ type WorkspaceFormProps = {
 
 const fieldClassName =
   "border-line bg-canvas mt-1.5 min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm";
-const alertOptions = [60, 30, 15, 7, 3, 1, 0] as const;
 
 export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
   const [state, formAction] = useActionState(updateWorkspaceConfiguration, initialActionState);
@@ -211,22 +210,12 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
           Alterar o timezone muda a interpretação de “hoje” e afetará agendas futuras. A moeda está
           bloqueada para preservar a consistência histórica.
         </p>
-        <div className="mt-5">
-          <p className="text-sm font-semibold">Antecedência padrão dos alertas</p>
-          <div className="mt-3 flex flex-wrap gap-4">
-            {alertOptions.map((days) => (
-              <label className="inline-flex items-center gap-2 text-sm" key={days}>
-                <input
-                  defaultChecked={settings.default_alert_offsets.includes(days)}
-                  name="alertOffsets"
-                  type="checkbox"
-                  value={days}
-                />
-                {days === 0 ? "No dia" : `${days} ${days === 1 ? "dia" : "dias"}`}
-              </label>
-            ))}
-          </div>
-        </div>
+        {/* A antecedência dos alertas vive no perfil, junto das outras preferências de uso.
+            Os campos ocultos preservam o valor salvo porque a RPC de configuração recebe
+            todos os campos de uma vez. */}
+        {settings.default_alert_offsets.map((days) => (
+          <input key={days} name="alertOffsets" type="hidden" value={days} />
+        ))}
       </fieldset>
 
       <div className="flex justify-end">

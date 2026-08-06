@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
@@ -66,6 +66,34 @@ describe("confirm dialog", () => {
 
     await user.click(confirmButton);
     expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("mantém a confirmação travada durante a contagem e libera ao fim", () => {
+    // fireEvent em vez de userEvent: userEvent tem loop próprio de espera e não combina
+    // com timers falsos sem travar o teste.
+    vi.useFakeTimers();
+    try {
+      const onSubmit = renderInForm({ confirmLabel: "Excluir agora", holdSeconds: 3 });
+
+      fireEvent.click(screen.getByRole("button", { name: "Excluir" }));
+      expect(screen.getByRole("button", { name: "Aguarde 3s…" })).toBeDisabled();
+
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(screen.getByRole("button", { name: "Aguarde 2s…" })).toBeDisabled();
+
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+
+      const confirmButton = screen.getByRole("button", { name: "Excluir agora" });
+      expect(confirmButton).toBeEnabled();
+      fireEvent.click(confirmButton);
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("devolve o foco ao gatilho depois de fechar", async () => {
