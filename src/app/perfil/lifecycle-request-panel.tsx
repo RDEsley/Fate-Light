@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { DangerAction, DangerZone } from "@/components/ui/danger-zone";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FieldError } from "@/components/ui/field-error";
 import { Icon } from "@/components/ui/icon";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -130,11 +131,7 @@ export function LifecycleRequestPanel({ requests }: { requests: LifecycleRequest
               required
               value={confirmation}
             />
-            {confirmation && !unlocked ? (
-              <span className="field__error">
-                <Icon className="size-3.5" name="alert" /> A frase ainda não confere.
-              </span>
-            ) : null}
+            {confirmation && !unlocked ? <FieldError message="A frase ainda não confere." /> : null}
           </label>
           <label className="flex items-start gap-3 text-sm leading-6">
             <input className="mt-1" name="acknowledged" required type="checkbox" />

@@ -98,6 +98,18 @@ export function ServiceCard({
     service.promotionalCycles === null
       ? 0
       : Math.max(0, service.promotionalCycles - service.promotionalCyclesUsed);
+  const appliedPrice =
+    service.discountType === "percentage"
+      ? service.listPrice * (1 - service.discountValue / 100)
+      : service.discountType === "fixed"
+        ? service.listPrice - service.discountValue
+        : service.listPrice;
+  // Adicional de repasse acompanha a verba de mídia; só o declarado como receita
+  // entra no que você recebe (ADR-0018).
+  const additionalRevenue = service.additionalFeeIsRevenue ? Number(service.additionalFee) : 0;
+  const passThrough =
+    Number(service.mediaBudget) +
+    (service.additionalFeeIsRevenue ? 0 : Number(service.additionalFee));
 
   return (
     <article className="border-line rounded-xl border p-5">
@@ -116,17 +128,15 @@ export function ServiceCard({
           <dd>{formatCurrency(service.listPrice)}</dd>
         </div>
         <div>
-          <dt className="text-muted">Valor aplicado</dt>
+          <dt className="text-muted">{additionalRevenue > 0 ? "A receber" : "Valor aplicado"}</dt>
           <dd className="text-positive font-black">
-            {formatCurrency(
-              service.discountType === "percentage"
-                ? service.listPrice * (1 - service.discountValue / 100)
-                : service.discountType === "fixed"
-                  ? service.listPrice - service.discountValue
-                  : service.listPrice,
-            )}
+            {formatCurrency(appliedPrice + additionalRevenue)}
           </dd>
-          {service.discountType !== "none" ? (
+          {additionalRevenue > 0 ? (
+            <small className="text-muted">
+              {formatCurrency(appliedPrice)} + {formatCurrency(additionalRevenue)} de adicional
+            </small>
+          ) : service.discountType !== "none" ? (
             <small className="text-muted">
               desconto de{" "}
               {service.discountType === "percentage"
@@ -157,8 +167,13 @@ export function ServiceCard({
           <dd>{duration}</dd>
         </div>
         <div>
-          <dt className="text-muted">Mídia + adicional</dt>
-          <dd>{formatCurrency(Number(service.mediaBudget) + Number(service.additionalFee))}</dd>
+          <dt className="text-muted">Repasses</dt>
+          <dd>{formatCurrency(passThrough)}</dd>
+          {passThrough > 0 ? (
+            <small className="text-muted">
+              {service.additionalFeeIsRevenue ? "verba de mídia" : "mídia + adicional de terceiro"}
+            </small>
+          ) : null}
         </div>
       </dl>
       {service.promotionalPrice !== null ? (

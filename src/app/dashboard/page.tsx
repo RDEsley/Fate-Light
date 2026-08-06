@@ -12,6 +12,7 @@ import {
   isoToday,
   type DashboardPeriod,
 } from "@/features/mvp/format";
+import { ownRevenue } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -44,23 +45,61 @@ export default async function DashboardPage({
   const { dueEnd, end, start } = dashboardPeriodBounds(period, today);
   const nextWeek = addDays(today, 7);
   const nextMonth = addDays(today, 30);
+  // O PostgREST corta a resposta em `max_rows` (1000). Uma consulta sem recorte de data
+  // devolvia "as primeiras mil cobranças" e os totais do painel passavam a mentir em
+  // silêncio assim que o workspace crescia. Cada consulta abaixo pede só o que a página
+  // realmente lê, e o horizonte das pendentes vai até o maior entre o fim do período e a
+  // janela de 7 dias — os dois recortes que os cards mostram.
+  const chargeColumns =
+    "id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, status, paid_at, clients(name)";
+  const pendingHorizon = dueEnd > nextWeek ? dueEnd : nextWeek;
   const [
-    { data: charges, error: chargesError },
-    { data: expenses, error: expensesError },
+    { data: paidCharges, error: paidChargesError },
+    { data: dueCharges, error: dueChargesError },
+    { data: openCharges, error: openChargesError },
+    { data: paidExpenseRows, error: paidExpensesError },
+    { data: openExpenseRows, error: openExpensesError },
     { data: domains, error: domainsError },
     { count: activeClients, error: clientsError },
   ] = await Promise.all([
     context.supabase
       .from("charges")
-      .select(
-        "id, description, due_date, company_revenue, media_budget, additional_fee, status, paid_at, clients(name)",
-      )
+      .select(chargeColumns)
       .eq("workspace_id", context.workspaceId)
-      .neq("status", "cancelled"),
+      .eq("status", "paid")
+      .gte("paid_at", start)
+      .lt("paid_at", addDays(end, 1))
+      .order("paid_at", { ascending: false }),
+    context.supabase
+      .from("charges")
+      .select(chargeColumns)
+      .eq("workspace_id", context.workspaceId)
+      .neq("status", "cancelled")
+      .gte("due_date", start)
+      .lte("due_date", dueEnd)
+      .order("due_date"),
+    context.supabase
+      .from("charges")
+      .select(chargeColumns)
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "pending")
+      .lte("due_date", pendingHorizon)
+      .order("due_date"),
     context.supabase
       .from("expenses")
       .select("id, description, amount, due_date, status, paid_at")
-      .eq("workspace_id", context.workspaceId),
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "paid")
+      .gte("paid_at", start)
+      .lt("paid_at", addDays(end, 1))
+      .order("paid_at", { ascending: false }),
+    context.supabase
+      .from("expenses")
+      .select("id, description, amount, due_date, status, paid_at")
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "pending")
+      .lt("due_date", today)
+      .order("due_date"),
     context.supabase
       .from("domains")
       .select("id, domain, expires_on, clients(name)")
@@ -76,56 +115,47 @@ export default async function DashboardPage({
       .is("archived_at", null),
   ]);
 
-  const allCharges = charges ?? [];
-  const paidInPeriod = allCharges.filter(
-    (charge) =>
-      charge.status === "paid" &&
-      charge.paid_at &&
-      charge.paid_at.slice(0, 10) >= start &&
-      charge.paid_at.slice(0, 10) <= end,
-  );
-  const chargesInPeriod = allCharges.filter(
-    (charge) => charge.due_date >= start && charge.due_date <= dueEnd,
-  );
-  // Todo pendente, sem limite de data: alimenta "vencidas" e "próximos 7 dias", que são
-  // sobre agora, não sobre o período escolhido no topo da página.
-  const pending = allCharges.filter((charge) => charge.status === "pending");
+  const paidInPeriod = paidCharges ?? [];
+  const chargesInPeriod = dueCharges ?? [];
+  // Pendentes até o horizonte: alimenta "vencidas" e "próximos 7 dias", que são sobre
+  // agora, não sobre o período escolhido no topo da página.
+  const pending = openCharges ?? [];
   // Só o que vence dentro do período escolhido: é o que o card "Receita própria
   // pendente" mostra, e antes dessa distinção ele somava pendência de qualquer data,
   // inclusive de meses futuros, mesmo com "Este mês" selecionado.
   const pendingInPeriod = pending.filter(
     (charge) => charge.due_date >= start && charge.due_date <= dueEnd,
   );
-  const paidExpenses = (expenses ?? []).filter(
-    (expense) =>
-      expense.status === "paid" &&
-      expense.paid_at &&
-      expense.paid_at.slice(0, 10) >= start &&
-      expense.paid_at.slice(0, 10) <= end,
+  const paidExpenses = paidExpenseRows ?? [];
+  const ownReceived = sum(paidInPeriod, ownRevenue);
+  const ownPending = sum(pendingInPeriod, ownRevenue);
+  // Repasse não é receita: verba de mídia e adicional de terceiro andam juntos (ADR-0018).
+  const mediaPeriod = sum(
+    chargesInPeriod,
+    (charge) =>
+      Number(charge.media_budget) +
+      (charge.additional_fee_is_revenue ? 0 : Number(charge.additional_fee)),
   );
-  const ownReceived = sum(
-    paidInPeriod,
-    (charge) => Number(charge.company_revenue) + Number(charge.additional_fee),
-  );
-  const ownPending = sum(
-    pendingInPeriod,
-    (charge) => Number(charge.company_revenue) + Number(charge.additional_fee),
-  );
-  const mediaPeriod = sum(chargesInPeriod, (charge) => charge.media_budget);
   const expensesPaid = sum(paidExpenses, (expense) => expense.amount);
   const result = ownReceived - expensesPaid;
   const overdue = pending.filter((charge) => charge.due_date < today);
   const dueSoon = pending.filter(
     (charge) => charge.due_date >= today && charge.due_date <= nextWeek,
   );
-  const overdueExpenses = (expenses ?? []).filter(
-    (expense) => expense.status === "pending" && expense.due_date < today,
-  );
+  const overdueExpenses = openExpenseRows ?? [];
   const expiredDomains = (domains ?? []).filter((domain) => domain.expires_on < today);
   const upcomingDomains = (domains ?? []).filter((domain) => domain.expires_on >= today);
   const attentionTotal =
     overdue.length + dueSoon.length + overdueExpenses.length + (domains?.length ?? 0);
-  const hasError = Boolean(chargesError || expensesError || domainsError || clientsError);
+  const hasError = Boolean(
+    paidChargesError ||
+    dueChargesError ||
+    openChargesError ||
+    paidExpensesError ||
+    openExpensesError ||
+    domainsError ||
+    clientsError,
+  );
   const maxFlow = Math.max(ownReceived, mediaPeriod, expensesPaid, Math.abs(result), 1);
   const firstName = context.fullName.trim().split(/\s+/)[0] || context.fullName;
 
@@ -271,7 +301,7 @@ export default async function DashboardPage({
           </div>
           <div className="mt-7 space-y-5">
             <FlowBar color="brand" label="Receita própria" max={maxFlow} value={ownReceived} />
-            <FlowBar color="violet" label="Verba administrada" max={maxFlow} value={mediaPeriod} />
+            <FlowBar color="violet" label="Verba e repasses" max={maxFlow} value={mediaPeriod} />
             <FlowBar color="negative" label="Despesas pagas" max={maxFlow} value={expensesPaid} />
             <FlowBar
               color={result >= 0 ? "positive" : "negative"}
@@ -333,6 +363,16 @@ export default async function DashboardPage({
           )}
           title={`Próximos 7 dias (${dueSoon.length})`}
           tone="warning"
+        />
+        <AlertList
+          empty="Nenhuma despesa vencida."
+          href="/despesas?state=pending"
+          items={overdueExpenses.map(
+            (expense) =>
+              `${expense.description} — ${formatCurrency(expense.amount)} (${formatDatePtBr(expense.due_date)})`,
+          )}
+          title={`Despesas vencidas (${overdueExpenses.length})`}
+          tone="danger"
         />
         <AlertList
           empty="Nenhum domínio vencido."

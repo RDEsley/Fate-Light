@@ -127,6 +127,7 @@ export type Database = {
       charges: {
         Row: {
           additional_fee: number
+          additional_fee_is_revenue: boolean
           cancel_reason: string | null
           cancel_reason_code: string | null
           cancelled_at: string | null
@@ -153,6 +154,7 @@ export type Database = {
         }
         Insert: {
           additional_fee?: number
+          additional_fee_is_revenue?: boolean
           cancel_reason?: string | null
           cancel_reason_code?: string | null
           cancelled_at?: string | null
@@ -179,6 +181,7 @@ export type Database = {
         }
         Update: {
           additional_fee?: number
+          additional_fee_is_revenue?: boolean
           cancel_reason?: string | null
           cancel_reason_code?: string | null
           cancelled_at?: string | null
@@ -307,6 +310,7 @@ export type Database = {
       client_services: {
         Row: {
           additional_fee: number
+          additional_fee_is_revenue: boolean
           adjustment_interval_months: number | null
           adjustment_rate: number | null
           billing_type: string
@@ -338,6 +342,7 @@ export type Database = {
         }
         Insert: {
           additional_fee?: number
+          additional_fee_is_revenue?: boolean
           adjustment_interval_months?: number | null
           adjustment_rate?: number | null
           billing_type?: string
@@ -369,6 +374,7 @@ export type Database = {
         }
         Update: {
           additional_fee?: number
+          additional_fee_is_revenue?: boolean
           adjustment_interval_months?: number | null
           adjustment_rate?: number | null
           billing_type?: string
@@ -1142,12 +1148,19 @@ export type Database = {
       charges_overview: {
         Row: {
           additional_fee: number | null
+          additional_fee_is_revenue: boolean | null
+          cancel_reason: string | null
+          cancel_reason_code: string | null
+          cancelled_at: string | null
           client_id: string | null
           client_service_id: string | null
           company_result_value: number | null
           company_revenue: number | null
           created_at: string | null
           created_by: string | null
+          delay_reason: string | null
+          delay_reason_code: string | null
+          delay_recorded_at: string | null
           description: string | null
           due_date: string | null
           effective_status: string | null
@@ -1164,12 +1177,19 @@ export type Database = {
         }
         Insert: {
           additional_fee?: number | null
+          additional_fee_is_revenue?: boolean | null
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
           client_id?: string | null
           client_service_id?: string | null
           company_result_value?: never
           company_revenue?: number | null
           created_at?: string | null
           created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
           description?: string | null
           due_date?: string | null
           effective_status?: never
@@ -1186,12 +1206,19 @@ export type Database = {
         }
         Update: {
           additional_fee?: number | null
+          additional_fee_is_revenue?: boolean | null
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
           client_id?: string | null
           client_service_id?: string | null
           company_result_value?: never
           company_revenue?: number | null
           created_at?: string | null
           created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
           description?: string | null
           due_date?: string | null
           effective_status?: never
@@ -1272,6 +1299,7 @@ export type Database = {
       apply_service_to_client: {
         Args: {
           p_additional_fee: number
+          p_additional_fee_is_revenue: boolean
           p_adjustment_interval_months: number
           p_adjustment_rate: number
           p_billing_type: string
@@ -1381,6 +1409,27 @@ export type Database = {
       settle_client_service_charges: {
         Args: { p_payment_method: string; p_service_id: string }
         Returns: number
+      }
+      update_client_service: {
+        Args: {
+          p_additional_fee: number
+          p_additional_fee_is_revenue: boolean
+          p_adjustment_interval_months: number
+          p_adjustment_rate: number
+          p_billing_type: string
+          p_description: string
+          p_discount_type: string
+          p_discount_value: number
+          p_list_price: number
+          p_media_budget: number
+          p_name: string
+          p_next_due_date: string
+          p_notes: string
+          p_promotional_cycles: number
+          p_promotional_price: number
+          p_service_id: string
+        }
+        Returns: string
       }
       update_current_workspace_configuration: {
         Args: {

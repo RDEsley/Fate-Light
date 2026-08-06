@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { DangerAction, DangerZone } from "@/components/ui/danger-zone";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { Icon } from "@/components/ui/icon";
+import { FieldError } from "@/components/ui/field-error";
 import { initialActionState } from "@/lib/forms/action-state";
 
 import { resetWorkspaceOperationalData } from "./actions";
@@ -54,11 +54,7 @@ export function WorkspaceDangerZone() {
             placeholder={confirmationPhrase}
             value={confirmation}
           />
-          {confirmation && !unlocked ? (
-            <span className="field__error">
-              <Icon className="size-3.5" name="alert" /> A frase ainda não confere.
-            </span>
-          ) : null}
+          {confirmation && !unlocked ? <FieldError message="A frase ainda não confere." /> : null}
         </label>
       </form>
     </DangerZone>

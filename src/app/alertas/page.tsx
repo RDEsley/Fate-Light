@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AccountShell } from "@/app/_components/account-shell";
 import { Icon } from "@/components/ui/icon";
 import { getAttentionItems } from "@/features/alerts/attention";
-import { addDays, isoToday, parseDatePtBr } from "@/features/mvp/format";
+import { addDays, isoToday } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export const metadata: Metadata = { title: "Alertas" };
@@ -15,12 +15,10 @@ export default async function AlertsPage() {
   const urgent = items.filter(({ severity }) => severity === "danger");
   const upcoming = items.filter(({ severity }) => severity === "warning");
   // "Esta semana" recorta os próximos sete dias dentro do que já está no radar, sem
-  // consultar o banco de novo: a data exibida no meta é a mesma usada aqui.
+  // consultar o banco de novo. Lê `item.date`, não o texto do `meta`: as despesas
+  // formatam o meta sem o separador "·" e nenhuma delas era reconhecida aqui.
   const weekLimit = addDays(isoToday(), 7);
-  const thisWeek = upcoming.filter((item) => {
-    const date = parseDatePtBr(item.meta.split("·").pop()?.trim() ?? "");
-    return Boolean(date && date <= weekLimit);
-  });
+  const thisWeek = upcoming.filter((item) => item.date <= weekLimit);
 
   return (
     <AccountShell

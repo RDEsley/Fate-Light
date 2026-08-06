@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { formatDatePtBr, isoToday, parseDatePtBr } from "@/features/mvp/format";
 
+import { FieldError } from "./field-error";
 import { Icon } from "./icon";
 
 export type ClientOption = {
@@ -43,6 +44,7 @@ export function ClientCombobox({
 }) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const initial = clients.find((client) => client.id === defaultValue);
   const [filter, setFilter] = useState<ClientFilter>(defaultFilter);
   const [open, setOpen] = useState(false);
@@ -56,6 +58,15 @@ export function ClientCombobox({
     document.addEventListener("pointerdown", closeOnOutsideClick);
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
+
+  // A obrigatoriedade mora no campo visível, não no `hidden`: input oculto fica fora da
+  // validação de restrições do HTML, então `required` ali não impedia nada e o envio sem
+  // cliente escolhido só era barrado no servidor, com o formulário inteiro perdido.
+  useEffect(() => {
+    searchRef.current?.setCustomValidity(
+      optional || selectedId ? "" : "Escolha um cliente da lista.",
+    );
+  }, [optional, selectedId]);
 
   const visibleClients = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("pt-BR");
@@ -105,7 +116,7 @@ export function ClientCombobox({
       <label className="field__label" htmlFor={`${listId}-search`}>
         {label} {optional ? <span className="field__optional">opcional</span> : null}
       </label>
-      <input name={name} required={!optional} type="hidden" value={selectedId} />
+      <input name={name} type="hidden" value={selectedId} />
       <div className="client-combobox__control">
         <Icon className="text-muted size-4" name="search" />
         <input
@@ -114,6 +125,7 @@ export function ClientCombobox({
           aria-expanded={open}
           autoComplete="off"
           id={`${listId}-search`}
+          ref={searchRef}
           onChange={(event) => {
             setQuery(event.target.value);
             setSelectedId("");
@@ -205,13 +217,17 @@ export function ClientCombobox({
 
 export function DateField({
   defaultValue,
+  error,
   label,
   name,
+  optional = false,
   required = false,
 }: {
   defaultValue?: string;
+  error?: string;
   label: string;
   name: string;
+  optional?: boolean;
   required?: boolean;
 }) {
   const calendarId = useId();
@@ -266,7 +282,7 @@ export function DateField({
   return (
     <div className="field date-field-root" ref={rootRef}>
       <label className="field__label" htmlFor={`${calendarId}-input`}>
-        {label}
+        {label} {optional ? <span className="field__optional">opcional</span> : null}
       </label>
       <span className="date-field">
         <input name={name} type="hidden" value={dateValue} />
@@ -274,6 +290,7 @@ export function DateField({
           aria-controls={calendarId}
           aria-expanded={open}
           aria-haspopup="dialog"
+          aria-invalid={error ? true : undefined}
           autoComplete="off"
           id={`${calendarId}-input`}
           inputMode="numeric"
@@ -358,6 +375,7 @@ export function DateField({
           </button>
         </span>
       ) : null}
+      <FieldError message={error} />
     </div>
   );
 }

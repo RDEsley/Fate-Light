@@ -10,6 +10,8 @@ const messages: Record<string, string> = {
   error: "Não foi possível concluir a operação.",
   invalid: "Revise os campos informados.",
   "prior-revenue-deleted": "Lançamento de histórico anterior removido.",
+  "prior-revenue-error":
+    "Cliente salvo, mas o total já recebido não pôde ser registrado. Lance-o como cobrança avulsa já paga.",
   "prior-revenue-updated": "Lançamento de histórico anterior atualizado.",
   restored: "Cliente desarquivado e de volta à operação.",
   "service-created": "Serviço aplicado e cobrança criada.",
@@ -21,6 +23,7 @@ const messages: Record<string, string> = {
   "service-paused": "Serviço pausado. Sem novas cobranças nem alertas até você retomar.",
   "service-resumed": "Serviço retomado.",
   "service-schedule-updated": "Agenda de cobrança futura atualizada.",
+  "service-settled": "Pendências já vencidas do serviço marcadas como pagas.",
   "service-updated": "Serviço atualizado. Cobranças pendentes acompanharam o novo valor.",
   "status-updated": "Situação comercial atualizada.",
   updated: "Cliente atualizado.",

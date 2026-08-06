@@ -66,7 +66,7 @@ select lives_ok(
   $$select public.apply_service_to_client(
     '65656565-0001-4565-8565-656565656565'::uuid, null,
     'Serviço cadastrado errado', null,
-    800, 'none', 0, 0, 0,
+    800, 'none', 0, 0, 0, true,
     'monthly', current_date, current_date, 1,
     null, null, null, null, null
   )$$,

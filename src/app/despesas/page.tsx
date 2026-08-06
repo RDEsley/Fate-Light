@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 
-import { createExpense, deleteOperationalRecord, markExpensePaid } from "@/app/_actions/mvp";
+import { deleteOperationalRecord, markExpensePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { FieldHint } from "@/components/ui/field-hint";
-import { ClientCombobox, DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
+
+import { ExpenseForm } from "./expense-form";
 
 export const metadata: Metadata = { title: "Despesas" };
 
@@ -24,6 +24,8 @@ const categories = [
   ["marketing", "Marketing"],
   ["other", "Outros"],
 ] as const;
+
+const categoryOptions = categories.map(([value, label]) => ({ label, value }));
 
 export default async function ExpensesPage({
   searchParams,
@@ -106,97 +108,16 @@ export default async function ExpensesPage({
             <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
           </span>
         </summary>
-        <form action={createExpense} className="form-grid mt-4 sm:grid-cols-2">
-          <label className="text-sm font-semibold sm:col-span-2">
-            Descrição
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              maxLength={200}
-              name="description"
-              placeholder="Ex.: Hospedagem do site"
-              required
-            />
-          </label>
-          <label className="text-sm font-semibold">
-            <span className="flex items-center">
-              Categoria
-              <FieldHint>
-                Serve para agrupar as despesas nos relatórios. Na dúvida, use “Outros”.
-              </FieldHint>
-            </span>
-            <select
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              name="category"
-            >
-              {categories.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-semibold">
-            <span className="flex items-center">
-              Tipo
-              <FieldHint>
-                Fixa é o que se repete todo mês, como aluguel. Variável muda de valor ou acontece
-                uma vez só.
-              </FieldHint>
-            </span>
-            <select
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              name="expenseType"
-            >
-              <option value="fixed">Fixa</option>
-              <option value="variable">Variável</option>
-            </select>
-          </label>
-          <label className="text-sm font-semibold">
-            Valor
-            <input
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              min="0.01"
-              name="amount"
-              placeholder="Ex.: 89,90"
-              required
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <DateField defaultValue={isoToday()} label="Vencimento ou data" name="dueDate" required />
-          <label className="text-sm font-semibold">
-            Status
-            <select
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3"
-              name="status"
-            >
-              <option value="pending">Pendente</option>
-              <option value="paid">Paga</option>
-            </select>
-          </label>
-          <ClientCombobox
-            clients={(clients ?? []).map((client) => ({
-              id: client.id,
-              name: client.name,
-              status: client.commercial_status,
-              tradeName: client.trade_name,
-            }))}
-            defaultFilter="all"
-            label="Cliente"
-            optional
-          />
-          <label className="text-sm font-semibold sm:col-span-2">
-            Observações
-            <textarea
-              className="border-line bg-canvas mt-2 min-h-24 w-full rounded-xl border px-4 py-3"
-              maxLength={5000}
-              name="notes"
-            />
-          </label>
-          <div className="sm:col-span-2">
-            <SubmitButton idleLabel="Criar despesa" />
-          </div>
-        </form>
+        <ExpenseForm
+          categoryOptions={categoryOptions}
+          clients={(clients ?? []).map((client) => ({
+            id: client.id,
+            name: client.name,
+            status: client.commercial_status,
+            tradeName: client.trade_name,
+          }))}
+          today={isoToday()}
+        />
       </details>
       {error ? (
         <p role="alert">Não foi possível carregar as despesas.</p>

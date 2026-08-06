@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { Icon, type IconName } from "./icon";
+import { FieldError } from "./field-error";
+import { type IconName } from "./icon";
 import { Modal, type ModalTone } from "./modal";
 
 /**
@@ -124,11 +125,7 @@ export function ConfirmDialog({
               placeholder={requiredPhrase}
               value={typed}
             />
-            {typed && !unlocked ? (
-              <span className="field__error">
-                <Icon className="size-3.5" name="alert" /> A frase ainda não confere.
-              </span>
-            ) : null}
+            {typed && !unlocked ? <FieldError message="A frase ainda não confere." /> : null}
           </label>
         ) : null}
       </Modal>

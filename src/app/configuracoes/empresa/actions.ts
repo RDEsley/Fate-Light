@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import type { ActionState } from "@/lib/forms/action-state";
+import { rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -58,12 +58,14 @@ export async function updateWorkspaceConfiguration(
   });
 
   if (!parsed.success) {
-    return { status: "error", message: "Revise os dados e preferências da empresa." };
+    return rejectSubmission(formData, "Revise os dados e preferências da empresa.");
   }
 
   const normalizedTaxId = (parsed.data.taxId ?? "").replace(/\D/g, "");
   if (normalizedTaxId && ![11, 14].includes(normalizedTaxId.length)) {
-    return { status: "error", message: "Informe um CPF ou CNPJ com 11 ou 14 dígitos." };
+    return rejectSubmission(formData, "Informe um CPF ou CNPJ com 11 ou 14 dígitos.", {
+      taxId: "Informe 11 dígitos para CPF ou 14 para CNPJ.",
+    });
   }
 
   const supabase = await createServerSupabaseClient();
@@ -92,7 +94,7 @@ export async function updateWorkspaceConfiguration(
   });
 
   if (error) {
-    return { status: "error", message: "Não foi possível atualizar a empresa." };
+    return rejectSubmission(formData, "Não foi possível atualizar a empresa.");
   }
 
   revalidatePath("/configuracoes/empresa");

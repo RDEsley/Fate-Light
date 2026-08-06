@@ -3,12 +3,9 @@ import type { Metadata } from "next";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { FieldHint } from "@/components/ui/field-hint";
 import { Icon } from "@/components/ui/icon";
-import { SelectField } from "@/components/ui/select-field";
-import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import { formatCurrency } from "@/features/mvp/format";
-import { billingFrequencies, billingFrequencyLabel } from "@/features/mvp/recurrence";
+import { billingFrequencyLabel } from "@/features/mvp/recurrence";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import {
@@ -17,6 +14,7 @@ import {
   toggleCatalogService,
   updateCatalogService,
 } from "./actions";
+import { ServiceCatalogForm } from "./service-catalog-form";
 
 export const metadata: Metadata = { title: "Serviços" };
 
@@ -198,105 +196,5 @@ export default async function ServicesPage({
         </section>
       )}
     </AccountShell>
-  );
-}
-
-function ServiceCatalogForm({
-  action,
-  service,
-}: {
-  action: (formData: FormData) => Promise<void>;
-  service?: {
-    default_adjustment_interval_months: number | null;
-    default_adjustment_rate: number | string | null;
-    default_billing_type: string;
-    default_price: number | string;
-    description: string | null;
-    id: string;
-    name: string;
-  };
-}) {
-  return (
-    <form action={action} className="form-grid mt-3 sm:grid-cols-2">
-      {service ? <input name="id" type="hidden" value={service.id} /> : null}
-      <label className="field">
-        <span className="field__label">Nome</span>
-        <input
-          defaultValue={service?.name}
-          maxLength={120}
-          name="name"
-          placeholder="Ex.: Gestão de Google Ads"
-        />
-        <span className="field__hint">
-          Nomes se repetem mal: use um nome que você reconheceria em qualquer cliente.
-        </span>
-      </label>
-      <label className="field">
-        <span className="field__label">
-          Valor padrão
-          <FieldHint>
-            É só uma sugestão inicial. Ao aplicar o serviço em um cliente você pode mudar o valor
-            sem afetar o catálogo nem os outros clientes.
-          </FieldHint>
-        </span>
-        <input
-          defaultValue={service?.default_price ?? ""}
-          min="0"
-          name="defaultPrice"
-          placeholder="Ex.: 1500,00"
-          step="0.01"
-          type="number"
-        />
-      </label>
-      <SelectField
-        defaultValue={service?.default_billing_type ?? "monthly"}
-        label="Periodicidade"
-        name="billingType"
-        options={billingFrequencies.map(([value, label]) => ({ label, value }))}
-      />
-      <label className="field">
-        <span className="field__label">
-          Reajuste a cada (meses) <span className="field__optional">opcional</span>
-        </span>
-        <input
-          defaultValue={service?.default_adjustment_interval_months ?? ""}
-          max="60"
-          min="1"
-          name="adjustmentIntervalMonths"
-          type="number"
-        />
-      </label>
-      <label className="field">
-        <span className="field__label">
-          Sugestão de reajuste (%) <span className="field__optional">opcional</span>
-        </span>
-        <input
-          defaultValue={service?.default_adjustment_rate ?? ""}
-          max="100"
-          min="0"
-          name="adjustmentRate"
-          step="0.01"
-          type="number"
-        />
-      </label>
-      <label className="field sm:col-span-2">
-        <span className="field__label">
-          Descrição <span className="field__optional">opcional</span>
-        </span>
-        <textarea defaultValue={service?.description ?? ""} maxLength={3000} name="description" />
-      </label>
-      <div className="sm:col-span-2">
-        <SoftSubmitButton
-          idleLabel={service ? "Salvar alterações" : "Criar serviço"}
-          requirements={[
-            { message: "Dê um nome ao serviço.", name: "name" },
-            {
-              message: "O valor padrão está em branco. Você poderá ajustá-lo em cada cliente.",
-              name: "defaultPrice",
-            },
-          ]}
-        />
-      </div>
-    </form>
   );
 }

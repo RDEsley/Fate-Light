@@ -5,6 +5,7 @@ import { useState } from "react";
 import { recordChargeDelayReason } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { Icon } from "@/components/ui/icon";
+import { SelectField } from "@/components/ui/select-field";
 
 const reasons = [
   ["client_requested", "Cliente pediu mais prazo"],
@@ -14,6 +15,8 @@ const reasons = [
   ["internal_follow_up", "Aguardando acompanhamento interno"],
   ["other", "Outro motivo"],
 ] as const;
+
+const reasonOptions = reasons.map(([value, label]) => ({ label, value }));
 
 export function DelayReasonForm({ chargeId }: { chargeId: string }) {
   const [code, setCode] = useState<(typeof reasons)[number][0]>("client_requested");
@@ -28,26 +31,23 @@ export function DelayReasonForm({ chargeId }: { chargeId: string }) {
       </summary>
       <form action={recordChargeDelayReason} className="form-grid mt-3 sm:grid-cols-2">
         <input name="id" type="hidden" value={chargeId} />
-        <label className="text-sm font-semibold">
-          Motivo
-          <select
-            name="code"
-            onChange={(event) => setCode(event.target.value as typeof code)}
-            value={code}
-          >
-            {reasons.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm font-semibold sm:col-span-2">
-          {code === "other" ? "Explique o motivo" : "Observação (você pode ajustar)"}
+        <SelectField
+          label="Motivo"
+          name="code"
+          onValueChange={(value) => setCode(value as typeof code)}
+          options={reasonOptions}
+          value={code}
+        />
+        <label className="field sm:col-span-2">
+          <span className="field__label">
+            {code === "other" ? "Explique o motivo" : "Observação (você pode ajustar)"}
+          </span>
           <textarea
             defaultValue={code === "other" ? "" : standardReason}
             key={code}
+            maxLength={500}
             name="reason"
+            placeholder="Ex.: cliente pediu para pagar junto com a mensalidade seguinte"
             required
           />
         </label>

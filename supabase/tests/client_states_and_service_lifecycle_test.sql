@@ -50,7 +50,7 @@ select lives_ok(
   $$select public.apply_service_to_client(
     '64646464-0001-4646-8646-646464646464'::uuid, null,
     'Gestão de tráfego', null,
-    1000, 'none', 0, 0, 0,
+    1000, 'none', 0, 0, 0, true,
     'monthly', current_date, current_date, 1,
     0, 4, null, null, null
   )$$,
@@ -76,7 +76,7 @@ select lives_ok(
   $$select public.apply_service_to_client(
     '64646464-0001-4646-8646-646464646464'::uuid, null,
     'Gestão de tráfego', null,
-    1500, 'none', 0, 0, 0,
+    1500, 'none', 0, 0, 0, true,
     'monthly', current_date, current_date + 1, 1,
     null, null, null, null, null
   )$$,

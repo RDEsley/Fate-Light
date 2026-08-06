@@ -144,6 +144,19 @@ Consolidada em 2026-08-06:
   nenhuma outra cobrança paga passa a ser excluível por causa disso.
 - Detalhes no [ADR 0017](adr/0017-editable-prior-revenue-entry.md).
 
+## Natureza do custo adicional do serviço
+
+Consolidada em 2026-08-06:
+
+- `additional_fee` não declarava natureza, e cada tela decidia sozinha o que ele
+  significava: o dashboard somava na receita, a página do cliente e o card do serviço
+  tratavam como repasse. O número do painel nunca fechou com o do cliente.
+- Passa a existir `additional_fee_is_revenue` em `client_services` e `charges`. O serviço
+  declara a natureza e as cobranças geradas herdam; cobrança avulsa declara a sua.
+- O default é receita própria e vale para todo dado existente, então nenhuma receita
+  histórica muda de valor com a migration.
+- Detalhes no [ADR 0018](adr/0018-additional-fee-nature.md).
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |
@@ -165,6 +178,7 @@ Consolidada em 2026-08-06:
 | ADR-0015 | Estados do cliente, pausa de serviço e ciclos promocionais gratuitos | Aceita | [ADR](adr/0015-client-states-and-service-lifecycle-experience.md) |
 | ADR-0016 | Exclusão forçada pelo dono, links do cliente e liquidação em lote | Aceita | [ADR](adr/0016-owner-forced-deletion-and-client-links.md) |
 | ADR-0017 | Edição e exclusão do lançamento de receita anterior ao sistema | Aceita | [ADR](adr/0017-editable-prior-revenue-entry.md) |
+| ADR-0018 | Natureza declarada do custo adicional: receita própria ou repasse | Aceita | [ADR](adr/0018-additional-fee-nature.md) |
 
 ## Outras decisões consolidadas
 

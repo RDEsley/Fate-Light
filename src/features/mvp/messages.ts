@@ -1,57 +1,94 @@
 import type { z } from "zod";
 
-/** Rótulo em português de cada campo, usado nas mensagens devolvidas aos formulários. */
+/**
+ * Rótulo em português de cada campo, usado nas mensagens devolvidas aos formulários.
+ * Aqui ficam só os nomes que valem em qualquer tela; o que muda de sentido conforme o
+ * formulário (`name`, `description`) chega pelo parâmetro `labels` de `formErrors`.
+ */
 const fieldLabels: Record<string, string> = {
   additionalFee: "Custo adicional",
+  additionalFeeIsRevenue: "Natureza do custo adicional",
   adjustmentIntervalMonths: "Intervalo de reajuste",
   adjustmentRate: "Sugestão de reajuste",
+  amount: "Valor",
+  autoRenew: "Renovação automática",
   billingType: "Periodicidade",
   cancelReason: "Motivo do cancelamento",
+  category: "Categoria",
   clientId: "Cliente",
+  clientServiceId: "Serviço vinculado",
+  companyName: "Razão social ou nome fantasia",
   companyRevenue: "Receita própria",
+  cost: "Custo",
+  defaultPrice: "Valor padrão",
   description: "Descrição",
+  discountType: "Tipo de desconto",
   discountValue: "Desconto",
+  domain: "Domínio",
   dueDate: "Vencimento",
+  email: "E-mail",
+  expenseType: "Tipo",
+  expiresOn: "Data de expiração",
   installmentCount: "Quantidade de parcelas",
   listPrice: "Valor cheio",
   mediaBudget: "Verba de mídia",
-  name: "Nome do serviço",
+  name: "Nome",
   nextDueDate: "Primeiro vencimento",
   notes: "Observações",
+  paymentMethod: "Forma de pagamento",
+  paymentResponsibility: "Responsável pelo pagamento",
+  phone: "Telefone",
+  priorRevenue: "Total já recebido",
+  priorRevenueDate: "Data de referência",
   promotionalCycles: "Quantidade de ciclos",
   promotionalPrice: "Valor promocional",
+  registrar: "Registrador",
+  serviceId: "Serviço do catálogo",
   startDate: "Início do serviço",
+  status: "Status",
+  website: "Site",
 };
 
 /** Mensagens específicas quando a regra violada não é óbvia pelo campo. */
 const ruleMessages: Record<string, string> = {
   adjustmentIntervalMonths:
     "Preencha o intervalo e a porcentagem do reajuste juntos, com a porcentagem até 100.",
+  amount: "Informe um valor maior que zero.",
+  companyRevenue: "A cobrança precisa de algum valor: receita, verba de mídia ou adicional.",
   discountValue: "O desconto não pode passar de 100% nem ser maior que o valor cheio do serviço.",
+  domain: "Informe só o endereço, como exemplo.com.br — sem espaços nem caminho depois da barra.",
   installmentCount: "Use de 1 a 120 parcelas.",
   listPrice: "Informe um valor igual ou maior que zero.",
   nextDueDate: "O primeiro vencimento não pode ser anterior ao início do serviço.",
+  paymentMethod: "Para registrar como já paga, informe a forma de pagamento.",
+  phone: "Informe um telefone com pelo menos 7 dígitos ou deixe em branco.",
   promotionalCycles: "Informe de 1 a 60 ciclos promocionais.",
   promotionalPrice:
     "Para usar preço promocional, preencha o valor e a quantidade de ciclos juntos.",
+  website: "Informe só o endereço, como exemplo.com.br — sem espaços.",
 };
 
-export function fieldErrorsFrom(error: z.ZodError): Record<string, string> {
-  const errors: Record<string, string> = {};
+/**
+ * Traduz o erro do schema no que o formulário precisa: a marca de cada campo e o resumo
+ * do topo. `labels` cobre o que muda de nome conforme a tela — "Nome" é do cliente numa
+ * e do serviço na outra.
+ */
+export function formErrors(error: z.ZodError, labels: Record<string, string> = {}) {
+  const names = { ...fieldLabels, ...labels };
+  const fieldErrors: Record<string, string> = {};
   for (const issue of error.issues) {
     const field = String(issue.path[0] ?? "");
-    if (!field || errors[field]) continue;
-    errors[field] =
-      ruleMessages[field] ?? `${fieldLabels[field] ?? "Campo"}: confira o valor informado.`;
+    if (!field || fieldErrors[field]) continue;
+    fieldErrors[field] =
+      ruleMessages[field] ?? `${names[field] ?? "Campo"}: confira o valor informado.`;
   }
-  return errors;
-}
-
-export function summarizeFieldErrors(errors: Record<string, string>) {
-  const names = Object.keys(errors).map((field) => fieldLabels[field] ?? field);
-  if (!names.length) return "Revise os dados informados.";
-  if (names.length === 1) return `Revise o campo ${names[0]}.`;
-  return `Revise os campos: ${names.join(", ")}.`;
+  const touched = Object.keys(fieldErrors).map((field) => names[field] ?? field);
+  const message = !touched.length
+    ? "Revise os dados informados."
+    : touched.length === 1
+      ? `Revise o campo ${touched[0]}.`
+      : `Revise os campos: ${touched.join(", ")}.`;
+  return { fieldErrors, message };
 }
 
 /**

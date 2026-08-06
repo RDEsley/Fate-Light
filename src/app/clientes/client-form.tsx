@@ -1,6 +1,11 @@
+"use client";
+
 import type { Route } from "next";
 import Link from "next/link";
+import { useActionState } from "react";
 
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
 import { DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
@@ -9,12 +14,13 @@ import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import type { ClientLink } from "@/features/clients/schemas";
 import { clientStatusOptions } from "@/features/clients/status";
 import { isoToday } from "@/features/mvp/format";
+import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 import { ClientLinksField } from "./client-links-field";
 import { PriorRevenueEntries, type PriorRevenueEntry } from "./prior-revenue-entries";
 
 type ClientFormProps = {
-  action: (formData: FormData) => Promise<void>;
+  action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   cancelHref: Route;
   clientId?: string;
   deletePriorRevenueAction?: (formData: FormData) => Promise<void>;
@@ -44,10 +50,16 @@ export function ClientForm({
   values,
 }: ClientFormProps) {
   const editing = Boolean(clientId);
+  const [state, formAction] = useActionState(action, initialActionState);
+  const errors = state.fieldErrors ?? {};
+  const sent = submittedValues(state);
 
   return (
-    <form action={action} className="grid gap-4">
+    <form action={formAction} className="grid gap-4">
       {clientId ? <input name="clientId" type="hidden" value={clientId} /> : null}
+      {state.status === "error" && state.message ? (
+        <FeedbackBanner message={state.message} tone="error" />
+      ) : null}
 
       <section className="panel-card">
         <div className="section-heading mb-4">
@@ -63,26 +75,30 @@ export function ClientForm({
           <label className="field">
             <span className="field__label">Nome</span>
             <input
-              defaultValue={values?.name}
+              aria-invalid={Boolean(errors.name)}
+              defaultValue={sent.text("name", values?.name ?? "")}
               maxLength={160}
               name="name"
               placeholder="Ex.: Padaria do João"
               required
             />
+            <FieldError message={errors.name} />
           </label>
           <label className="field">
             <span className="field__label">
               Razão social ou nome fantasia <span className="field__optional">opcional</span>
             </span>
             <input
-              defaultValue={values?.companyName ?? ""}
+              aria-invalid={Boolean(errors.companyName)}
+              defaultValue={sent.text("companyName", values?.companyName ?? "")}
               maxLength={160}
               name="companyName"
               placeholder="Ex.: João Alimentos LTDA"
             />
+            <FieldError message={errors.companyName} />
           </label>
           <SelectField
-            defaultValue={values?.status ?? "active"}
+            defaultValue={sent.text("status", values?.status ?? "active")}
             label="Situação comercial"
             name="status"
             options={clientStatusOptions}
@@ -92,11 +108,13 @@ export function ClientForm({
               Site <span className="field__optional">opcional</span>
             </span>
             <input
-              defaultValue={values?.website ?? ""}
+              aria-invalid={Boolean(errors.website)}
+              defaultValue={sent.text("website", values?.website ?? "")}
               maxLength={253}
               name="website"
               placeholder="Ex.: padariadojoao.com.br"
             />
+            <FieldError message={errors.website} />
           </label>
         </div>
         <div className="border-line mt-4 border-t pt-4">
@@ -127,31 +145,35 @@ export function ClientForm({
               E-mail <span className="field__optional">opcional</span>
             </span>
             <input
-              defaultValue={values?.email ?? ""}
+              aria-invalid={Boolean(errors.email)}
+              defaultValue={sent.text("email", values?.email ?? "")}
               maxLength={254}
               name="email"
               placeholder="Ex.: contato@padariadojoao.com.br"
               type="email"
             />
+            <FieldError message={errors.email} />
           </label>
           <label className="field">
             <span className="field__label">
               Telefone <span className="field__optional">opcional</span>
             </span>
             <input
-              defaultValue={values?.phone ?? ""}
+              aria-invalid={Boolean(errors.phone)}
+              defaultValue={sent.text("phone", values?.phone ?? "")}
               maxLength={32}
               name="phone"
               placeholder="Ex.: (11) 98888-7777"
               type="tel"
             />
+            <FieldError message={errors.phone} />
           </label>
           <label className="field sm:col-span-2">
             <span className="field__label">
               Observações <span className="field__optional">opcional</span>
             </span>
             <textarea
-              defaultValue={values?.notes ?? ""}
+              defaultValue={sent.text("notes", values?.notes ?? "")}
               maxLength={5000}
               name="notes"
               placeholder="Combinados, preferências, contexto do relacionamento…"
@@ -203,6 +225,7 @@ export function ClientForm({
               </FieldHint>
             </span>
             <input
+              defaultValue={sent.text("priorRevenue")}
               min="0"
               name="priorRevenue"
               placeholder="Ex.: 24000,00"
@@ -210,7 +233,11 @@ export function ClientForm({
               type="number"
             />
           </label>
-          <DateField defaultValue={isoToday()} label="Data de referência" name="priorRevenueDate" />
+          <DateField
+            defaultValue={sent.text("priorRevenueDate", isoToday())}
+            label="Data de referência"
+            name="priorRevenueDate"
+          />
         </div>
         {editing ? (
           <p className="field__hint mt-2">

@@ -50,10 +50,8 @@ export function SoftSubmitButton({
   requirements: SoftRequirement[];
 }) {
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [acknowledged, setAcknowledged] = useState(false);
 
   const guard = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (acknowledged) return;
     const form = event.currentTarget.form;
     if (!form) return;
     const data = new FormData(form);
@@ -66,10 +64,16 @@ export function SoftSubmitButton({
       const names = Array.isArray(requirement.name) ? requirement.name : [requirement.name];
       return !names.some((name) => isFilled(name, requirement.warnOnZero));
     });
-    if (!missing.length) return;
+    const messages = missing.map((requirement) => requirement.message);
+    // O aviso vale por clique, não para sempre: o segundo clique com a mesma pendência
+    // envia assim mesmo, mas preencher o campo e voltar a esvaziá-lo avisa de novo, e um
+    // envio limpo apaga a lista em vez de deixar um alerta velho na tela.
+    const repeated =
+      warnings.length === messages.length &&
+      messages.every((message, index) => message === warnings[index]);
+    setWarnings(messages);
+    if (!messages.length || repeated) return;
     event.preventDefault();
-    setWarnings(missing.map((requirement) => requirement.message));
-    setAcknowledged(true);
   };
 
   return (

@@ -30,6 +30,56 @@ describe("form controls", () => {
     expect(container.querySelector<HTMLInputElement>('input[name="clientId"]')).toHaveValue("b");
   });
 
+  it("barra o envio sem cliente escolhido pelo campo visível, não pelo oculto", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <form>
+        <ClientCombobox clients={clients} />
+      </form>,
+    );
+
+    // Campo oculto fica fora da validação de restrições do HTML: marcá-lo como `required`
+    // não impedia nada, então a exigência precisa viver no input que o usuário enxerga.
+    const hidden = container.querySelector<HTMLInputElement>('input[name="clientId"]')!;
+    expect(hidden).not.toHaveAttribute("required");
+
+    const search = screen.getByRole("combobox", { name: "Cliente" }) as HTMLInputElement;
+    expect(search.checkValidity()).toBe(false);
+    expect(search.validationMessage).toBe("Escolha um cliente da lista.");
+
+    await user.click(search);
+    await user.click(screen.getByRole("option", { name: /Ana Ativa/ }));
+
+    expect(search.checkValidity()).toBe(true);
+  });
+
+  it("não exige seleção quando o cliente é opcional", () => {
+    render(
+      <form>
+        <ClientCombobox clients={clients} optional />
+      </form>,
+    );
+
+    const search = screen.getByRole("combobox", { name: /Cliente/ }) as HTMLInputElement;
+    expect(search.checkValidity()).toBe(true);
+  });
+
+  it("mostra o erro do campo de data abaixo do controle", () => {
+    render(
+      <DateField
+        error="O primeiro vencimento não pode ser anterior ao início do serviço."
+        label="Primeiro vencimento"
+        name="nextDueDate"
+        required
+      />,
+    );
+
+    expect(
+      screen.getByText("O primeiro vencimento não pode ser anterior ao início do serviço."),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Primeiro vencimento")).toHaveAttribute("aria-invalid", "true");
+  });
+
   it("usa calendário e valor de envio em português do Brasil", async () => {
     const user = userEvent.setup();
     const { container } = render(

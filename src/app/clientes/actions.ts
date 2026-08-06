@@ -7,7 +7,12 @@ import { z } from "zod";
 
 import { parseClientForm, parsePriorRevenue } from "@/features/clients/schemas";
 import { clientStatusValues } from "@/features/clients/status";
+import { formErrors } from "@/features/mvp/messages";
+import { rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
+
+/** "Nome" aqui é o do cliente. */
+const clientLabels = { description: "Observações", name: "Nome do cliente" };
 
 const identifierSchema = z.string().uuid();
 const clientStatusSchema = z.enum(clientStatusValues);
@@ -16,16 +21,20 @@ function statusRedirect(path: string, status: string): never {
   redirect(`${path}${path.includes("?") ? "&" : "?"}status=${status}` as Route);
 }
 
-/** Registra em uma única cobrança quitada tudo o que o cliente já pagou antes do sistema. */
+/**
+ * Registra em uma única cobrança quitada tudo o que o cliente já pagou antes do sistema.
+ * Devolve o que aconteceu porque a falha aqui precisa chegar ao usuário: o cadastro do
+ * cliente já foi gravado, então engolir o erro deixava o valor sumir sem nenhum aviso.
+ */
 async function recordPriorRevenue(
   supabase: Awaited<ReturnType<typeof requireWorkspaceContext>>["supabase"],
   workspaceId: string,
   clientId: string,
   formData: FormData,
-) {
+): Promise<"failed" | "recorded" | "skipped"> {
   const prior = parsePriorRevenue(formData);
-  if (!prior) return;
-  await supabase.from("charges").insert({
+  if (!prior) return "skipped";
+  const { error } = await supabase.from("charges").insert({
     client_id: clientId,
     company_revenue: prior.priorRevenue,
     description: "Histórico anterior ao sistema",
@@ -36,44 +45,63 @@ async function recordPriorRevenue(
     status: "paid",
     workspace_id: workspaceId,
   });
+  if (error) return "failed";
+  // A cobrança quitada nasce aqui, então as telas que a exibem precisam ser revalidadas
+  // junto — sem isto ela só aparecia em cobranças e histórico na revalidação seguinte.
+  revalidatePath("/cobrancas");
+  revalidatePath("/historico");
+  return "recorded";
 }
 
-export async function createClient(formData: FormData) {
+export async function createClient(_state: ActionState, formData: FormData): Promise<ActionState> {
   const values = parseClientForm(formData);
-  if (!values) statusRedirect("/clientes/novo", "invalid");
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, clientLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("clients")
-    .insert({ ...values, workspace_id: workspaceId })
+    .insert({ ...values.data, workspace_id: workspaceId })
     .select("id")
     .single();
-  if (error || !data) statusRedirect("/clientes/novo", "error");
-  await recordPriorRevenue(supabase, workspaceId, data.id, formData);
+  if (error || !data) {
+    return rejectSubmission(formData, "Não foi possível salvar o cliente. Tente de novo.");
+  }
+  const prior = await recordPriorRevenue(supabase, workspaceId, data.id, formData);
   revalidatePath("/clientes");
   revalidatePath("/dashboard");
-  statusRedirect(`/clientes/${data.id}`, "created");
+  statusRedirect(`/clientes/${data.id}`, prior === "failed" ? "prior-revenue-error" : "created");
 }
 
-export async function updateClient(formData: FormData) {
+export async function updateClient(_state: ActionState, formData: FormData): Promise<ActionState> {
   const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const values = parseClientForm(formData);
   if (!clientId.success) statusRedirect("/clientes", "error");
-  if (!values) statusRedirect(`/clientes/${clientId.data}/editar`, "invalid");
+  const values = parseClientForm(formData);
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, clientLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("clients")
-    .update(values)
+    .update(values.data)
     .eq("id", clientId.data)
     .eq("workspace_id", workspaceId)
     .is("archived_at", null)
     .select("id")
     .single();
-  if (error || !data) statusRedirect(`/clientes/${clientId.data}/editar`, "error");
-  await recordPriorRevenue(supabase, workspaceId, clientId.data, formData);
+  if (error || !data) {
+    return rejectSubmission(formData, "Não foi possível salvar o cliente. Tente de novo.");
+  }
+  const prior = await recordPriorRevenue(supabase, workspaceId, clientId.data, formData);
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${clientId.data}`);
   revalidatePath("/dashboard");
-  statusRedirect(`/clientes/${clientId.data}`, "updated");
+  statusRedirect(
+    `/clientes/${clientId.data}`,
+    prior === "failed" ? "prior-revenue-error" : "updated",
+  );
 }
 
 /**

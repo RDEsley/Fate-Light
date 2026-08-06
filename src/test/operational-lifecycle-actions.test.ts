@@ -3,6 +3,7 @@ import { vi } from "vitest";
 const lifecycleMocks = vi.hoisted(() => {
   const chain = {
     eq: vi.fn(),
+    insert: vi.fn(),
     select: vi.fn(),
     single: vi.fn(),
     update: vi.fn(),
@@ -26,11 +27,13 @@ vi.mock("@/lib/auth/workspace-context", () => ({
 }));
 
 import {
+  createExpense,
   deleteClientService,
   deleteOperationalRecord,
   setClientServiceState,
   updateClientServiceSchedule,
 } from "@/app/_actions/mvp";
+import { initialActionState } from "@/lib/forms/action-state";
 
 const clientId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const recordId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -164,6 +167,31 @@ describe("operational lifecycle actions", () => {
       billing_type: "annual",
       next_due_date: "2027-08-03",
     });
+    // Mudar a agenda muda o que cobranças e painel mostram; revalidar só a página do
+    // cliente deixava as duas telas exibindo a data antiga.
+    const revalidated = lifecycleMocks.revalidatePath.mock.calls.map(([path]) => path);
+    expect(revalidated).toEqual(
+      expect.arrayContaining([`/clientes/${clientId}`, "/cobrancas", "/dashboard"]),
+    );
+  });
+
+  it("ancora a despesa já paga na data informada, não no momento do cadastro", async () => {
+    lifecycleMocks.chain.insert.mockResolvedValue({ error: null });
+    const formData = new FormData();
+    formData.set("amount", "89.90");
+    formData.set("category", "hosting");
+    formData.set("clientId", "");
+    formData.set("description", "Hospedagem de junho");
+    formData.set("dueDate", "2026-06-10");
+    formData.set("expenseType", "fixed");
+    formData.set("notes", "");
+    formData.set("status", "paid");
+
+    await expect(createExpense(initialActionState, formData)).rejects.toThrow(
+      "REDIRECT:/despesas?status=created",
+    );
+    const [payload] = lifecycleMocks.chain.insert.mock.calls.at(-1) as [{ paid_at: string }];
+    expect(payload.paid_at).toBe("2026-06-10T12:00:00.000Z");
   });
 
   it("usa a RPC protegida para excluir somente registros elegíveis", async () => {

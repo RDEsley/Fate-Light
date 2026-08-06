@@ -1,21 +1,19 @@
 import type { Metadata } from "next";
 import { Fragment } from "react";
 
-import { createCharge, deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
+import { deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { FieldHint } from "@/components/ui/field-hint";
-import { ClientCombobox, DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
-import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
 import { cancellationReasons } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { CancelChargeForm } from "./cancel-charge-form";
+import { ChargeForm } from "./charge-form";
 import { DelayReasonForm } from "./delay-reason-form";
 import { FocusCharge } from "./focus-charge";
 
@@ -23,6 +21,7 @@ export const metadata: Metadata = { title: "Cobranças" };
 
 const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro", "Outro"];
 const paymentOptions = paymentMethods.map((method) => ({ label: method, value: method }));
+
 const cancellationLabels = new Map<string, string>(cancellationReasons.map(([v, l]) => [v, l]));
 
 const statusLabels: Record<string, string> = {
@@ -50,12 +49,16 @@ export default async function ChargesPage({
     ? parameters.state!
     : "all";
   const chargeColumns =
-    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name)";
+    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name)";
 
-  // Duas consultas de propósito: pendentes sobem ordenadas pelo vencimento mais próximo,
-  // resolvidas descem ordenadas pela mais recente. Um único `order` não expressa isso, e
-  // ordenar só no cliente deixaria o corte de 100 registros descartar pendências antigas.
-  const buildRequest = (pending: boolean) => {
+  // Em "Todos", duas consultas de propósito: pendentes sobem ordenadas pelo vencimento
+  // mais próximo, resolvidas descem ordenadas pela mais recente. Um único `order` não
+  // expressa isso, e ordenar só no cliente deixaria o corte de 100 registros descartar
+  // pendências antigas. `status` ausente significa "tudo que não está pendente"; quando
+  // ele vem, o recorte vai no banco — filtrar em memória depois do `limit` fazia "Pagas"
+  // mostrar só o que sobrasse das 100 resolvidas mais recentes, que podiam ser todas
+  // canceladas.
+  const buildRequest = (pending: boolean, status?: string) => {
     let request = context.supabase
       .from("charges")
       .select(chargeColumns)
@@ -63,19 +66,18 @@ export default async function ChargesPage({
       .order("due_date", { ascending: pending })
       .limit(pending ? 200 : 100);
     if (query) request = request.ilike("description", `%${query}%`);
-    return pending ? request.eq("status", "pending") : request.neq("status", "pending");
+    return status ? request.eq("status", status) : request.neq("status", "pending");
   };
 
   const chargesRequest =
     state === "all"
-      ? Promise.all([buildRequest(true), buildRequest(false)]).then(([open, resolved]) => ({
-          data: [...(open.data ?? []), ...(resolved.data ?? [])],
-          error: open.error ?? resolved.error,
-        }))
-      : buildRequest(state === "pending").then((result) => ({
-          data: (result.data ?? []).filter((charge) => charge.status === state),
-          error: result.error,
-        }));
+      ? Promise.all([buildRequest(true, "pending"), buildRequest(false)]).then(
+          ([open, resolved]) => ({
+            data: [...(open.data ?? []), ...(resolved.data ?? [])],
+            error: open.error ?? resolved.error,
+          }),
+        )
+      : buildRequest(state === "pending", state);
 
   const [{ data: clients }, { data: services }, { data: charges, error }] = await Promise.all([
     context.supabase
@@ -158,117 +160,22 @@ export default async function ChargesPage({
           cliente, que já cria e renova as cobranças. Use este formulário para lançamentos fora da
           recorrência ou para registrar algo que já aconteceu.
         </p>
-        <form action={createCharge} className="form-grid mt-4 sm:grid-cols-2">
-          <ClientCombobox
-            clients={(clients ?? []).map((client) => ({
-              id: client.id,
-              name: client.name,
-              status: client.commercial_status,
-              tradeName: client.trade_name,
-            }))}
-            defaultValue={parameters.clientId}
-          />
-          <SelectField
-            defaultValue={parameters.serviceId ?? ""}
-            label="Serviço vinculado"
-            name="clientServiceId"
-            optional
-            options={[
-              { description: "Cobrança independente", label: "Sem vínculo", value: "" },
-              ...(services ?? []).map((service) => ({
-                description: clientNames.get(service.client_id),
-                label: service.name,
-                value: service.id,
-              })),
-            ]}
-            placeholder="Sem vínculo"
-          />
-          <label className="field sm:col-span-2">
-            <span className="field__label">Descrição</span>
-            <input
-              maxLength={200}
-              name="description"
-              placeholder="Ex.: Gestão de tráfego — agosto"
-            />
-          </label>
-          <DateField defaultValue={today} label="Vencimento" name="dueDate" required />
-          <label className="field">
-            <span className="field__label">
-              Receita própria
-              <FieldHint>
-                O que fica com você. É este valor que entra nos relatórios de faturamento.
-              </FieldHint>
-            </span>
-            <input
-              min="0"
-              name="companyRevenue"
-              placeholder="Ex.: 1500,00"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Verba de mídia <span className="field__optional">opcional</span>
-              <FieldHint>
-                Dinheiro do cliente que só passa por você para virar anúncio. Não conta como sua
-                receita.
-              </FieldHint>
-            </span>
-            <input min="0" name="mediaBudget" placeholder="Ex.: 800,00" step="0.01" type="number" />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Adicional <span className="field__optional">opcional</span>
-            </span>
-            <input
-              min="0"
-              name="additionalFee"
-              placeholder="Ex.: 120,00"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <div className="option-card sm:col-span-2">
-            <label className="option-card__toggle">
-              <input name="alreadyPaid" type="checkbox" />
-              <span>
-                <strong>Esta cobrança já foi paga</strong>
-                <small>
-                  Para registrar algo que aconteceu antes de você usar o sistema. Entra direto como
-                  quitada, na data de vencimento informada.
-                </small>
-              </span>
-            </label>
-            <div className="mt-3">
-              <SelectField
-                defaultValue="Pix"
-                label="Forma de pagamento"
-                name="paymentMethod"
-                options={paymentOptions}
-              />
-            </div>
-          </div>
-          <label className="field sm:col-span-2">
-            <span className="field__label">
-              Observações <span className="field__optional">opcional</span>
-            </span>
-            <textarea maxLength={5000} name="notes" />
-          </label>
-          <div className="sm:col-span-2">
-            <SoftSubmitButton
-              idleLabel="Criar cobrança"
-              requirements={[
-                { message: "Descreva a cobrança para reconhecê-la depois.", name: "description" },
-                {
-                  message: "Todos os valores estão zerados — a cobrança precisa de algum valor.",
-                  name: ["companyRevenue", "mediaBudget", "additionalFee"],
-                  warnOnZero: true,
-                },
-              ]}
-            />
-          </div>
-        </form>
+        <ChargeForm
+          clients={(clients ?? []).map((client) => ({
+            id: client.id,
+            name: client.name,
+            status: client.commercial_status,
+            tradeName: client.trade_name,
+          }))}
+          defaultClientId={parameters.clientId}
+          defaultServiceId={parameters.serviceId}
+          services={(services ?? []).map((service) => ({
+            clientName: clientNames.get(service.client_id),
+            id: service.id,
+            name: service.name,
+          }))}
+          today={today}
+        />
       </details>
 
       {error ? (
@@ -316,7 +223,12 @@ export default async function ChargesPage({
                       <dd>{formatCurrency(charge.media_budget)}</dd>
                     </div>
                     <div>
-                      <dt>Adicional</dt>
+                      <dt>
+                        Adicional
+                        {Number(charge.additional_fee) > 0 && !charge.additional_fee_is_revenue
+                          ? " (repasse)"
+                          : ""}
+                      </dt>
                       <dd>{formatCurrency(charge.additional_fee)}</dd>
                     </div>
                     <div>
