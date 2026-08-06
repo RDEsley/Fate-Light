@@ -4,7 +4,9 @@ import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { initialActionState } from "@/lib/forms/action-state";
+import { FieldError } from "@/components/ui/field-error";
+import { SelectField } from "@/components/ui/select-field";
+import { initialActionState, submittedValues } from "@/lib/forms/action-state";
 
 import { updateWorkspaceConfiguration } from "./actions";
 
@@ -31,11 +33,27 @@ type WorkspaceFormProps = {
   };
 };
 
-const fieldClassName =
-  "border-line bg-canvas mt-1.5 min-h-11 w-full rounded-xl border px-3 py-2.5 text-sm";
+const countryOptions = [{ label: "Brasil", value: "BR" }];
+
+const timezoneOptions = [
+  { label: "São Paulo", value: "America/Sao_Paulo" },
+  { label: "Recife", value: "America/Recife" },
+  { label: "Manaus", value: "America/Manaus" },
+  { label: "Rio Branco", value: "America/Rio_Branco" },
+  { label: "UTC", value: "UTC" },
+];
+
+const accountingBasisOptions = [
+  { description: "Registra ao pagar ou receber", label: "Caixa", value: "cash" },
+  { description: "Registra ao emitir ou vencer", label: "Competência", value: "accrual" },
+];
 
 export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
   const [state, formAction] = useActionState(updateWorkspaceConfiguration, initialActionState);
+  // O React devolve todo campo ao `defaultValue` quando a action termina. Sem reler o que
+  // foi enviado, um CNPJ com dígito a menos apagava as outras doze edições da tela.
+  const sent = submittedValues(state);
+  const errors = state.fieldErrors ?? {};
 
   return (
     <form action={formAction} className="space-y-5">
@@ -48,163 +66,137 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
 
       <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">Identidade</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm font-semibold sm:col-span-2">
-            Nome do workspace
+        <div className="form-grid sm:grid-cols-2">
+          <label className="field sm:col-span-2">
+            <span className="field__label">Nome do workspace</span>
             <input
-              className={fieldClassName}
-              defaultValue={workspace.name}
+              defaultValue={sent.text("workspaceName", workspace.name)}
               maxLength={120}
               name="workspaceName"
               required
             />
           </label>
-          <label className="text-sm font-semibold sm:col-span-2">
-            Razão social
+          <label className="field sm:col-span-2">
+            <span className="field__label">Razão social</span>
             <input
-              className={fieldClassName}
-              defaultValue={settings.legal_name}
+              defaultValue={sent.text("legalName", settings.legal_name)}
               maxLength={160}
               name="legalName"
               required
             />
           </label>
-          <label className="text-sm font-semibold">
-            Nome fantasia
+          <label className="field">
+            <span className="field__label">Nome fantasia</span>
             <input
-              className={fieldClassName}
-              defaultValue={settings.trade_name ?? ""}
+              defaultValue={sent.text("tradeName", settings.trade_name ?? "")}
               maxLength={160}
               name="tradeName"
             />
           </label>
-          <label className="text-sm font-semibold">
-            CPF ou CNPJ opcional
+          <label className="field">
+            <span className="field__label">
+              CPF ou CNPJ <span className="field__optional">opcional</span>
+            </span>
             <input
-              className={fieldClassName}
-              defaultValue={settings.tax_id ?? ""}
+              aria-invalid={Boolean(errors.taxId)}
+              defaultValue={sent.text("taxId", settings.tax_id ?? "")}
               inputMode="numeric"
               maxLength={24}
               name="taxId"
             />
+            <FieldError message={errors.taxId} />
           </label>
         </div>
       </fieldset>
 
       <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">Endereço</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm font-semibold sm:col-span-2">
-            Logradouro e número
+        <div className="form-grid sm:grid-cols-2">
+          <label className="field sm:col-span-2">
+            <span className="field__label">Logradouro e número</span>
             <input
               autoComplete="street-address"
-              className={fieldClassName}
-              defaultValue={settings.address_line1 ?? ""}
+              defaultValue={sent.text("addressLine1", settings.address_line1 ?? "")}
               maxLength={160}
               name="addressLine1"
             />
           </label>
-          <label className="text-sm font-semibold sm:col-span-2">
-            Complemento
+          <label className="field sm:col-span-2">
+            <span className="field__label">Complemento</span>
             <input
-              className={fieldClassName}
-              defaultValue={settings.address_line2 ?? ""}
+              defaultValue={sent.text("addressLine2", settings.address_line2 ?? "")}
               maxLength={160}
               name="addressLine2"
             />
           </label>
-          <label className="text-sm font-semibold">
-            Bairro
+          <label className="field">
+            <span className="field__label">Bairro</span>
             <input
-              className={fieldClassName}
-              defaultValue={settings.address_district ?? ""}
+              defaultValue={sent.text("addressDistrict", settings.address_district ?? "")}
               maxLength={100}
               name="addressDistrict"
             />
           </label>
-          <label className="text-sm font-semibold">
-            Cidade
+          <label className="field">
+            <span className="field__label">Cidade</span>
             <input
               autoComplete="address-level2"
-              className={fieldClassName}
-              defaultValue={settings.address_city ?? ""}
+              defaultValue={sent.text("addressCity", settings.address_city ?? "")}
               maxLength={100}
               name="addressCity"
             />
           </label>
-          <label className="text-sm font-semibold">
-            Estado
+          <label className="field">
+            <span className="field__label">Estado</span>
             <input
               autoComplete="address-level1"
-              className={fieldClassName}
-              defaultValue={settings.address_region ?? ""}
+              defaultValue={sent.text("addressRegion", settings.address_region ?? "")}
               maxLength={100}
               name="addressRegion"
             />
           </label>
-          <label className="text-sm font-semibold">
-            CEP
+          <label className="field">
+            <span className="field__label">CEP</span>
             <input
               autoComplete="postal-code"
-              className={fieldClassName}
-              defaultValue={settings.postal_code ?? ""}
+              defaultValue={sent.text("postalCode", settings.postal_code ?? "")}
               maxLength={20}
               name="postalCode"
             />
           </label>
-          <label className="text-sm font-semibold">
-            País
-            <select
-              className={fieldClassName}
-              defaultValue={settings.country_code}
-              name="countryCode"
-            >
-              <option value="BR">Brasil</option>
-            </select>
-          </label>
+          <SelectField
+            defaultValue={sent.text("countryCode", settings.country_code)}
+            label="País"
+            name="countryCode"
+            options={countryOptions}
+          />
         </div>
       </fieldset>
 
       <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">Preferências financeiras</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm font-semibold">
-            Moeda
-            <input
-              className={`${fieldClassName} text-muted`}
-              disabled
-              readOnly
-              value={workspace.currency}
-            />
+        <div className="form-grid sm:grid-cols-2">
+          <label className="field">
+            <span className="field__label">Moeda</span>
+            <input className="text-muted" disabled readOnly value={workspace.currency} />
           </label>
-          <label className="text-sm font-semibold">
-            Timezone financeiro
-            <select className={fieldClassName} defaultValue={workspace.timezone} name="timezone">
-              <option value="America/Sao_Paulo">São Paulo</option>
-              <option value="America/Recife">Recife</option>
-              <option value="America/Manaus">Manaus</option>
-              <option value="America/Rio_Branco">Rio Branco</option>
-              <option value="UTC">UTC</option>
-            </select>
-          </label>
-          <label className="text-sm font-semibold">
-            Formato de data
+          <SelectField
+            defaultValue={sent.text("timezone", workspace.timezone)}
+            label="Timezone financeiro"
+            name="timezone"
+            options={timezoneOptions}
+          />
+          <label className="field">
+            <span className="field__label">Formato de data</span>
             <input name="dateFormat" type="hidden" value="DD/MM/YYYY" />
-            <span className={`${fieldClassName} flex items-center text-sm`}>
-              DD/MM/AAAA · PT-BR
-            </span>
+            <input className="text-muted" disabled readOnly value="DD/MM/AAAA · PT-BR" />
           </label>
-          <label className="text-sm font-semibold">
-            Regime gerencial padrão
-            <select
-              className={fieldClassName}
-              defaultValue={settings.accounting_basis}
-              name="accountingBasis"
-            >
-              <option value="cash">Caixa</option>
-              <option value="accrual">Competência</option>
-            </select>
-          </label>
+          <SelectField
+            defaultValue={sent.text("accountingBasis", settings.accounting_basis)}
+            label="Regime gerencial padrão"
+            name="accountingBasis"
+            options={accountingBasisOptions}
+          />
         </div>
         <p className="text-muted mt-4 text-sm leading-6">
           Alterar o timezone muda a interpretação de “hoje” e afetará agendas futuras. A moeda está

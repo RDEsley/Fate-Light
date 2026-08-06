@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
 import { ClientCombobox, DateField, type ClientOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { isoToday } from "@/features/mvp/format";
+import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 export type DomainValues = {
   autoRenew: boolean;
@@ -20,8 +23,6 @@ export type DomainValues = {
   registrar: string | null;
 };
 
-const fieldClassName = "border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3";
-
 /**
  * Formulário de domínio usado tanto na criação quanto na edição. Ao escolher o cliente,
  * o que já está cadastrado nele (site e responsável) é sugerido: redigitar dado que o
@@ -33,12 +34,15 @@ export function DomainForm({
   domain,
   onCancel,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   clients: (ClientOption & { website?: string | null })[];
   domain?: DomainValues;
   onCancel?: () => void;
 }) {
   const editing = Boolean(domain);
+  const [state, formAction] = useActionState(action, initialActionState);
+  const errors = state.fieldErrors ?? {};
+  const sent = submittedValues(state);
   const [domainName, setDomainName] = useState(domain?.domain ?? "");
   const [responsibility, setResponsibility] = useState(domain?.paymentResponsibility ?? "");
   const [suggestion, setSuggestion] = useState<string | null>(null);
@@ -55,24 +59,31 @@ export function DomainForm({
   };
 
   return (
-    <form action={action} className="form-grid mt-4 sm:grid-cols-2">
+    <form action={formAction} className="form-grid mt-4 sm:grid-cols-2">
       {domain ? <input name="id" type="hidden" value={domain.id} /> : null}
+      {state.status === "error" && state.message ? (
+        <div className="sm:col-span-2">
+          <FeedbackBanner message={state.message} tone="error" />
+        </div>
+      ) : null}
       <ClientCombobox
         clients={clients}
         defaultFilter="all"
         defaultValue={domain?.clientId}
         onSelect={applyClient}
       />
-      <label className="text-sm font-semibold">
-        Domínio
+      <label className="field">
+        <span className="field__label">Domínio</span>
         <input
-          className={fieldClassName}
+          aria-invalid={Boolean(errors.domain)}
+          maxLength={253}
           name="domain"
           onChange={(event) => setDomainName(event.target.value)}
           placeholder="exemplo.com.br"
           required
           value={domainName}
         />
+        <FieldError message={errors.domain} />
         {suggestion ? (
           <button
             className="field__hint mt-1 block text-left underline underline-offset-2"
@@ -88,12 +99,13 @@ export function DomainForm({
       </label>
       <DateField
         defaultValue={domain?.expiresOn ?? isoToday()}
+        error={errors.expiresOn}
         label="Data de expiração"
         name="expiresOn"
         required
       />
-      <label className="text-sm font-semibold">
-        <span className="flex items-center">
+      <label className="field">
+        <span className="field__label">
           Responsável pelo pagamento
           <FieldHint>
             Quem paga a renovação: você, o cliente ou um terceiro. Aparece no card para você saber a
@@ -101,7 +113,7 @@ export function DomainForm({
           </FieldHint>
         </span>
         <input
-          className={fieldClassName}
+          aria-invalid={Boolean(errors.paymentResponsibility)}
           maxLength={120}
           name="paymentResponsibility"
           onChange={(event) => setResponsibility(event.target.value)}
@@ -109,53 +121,70 @@ export function DomainForm({
           required
           value={responsibility}
         />
+        <FieldError message={errors.paymentResponsibility} />
       </label>
 
-      <details className="form-disclosure sm:col-span-2" open={editing}>
+      {/* Aberto quando o erro está aqui dentro: apontar um campo escondido atrás de um
+          disclosure fechado é o mesmo que não apontar. */}
+      <details
+        className="form-disclosure sm:col-span-2"
+        open={editing || Boolean(errors.registrar || errors.cost || errors.notes)}
+      >
         <summary className="flex cursor-pointer items-center gap-1 text-sm font-semibold">
           Mais detalhes <span className="field__optional">opcional</span>
           <Icon className="form-disclosure__chevron ml-auto size-4" name="chevron-down" />
         </summary>
         <div className="form-grid mt-3 sm:grid-cols-2">
-          <label className="text-sm font-semibold">
-            <span className="flex items-center">
-              Registrador
+          <label className="field">
+            <span className="field__label">
+              Registrador <span className="field__optional">opcional</span>
               <FieldHint>Cole o link do painel para abrir a renovação com um clique.</FieldHint>
             </span>
             <input
-              className={fieldClassName}
-              defaultValue={domain?.registrar ?? ""}
+              defaultValue={sent.text("registrar", domain?.registrar ?? "")}
               maxLength={120}
               name="registrar"
               placeholder="Ex.: godaddy.com ou GoDaddy"
             />
+            <FieldError message={errors.registrar} />
           </label>
-          <label className="text-sm font-semibold">
-            Custo <span className="field__optional">opcional</span>
+          <label className="field">
+            <span className="field__label">
+              Custo <span className="field__optional">opcional</span>
+            </span>
             <input
-              className={fieldClassName}
-              defaultValue={domain?.cost ?? ""}
+              aria-invalid={Boolean(errors.cost)}
+              defaultValue={sent.text(
+                "cost",
+                domain?.cost === null ? "" : String(domain?.cost ?? ""),
+              )}
               min="0"
               name="cost"
               placeholder="Ex.: 40,00"
               step="0.01"
               type="number"
             />
+            <FieldError message={errors.cost} />
           </label>
           <div className="option-card sm:col-span-2">
             <label className="option-card__toggle">
-              <input defaultChecked={domain?.autoRenew} name="autoRenew" type="checkbox" />
+              <input
+                defaultChecked={sent.checkbox("autoRenew", domain?.autoRenew)}
+                name="autoRenew"
+                type="checkbox"
+              />
               <span>
                 <strong>Renovação automática</strong>
                 <small>O registrador cobra e renova sozinho quando o prazo vence.</small>
               </span>
             </label>
           </div>
-          <label className="text-sm font-semibold sm:col-span-2">
-            Observações <span className="field__optional">opcional</span>
+          <label className="field sm:col-span-2">
+            <span className="field__label">
+              Observações <span className="field__optional">opcional</span>
+            </span>
             <textarea
-              className="border-line bg-canvas mt-2 min-h-24 w-full rounded-xl border px-4 py-3"
-              defaultValue={domain?.notes ?? ""}
+              defaultValue={sent.text("notes", domain?.notes ?? "")}
               maxLength={5000}
               name="notes"
               placeholder="Login usado, combinados sobre a renovação…"

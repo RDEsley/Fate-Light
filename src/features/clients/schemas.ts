@@ -81,6 +81,10 @@ function optional(value: string) {
   return value || null;
 }
 
+/**
+ * Devolve o resultado do schema em vez de `null` no erro: sem o `ZodError` a action não
+ * tem como dizer qual campo recusou, e o formulário voltava com um aviso genérico.
+ */
 export function parseClientForm(formData: FormData) {
   // Campos opcionais ausentes valem como vazios: nem todo formulário envia todos eles.
   const text = (field: string) => String(formData.get(field) ?? "");
@@ -94,21 +98,24 @@ export function parseClientForm(formData: FormData) {
     website: text("website"),
   });
 
-  if (!parsed.success) return null;
+  if (!parsed.success) return { error: parsed.error, success: false as const };
   return {
-    address_json: null,
-    commercial_status: parsed.data.status,
-    email: optional(parsed.data.email),
-    kind: "company",
-    links: parseClientLinks(formData),
-    name: parsed.data.name,
-    notes: optional(parsed.data.notes),
-    phone: optional(parsed.data.phone),
-    responsible_name: null,
-    tags: [],
-    tax_id: null,
-    trade_name: optional(parsed.data.companyName),
-    website: optional(parsed.data.website),
+    data: {
+      address_json: null,
+      commercial_status: parsed.data.status,
+      email: optional(parsed.data.email),
+      kind: "company",
+      links: parseClientLinks(formData),
+      name: parsed.data.name,
+      notes: optional(parsed.data.notes),
+      phone: optional(parsed.data.phone),
+      responsible_name: null,
+      tags: [],
+      tax_id: null,
+      trade_name: optional(parsed.data.companyName),
+      website: optional(parsed.data.website),
+    },
+    success: true as const,
   };
 }
 

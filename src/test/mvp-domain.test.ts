@@ -5,7 +5,12 @@ import {
   formatCurrency,
   monthBounds,
 } from "@/features/mvp/format";
-import { chargeSchema, clientServiceSchema, domainSchema } from "@/features/mvp/schemas";
+import {
+  chargeSchema,
+  clientServiceSchema,
+  domainSchema,
+  ownRevenue,
+} from "@/features/mvp/schemas";
 import { billingFrequencyLabel } from "@/features/mvp/recurrence";
 
 describe("MVP financial boundaries", () => {
@@ -26,6 +31,24 @@ describe("MVP financial boundaries", () => {
     const charge = chargeSchema.parse(baseCharge);
     expect(charge).toMatchObject({ additionalFee: 50, companyRevenue: 500, mediaBudget: 1000 });
     expect(charge.companyRevenue + charge.additionalFee).toBe(550);
+  });
+
+  it("conta o adicional como receita só quando ele é declarado como tal", () => {
+    const base = { additional_fee: 50, company_revenue: 500 };
+    // Sem declaração vale o default da coluna: receita própria, que é o comportamento
+    // que o dashboard já praticava antes da ADR-0018.
+    expect(ownRevenue(base)).toBe(550);
+    expect(ownRevenue({ ...base, additional_fee_is_revenue: true })).toBe(550);
+    // Repasse acompanha a verba de mídia e nunca compõe faturamento (ADR-0001).
+    expect(ownRevenue({ ...base, additional_fee_is_revenue: false })).toBe(500);
+  });
+
+  it("assume receita própria quando o formulário não declara a natureza do adicional", () => {
+    expect(chargeSchema.parse(baseCharge).additionalFeeIsRevenue).toBe(true);
+    expect(
+      chargeSchema.parse({ ...baseCharge, additionalFeeIsRevenue: "passthrough" })
+        .additionalFeeIsRevenue,
+    ).toBe(false);
   });
 
   it("rejeita cobrança zerada", () => {

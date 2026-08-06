@@ -17,9 +17,19 @@ const nullableInteger = (maximum: number) =>
 
 export const identifierSchema = z.string().uuid();
 
+/**
+ * Natureza do custo adicional (ADR-0018). Ausente ou vazio vale como receita própria:
+ * é o default da coluna e o comportamento que o dashboard já praticava.
+ */
+const additionalFeeNature = z
+  .union([z.literal(""), z.enum(["revenue", "passthrough"])])
+  .default("")
+  .transform((value) => value !== "passthrough");
+
 export const clientServiceSchema = z
   .object({
     additionalFee: money,
+    additionalFeeIsRevenue: additionalFeeNature,
     adjustmentIntervalMonths: nullableInteger(60),
     adjustmentRate: nullableMoney,
     billingType: z.enum(billingFrequencyValues),
@@ -78,6 +88,21 @@ export const serviceCatalogSchema = z
     { path: ["adjustmentIntervalMonths"] },
   );
 
+/**
+ * Receita própria de uma cobrança. O custo adicional só entra quando declarado como
+ * receita (ADR-0018); como repasse ele acompanha a verba de mídia e nunca compõe
+ * faturamento, resultado ou margem — a mesma separação da ADR-0001.
+ */
+export function ownRevenue(charge: {
+  additional_fee: number | string | null;
+  additional_fee_is_revenue?: boolean | null;
+  company_revenue: number | string | null;
+}) {
+  const additional =
+    charge.additional_fee_is_revenue === false ? 0 : Number(charge.additional_fee ?? 0);
+  return Number(charge.company_revenue ?? 0) + additional;
+}
+
 export function discountedPrice(
   listPrice: number,
   discountType: "fixed" | "none" | "percentage",
@@ -95,6 +120,7 @@ export function discountedPrice(
 export const chargeSchema = z
   .object({
     additionalFee: money,
+    additionalFeeIsRevenue: additionalFeeNature,
     alreadyPaid: z.boolean(),
     clientId: identifierSchema,
     clientServiceId: z.union([z.literal(""), identifierSchema]),

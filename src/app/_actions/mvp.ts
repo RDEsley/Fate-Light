@@ -4,6 +4,8 @@ import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
+import { actionError, rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import {
   cancellationSchema,
   chargeSchema,
@@ -21,6 +23,23 @@ import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 function statusRedirect(path: string, status: string): never {
   redirect(`${path}${path.includes("?") ? "&" : "?"}status=${status}` as Route);
+}
+
+/** "Descrição" muda de sentido conforme a tela; o resto dos rótulos é comum. */
+const chargeLabels = { description: "Descrição da cobrança" };
+const expenseLabels = { description: "Descrição da despesa" };
+
+function readDomainForm(formData: FormData) {
+  return domainSchema.safeParse({
+    autoRenew: formData.get("autoRenew") === "on",
+    clientId: formData.get("clientId"),
+    cost: formData.get("cost"),
+    domain: formData.get("domain"),
+    expiresOn: formData.get("expiresOn"),
+    notes: formData.get("notes"),
+    paymentResponsibility: formData.get("paymentResponsibility"),
+    registrar: formData.get("registrar"),
+  });
 }
 
 /**
@@ -127,6 +146,8 @@ export async function updateClientServiceSchedule(formData: FormData) {
     .single();
   if (error || !data) statusRedirect(`/clientes/${values.data.clientId}`, "service-error");
   revalidatePath(`/clientes/${values.data.clientId}`);
+  revalidatePath("/cobrancas");
+  revalidatePath("/dashboard");
   statusRedirect(`/clientes/${values.data.clientId}`, "service-schedule-updated");
 }
 
@@ -157,9 +178,10 @@ export async function deleteOperationalRecord(formData: FormData) {
   statusRedirect(path, "deleted");
 }
 
-export async function createCharge(formData: FormData) {
+export async function createCharge(_state: ActionState, formData: FormData): Promise<ActionState> {
   const values = chargeSchema.safeParse({
     additionalFee: formData.get("additionalFee"),
+    additionalFeeIsRevenue: formData.get("additionalFeeNature") ?? "",
     alreadyPaid: formData.get("alreadyPaid") === "on",
     clientId: formData.get("clientId"),
     clientServiceId: formData.get("clientServiceId"),
@@ -170,7 +192,10 @@ export async function createCharge(formData: FormData) {
     notes: formData.get("notes"),
     paymentMethod: formData.get("paymentMethod"),
   });
-  if (!values.success) statusRedirect("/cobrancas", "invalid");
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, chargeLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   // Registrar uma cobrança passada já quitada evita ter que inventar histórico depois.
   const settled = values.data.alreadyPaid;
@@ -178,6 +203,7 @@ export async function createCharge(formData: FormData) {
     .from("charges")
     .insert({
       additional_fee: values.data.additionalFee,
+      additional_fee_is_revenue: values.data.additionalFeeIsRevenue,
       client_id: values.data.clientId,
       client_service_id: values.data.clientServiceId || null,
       company_revenue: values.data.companyRevenue,
@@ -192,7 +218,7 @@ export async function createCharge(formData: FormData) {
     })
     .select("id")
     .single();
-  if (error || !data) statusRedirect("/cobrancas", "error");
+  if (error || !data) return rejectSubmission(formData, databaseErrorMessage(error));
   revalidatePath("/cobrancas");
   revalidatePath("/historico");
   revalidatePath("/dashboard");
@@ -273,7 +299,7 @@ export async function cancelCharge(formData: FormData) {
   statusRedirect(`/cobrancas?focus=${values.data.id}`, "cancelled");
 }
 
-export async function createExpense(formData: FormData) {
+export async function createExpense(_state: ActionState, formData: FormData): Promise<ActionState> {
   const values = expenseSchema.safeParse({
     amount: formData.get("amount"),
     category: formData.get("category"),
@@ -284,7 +310,10 @@ export async function createExpense(formData: FormData) {
     notes: formData.get("notes"),
     status: formData.get("status"),
   });
-  if (!values.success) statusRedirect("/despesas", "invalid");
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, expenseLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { error } = await supabase.from("expenses").insert({
     amount: values.data.amount,
@@ -294,11 +323,16 @@ export async function createExpense(formData: FormData) {
     due_date: values.data.dueDate,
     expense_type: values.data.expenseType,
     notes: optional(values.data.notes),
-    paid_at: values.data.status === "paid" ? new Date().toISOString() : null,
+    // Despesa já paga é ancorada na data informada, como a cobrança já paga: usar "agora"
+    // jogava um custo antigo no período de hoje e o resultado do painel não fechava.
+    paid_at:
+      values.data.status === "paid"
+        ? new Date(`${values.data.dueDate}T12:00:00.000Z`).toISOString()
+        : null,
     status: values.data.status,
     workspace_id: workspaceId,
   });
-  if (error) statusRedirect("/despesas", "error");
+  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
   revalidatePath("/despesas");
   revalidatePath("/dashboard");
   statusRedirect("/despesas", "created");
@@ -322,18 +356,12 @@ export async function markExpensePaid(formData: FormData) {
   statusRedirect("/despesas", "paid");
 }
 
-export async function createDomain(formData: FormData) {
-  const values = domainSchema.safeParse({
-    autoRenew: formData.get("autoRenew") === "on",
-    clientId: formData.get("clientId"),
-    cost: formData.get("cost"),
-    domain: formData.get("domain"),
-    expiresOn: formData.get("expiresOn"),
-    notes: formData.get("notes"),
-    paymentResponsibility: formData.get("paymentResponsibility"),
-    registrar: formData.get("registrar"),
-  });
-  if (!values.success) statusRedirect("/dominios", "invalid");
+export async function createDomain(_state: ActionState, formData: FormData): Promise<ActionState> {
+  const values = readDomainForm(formData);
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { error } = await supabase.from("domains").insert({
     auto_renew: values.data.autoRenew,
@@ -347,25 +375,20 @@ export async function createDomain(formData: FormData) {
     status: "active",
     workspace_id: workspaceId,
   });
-  if (error) statusRedirect("/dominios", "error");
+  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
   revalidatePath("/dominios");
   revalidatePath("/dashboard");
   statusRedirect("/dominios", "created");
 }
 
-export async function updateDomain(formData: FormData) {
+export async function updateDomain(_state: ActionState, formData: FormData): Promise<ActionState> {
   const id = identifierSchema.safeParse(formData.get("id"));
-  const values = domainSchema.safeParse({
-    autoRenew: formData.get("autoRenew") === "on",
-    clientId: formData.get("clientId"),
-    cost: formData.get("cost"),
-    domain: formData.get("domain"),
-    expiresOn: formData.get("expiresOn"),
-    notes: formData.get("notes"),
-    paymentResponsibility: formData.get("paymentResponsibility"),
-    registrar: formData.get("registrar"),
-  });
-  if (!id.success || !values.success) statusRedirect("/dominios", "invalid");
+  if (!id.success) return actionError("Domínio não identificado. Recarregue a página.");
+  const values = readDomainForm(formData);
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("domains")
@@ -383,7 +406,7 @@ export async function updateDomain(formData: FormData) {
     .eq("workspace_id", workspaceId)
     .select("id")
     .single();
-  if (error || !data) statusRedirect("/dominios", "error");
+  if (error || !data) return rejectSubmission(formData, databaseErrorMessage(error));
   revalidatePath("/dominios");
   revalidatePath("/dashboard");
   statusRedirect("/dominios", "domain-updated");

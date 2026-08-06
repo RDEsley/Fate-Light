@@ -21,9 +21,15 @@ function clientForm(overrides: Record<string, string> = {}) {
   return formData;
 }
 
+/** Atalho para os casos que só olham o cadastro normalizado, não o erro. */
+function parsedClient(formData: FormData) {
+  const parsed = parseClientForm(formData);
+  return parsed.success ? parsed.data : null;
+}
+
 describe("client domain boundaries", () => {
   it("normaliza o cadastro mínimo do cliente", () => {
-    expect(parseClientForm(clientForm())).toEqual({
+    expect(parsedClient(clientForm())).toEqual({
       address_json: null,
       commercial_status: "active",
       email: "cliente@example.test",
@@ -40,8 +46,13 @@ describe("client domain boundaries", () => {
     });
   });
 
-  it("rejeita telefone curto", () => {
-    expect(parseClientForm(clientForm({ phone: "123" }))).toBeNull();
+  it("rejeita telefone curto apontando o campo", () => {
+    const rejected = parseClientForm(clientForm({ phone: "123" }));
+    expect(rejected.success).toBe(false);
+    // O erro precisa dizer qual campo recusou: é o que o formulário marca em vermelho.
+    expect(rejected.success ? [] : rejected.error.issues.map((issue) => issue.path[0])).toContain(
+      "phone",
+    );
   });
 
   it("normaliza os links extras e ignora linhas incompletas", () => {
@@ -77,20 +88,20 @@ describe("client domain boundaries", () => {
 
   it("aceita as novas situações comerciais e recusa valores forjados", () => {
     for (const status of ["budget", "pending", "blacklist"]) {
-      expect(parseClientForm(clientForm({ status }))).toMatchObject({
+      expect(parsedClient(clientForm({ status }))).toMatchObject({
         commercial_status: status,
       });
     }
-    expect(parseClientForm(clientForm({ status: "archived" }))).toBeNull();
-    expect(parseClientForm(clientForm({ status: "forjado" }))).toBeNull();
+    expect(parseClientForm(clientForm({ status: "archived" })).success).toBe(false);
+    expect(parseClientForm(clientForm({ status: "forjado" })).success).toBe(false);
   });
 
   it("guarda somente o host do site, sem protocolo nem caminho", () => {
     expect(
-      parseClientForm(clientForm({ website: "HTTPS://PadariaDoJoao.com.br/menu" })),
+      parsedClient(clientForm({ website: "HTTPS://PadariaDoJoao.com.br/menu" })),
     ).toMatchObject({ website: "padariadojoao.com.br" });
-    expect(parseClientForm(clientForm({ website: "" }))).toMatchObject({ website: null });
-    expect(parseClientForm(clientForm({ website: "não é um site" }))).toBeNull();
+    expect(parsedClient(clientForm({ website: "" }))).toMatchObject({ website: null });
+    expect(parseClientForm(clientForm({ website: "não é um site" })).success).toBe(false);
   });
 
   it("lê o histórico anterior somente quando há valor informado", () => {

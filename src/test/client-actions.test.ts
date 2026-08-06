@@ -25,6 +25,7 @@ vi.mock("@/lib/auth/workspace-context", () => ({
 }));
 
 import { archiveClient, createClient, deleteClient, setClientStatus } from "@/app/clientes/actions";
+import { initialActionState } from "@/lib/forms/action-state";
 
 function validClientForm() {
   const formData = new FormData();
@@ -63,7 +64,7 @@ describe("client actions", () => {
   });
 
   it("deriva o workspace do contexto e ignora workspace forjado no formulário", async () => {
-    await expect(createClient(validClientForm())).rejects.toThrow(
+    await expect(createClient(initialActionState, validClientForm())).rejects.toThrow(
       "REDIRECT:/clientes/client-id?status=created",
     );
 
@@ -75,6 +76,36 @@ describe("client actions", () => {
     );
     expect(clientActionMocks.insert).not.toHaveBeenCalledWith(
       expect.objectContaining({ workspace_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }),
+    );
+  });
+
+  it("revalida cobranças e histórico ao gravar o total já recebido", async () => {
+    clientActionMocks.insert
+      .mockReturnValueOnce({ select: clientActionMocks.select })
+      .mockReturnValueOnce(Promise.resolve({ error: null }));
+    const formData = validClientForm();
+    formData.set("priorRevenue", "24000");
+    formData.set("priorRevenueDate", "2026-01-31");
+
+    await expect(createClient(initialActionState, formData)).rejects.toThrow(
+      "REDIRECT:/clientes/client-id?status=created",
+    );
+
+    const revalidated = clientActionMocks.revalidatePath.mock.calls.map(([path]) => path);
+    expect(revalidated).toEqual(expect.arrayContaining(["/cobrancas", "/historico"]));
+  });
+
+  it("avisa quando o total já recebido não pôde ser gravado", async () => {
+    clientActionMocks.insert
+      .mockReturnValueOnce({ select: clientActionMocks.select })
+      .mockReturnValueOnce(Promise.resolve({ error: { message: "insert denied" } }));
+    const formData = validClientForm();
+    formData.set("priorRevenue", "24000");
+    formData.set("priorRevenueDate", "2026-01-31");
+
+    // O cliente já foi gravado, então engolir a falha fazia o valor sumir sem aviso.
+    await expect(createClient(initialActionState, formData)).rejects.toThrow(
+      "REDIRECT:/clientes/client-id?status=prior-revenue-error",
     );
   });
 

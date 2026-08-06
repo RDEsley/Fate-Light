@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
 import { formatCurrency, isoToday } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
+import { ownRevenue } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { archiveClient, deleteClient, restoreClient } from "../actions";
@@ -63,7 +64,7 @@ export default async function ClientDetailsPage({
     context.supabase
       .from("client_services")
       .select(
-        "id, name, description, list_price, discount_type, discount_value, company_revenue, media_budget, additional_fee, billing_type, installment_count, promotional_price, promotional_cycles, promotional_cycles_used, start_date, next_due_date, adjustment_interval_months, adjustment_rate, next_adjustment_date, ended_at, status, notes",
+        "id, name, description, list_price, discount_type, discount_value, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, billing_type, installment_count, promotional_price, promotional_cycles, promotional_cycles_used, start_date, next_due_date, adjustment_interval_months, adjustment_rate, next_adjustment_date, ended_at, status, notes",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
@@ -79,7 +80,9 @@ export default async function ClientDetailsPage({
       .order("name"),
     context.supabase
       .from("charges")
-      .select("client_service_id, company_revenue, status, due_date")
+      .select(
+        "client_service_id, company_revenue, additional_fee, additional_fee_is_revenue, status, due_date",
+      )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
   ]);
@@ -88,12 +91,14 @@ export default async function ClientDetailsPage({
   const statusInfo = clientStatusInfo(client.archived_at ? "archived" : client.commercial_status);
   const archived = Boolean(client.archived_at);
   const today = isoToday();
+  // O adicional declarado como receita entra aqui; como repasse, não (ADR-0018). Antes
+  // ele ficava de fora dos dois casos, e o total do cliente nunca fechava com o painel.
   const earned = (charges ?? [])
     .filter((charge) => charge.status === "paid")
-    .reduce((total, charge) => total + Number(charge.company_revenue), 0);
+    .reduce((total, charge) => total + ownRevenue(charge), 0);
   const pending = (charges ?? [])
     .filter((charge) => charge.status === "pending")
-    .reduce((total, charge) => total + Number(charge.company_revenue), 0);
+    .reduce((total, charge) => total + ownRevenue(charge), 0);
   // O card de cada serviço precisa saber o que a exclusão levaria junto, então os totais
   // são agrupados por serviço aqui, uma vez, em vez de refiltrar dentro do componente.
   const chargeTotals = new Map<
@@ -110,7 +115,7 @@ export default async function ClientDetailsPage({
     };
     if (charge.status === "paid") {
       totals.paidCharges += 1;
-      totals.paidRevenue += Number(charge.company_revenue);
+      totals.paidRevenue += ownRevenue(charge);
     } else if (charge.status === "pending") {
       totals.pendingCharges += 1;
       // "Quitar pendências" só liquida o que já venceu — um ciclo futuro marcado
@@ -284,6 +289,7 @@ export default async function ClientDetailsPage({
                 key={service.id}
                 service={{
                   additionalFee: Number(service.additional_fee),
+                  additionalFeeIsRevenue: service.additional_fee_is_revenue,
                   adjustmentIntervalMonths: service.adjustment_interval_months,
                   adjustmentRate:
                     service.adjustment_rate === null ? null : Number(service.adjustment_rate),

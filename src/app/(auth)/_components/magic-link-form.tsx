@@ -59,13 +59,13 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
         </div>
 
         {!isLogin ? (
-          <div>
-            <label className="text-sm font-semibold" htmlFor={`${mode}-display-name`}>
+          <div className="field">
+            <label className="field__label" htmlFor={`${mode}-display-name`}>
               Nome ou nome da empresa
             </label>
             <input
               autoComplete="name"
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
+              className="text-base"
               id={`${mode}-display-name`}
               maxLength={120}
               minLength={2}
@@ -74,19 +74,19 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
               required
               type="text"
             />
-            <p className="text-muted mt-2 text-xs">
+            <span className="field__hint">
               Usaremos esse nome para preparar seu primeiro acesso.
-            </p>
+            </span>
           </div>
         ) : null}
 
-        <div>
-          <label className="text-sm font-semibold" htmlFor={`${mode}-email`}>
+        <div className="field">
+          <label className="field__label" htmlFor={`${mode}-email`}>
             E-mail
           </label>
           <input
             autoComplete="email"
-            className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
+            className="text-base"
             id={`${mode}-email`}
             inputMode="email"
             maxLength={254}

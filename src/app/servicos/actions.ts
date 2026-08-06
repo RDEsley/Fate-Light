@@ -3,8 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
 import { identifierSchema, optional, serviceCatalogSchema } from "@/features/mvp/schemas";
+import { actionError, rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
+
+/** "Nome" e "Descrição" aqui são do item de catálogo. */
+const catalogLabels = { description: "Descrição do serviço", name: "Nome do serviço" };
 
 function finish(status: string): never {
   redirect(`/servicos?status=${status}`);
@@ -21,9 +26,15 @@ function parseService(formData: FormData) {
   });
 }
 
-export async function createCatalogService(formData: FormData) {
+export async function createCatalogService(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const values = parseService(formData);
-  if (!values.success) finish("service-invalid");
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, catalogLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { error } = await supabase.from("services").insert({
     active: true,
@@ -35,15 +46,22 @@ export async function createCatalogService(formData: FormData) {
     name: values.data.name,
     workspace_id: workspaceId,
   });
-  if (error) finish("service-error");
+  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
   revalidatePath("/servicos");
   finish("service-created");
 }
 
-export async function updateCatalogService(formData: FormData) {
+export async function updateCatalogService(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const id = identifierSchema.safeParse(formData.get("id"));
+  if (!id.success) return actionError("Serviço não identificado. Recarregue a página.");
   const values = parseService(formData);
-  if (!id.success || !values.success) finish("service-invalid");
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, catalogLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("services")
@@ -59,7 +77,7 @@ export async function updateCatalogService(formData: FormData) {
     .eq("workspace_id", workspaceId)
     .select("id")
     .single();
-  if (error || !data) finish("service-error");
+  if (error || !data) return rejectSubmission(formData, databaseErrorMessage(error));
   revalidatePath("/servicos");
   finish("service-updated");
 }

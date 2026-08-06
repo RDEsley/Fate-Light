@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { applyServiceToClient, editClientService } from "@/app/_actions/client-services";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
 import { DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
@@ -25,6 +26,7 @@ export type CatalogServiceOption = {
 
 export type ClientServiceValues = {
   additionalFee: number;
+  additionalFeeIsRevenue: boolean;
   adjustmentIntervalMonths: number | null;
   adjustmentRate: number | null;
   billingType: BillingFrequency;
@@ -51,13 +53,18 @@ const discountOptions = [
   { description: "Abate um valor em reais", label: "Valor fixo", value: "fixed" },
 ];
 
-function FieldError({ message }: { message?: string }) {
-  return message ? (
-    <span className="field__error">
-      <Icon className="size-3.5" name="alert" /> {message}
-    </span>
-  ) : null;
-}
+const additionalNatureOptions = [
+  {
+    description: "Soma na sua receita e no resultado",
+    label: "É minha receita",
+    value: "revenue",
+  },
+  {
+    description: "Passa por você mas é de terceiro; fica fora da receita",
+    label: "É repasse",
+    value: "passthrough",
+  },
+];
 
 /** Converte número para texto de campo sem transformar ausência de valor em zero. */
 function moneyText(value: number | null | undefined) {
@@ -99,6 +106,10 @@ export function ServiceApplicationForm({
   const [promotionalCycles, setPromotionalCycles] = useState(
     service?.promotionalCycles ? String(service.promotionalCycles) : "",
   );
+  const [additionalFee, setAdditionalFee] = useState(moneyText(service?.additionalFee));
+  const [additionalNature, setAdditionalNature] = useState(
+    service && !service.additionalFeeIsRevenue ? "passthrough" : "revenue",
+  );
   const [adjustment, setAdjustment] = useState(Boolean(service?.adjustmentIntervalMonths));
   const [adjustmentInterval, setAdjustmentInterval] = useState(
     service?.adjustmentIntervalMonths ? String(service.adjustmentIntervalMonths) : "6",
@@ -119,6 +130,8 @@ export function ServiceApplicationForm({
   );
   const cycles = Number(promotionalCycles) || 0;
   const promoValue = Number(promotionalPrice) || 0;
+  // Só o adicional declarado como receita entra no que você recebe (ADR-0018).
+  const additionalRevenue = additionalNature === "passthrough" ? 0 : Number(additionalFee) || 0;
   const catalogMatch = catalog.find(
     (item) => item.name.toLocaleLowerCase("pt-BR") === name.trim().toLocaleLowerCase("pt-BR"),
   );
@@ -208,17 +221,20 @@ export function ServiceApplicationForm({
         />
         <DateField
           defaultValue={service?.nextDueDate ?? isoToday()}
+          error={errors.nextDueDate}
           label="Primeiro vencimento"
           name="nextDueDate"
           required
         />
         <div className="service-price-preview">
-          <span>Valor aplicado</span>
-          <strong>{formatCurrency(finalPrice)}</strong>
+          <span>{additionalRevenue > 0 ? "A receber por cobrança" : "Valor aplicado"}</span>
+          <strong>{formatCurrency(finalPrice + additionalRevenue)}</strong>
           <small>
-            {editing
-              ? "Cobranças pendentes acompanham o novo valor"
-              : "Cobrança inicial criada automaticamente"}
+            {additionalRevenue > 0
+              ? `${formatCurrency(finalPrice)} do serviço + ${formatCurrency(additionalRevenue)} de adicional`
+              : editing
+                ? "Cobranças pendentes acompanham o novo valor"
+                : "Cobrança inicial criada automaticamente"}
           </small>
         </div>
       </div>
@@ -287,6 +303,7 @@ export function ServiceApplicationForm({
           )}
           <DateField
             defaultValue={service?.startDate ?? isoToday()}
+            error={errors.startDate}
             label="Início do serviço"
             name="startDate"
             required
@@ -437,16 +454,32 @@ export function ServiceApplicationForm({
           <label className="field">
             <span className="field__label">
               Custo adicional <span className="field__optional">opcional</span>
+              <FieldHint>
+                Valor extra cobrado junto do serviço. Diga ao lado se ele é seu ou se é só repasse —
+                é isso que define se entra na sua receita.
+              </FieldHint>
             </span>
             <input
-              defaultValue={service ? moneyText(service.additionalFee) : ""}
               min="0"
               name="additionalFee"
+              onChange={(event) => setAdditionalFee(event.target.value)}
               placeholder="Ex.: 120,00"
               step="0.01"
               type="number"
+              value={additionalFee}
             />
           </label>
+          {Number(additionalFee) > 0 ? (
+            <SelectField
+              label="O adicional é"
+              name="additionalFeeNature"
+              onValueChange={setAdditionalNature}
+              options={additionalNatureOptions}
+              value={additionalNature}
+            />
+          ) : (
+            <input name="additionalFeeNature" type="hidden" value="revenue" />
+          )}
           <label className="field sm:col-span-2">
             <span className="field__label">
               Descrição <span className="field__optional">opcional</span>

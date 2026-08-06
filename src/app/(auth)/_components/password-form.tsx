@@ -62,11 +62,11 @@ export function PasswordForm({
           />
         </div>
         {!isLogin ? (
-          <label className="block text-sm font-semibold">
-            Nome ou nome da empresa
+          <label className="field">
+            <span className="field__label">Nome ou nome da empresa</span>
             <input
               autoComplete="name"
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
+              className="text-base"
               maxLength={120}
               minLength={2}
               name="displayName"
@@ -74,16 +74,16 @@ export function PasswordForm({
               required
               type="text"
             />
-            <span className="text-muted mt-2 block text-xs">
+            <span className="field__hint">
               Usaremos esse nome para preparar seu primeiro acesso.
             </span>
           </label>
         ) : null}
-        <label className="block text-sm font-semibold">
-          E-mail
+        <label className="field">
+          <span className="field__label">E-mail</span>
           <input
             autoComplete="email"
-            className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
+            className="text-base"
             maxLength={254}
             name="email"
             placeholder="voce@empresa.com.br"
@@ -91,29 +91,27 @@ export function PasswordForm({
             type="email"
           />
         </label>
-        <label className="block text-sm font-semibold">
-          Senha
+        <label className="field">
+          <span className="field__label">Senha</span>
           <input
             autoComplete={isLogin ? "current-password" : "new-password"}
-            className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
-            minLength={8}
+            className="text-base"
             maxLength={72}
+            minLength={8}
             name="password"
             required
             type="password"
           />
-          {!isLogin ? (
-            <span className="text-muted mt-2 block text-xs">Use pelo menos 8 caracteres.</span>
-          ) : null}
+          {!isLogin ? <span className="field__hint">Use pelo menos 8 caracteres.</span> : null}
         </label>
         {!isLogin ? (
-          <label className="block text-sm font-semibold">
-            Confirmar senha
+          <label className="field">
+            <span className="field__label">Confirmar senha</span>
             <input
               autoComplete="new-password"
-              className="border-line bg-canvas mt-2 min-h-11 w-full rounded-xl border px-4 py-3 text-base"
-              minLength={8}
+              className="text-base"
               maxLength={72}
+              minLength={8}
               name="confirmPassword"
               required
               type="password"

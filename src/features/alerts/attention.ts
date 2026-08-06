@@ -8,6 +8,8 @@ import { addDays, formatDatePtBr, isoToday } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export type AttentionItem = {
+  /** Data do vencimento em ISO. Quem agrupa por prazo lê daqui, nunca do texto de `meta`. */
+  date: string;
   href: Route;
   id: string;
   meta: string;
@@ -81,6 +83,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
   const items: AttentionItem[] = [
     // O alerta funciona como guia: leva direto à cobrança citada, não à lista genérica.
     ...(charges ?? []).map((charge) => ({
+      date: charge.due_date,
       href: `/cobrancas?focus=${charge.id}` as Route,
       id: `charge-${charge.id}`,
       meta: `${charge.clients?.name ?? "Cliente"} · ${formatDatePtBr(charge.due_date)}`,
@@ -93,6 +96,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
             : `Cobrança próxima: ${charge.description}`,
     })),
     ...(expenses ?? []).map((expense) => ({
+      date: expense.due_date,
       href: `/despesas?focus=${expense.id}` as Route,
       id: `expense-${expense.id}`,
       meta: `Vencimento ${formatDatePtBr(expense.due_date)}`,
@@ -105,6 +109,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
             : `Despesa próxima: ${expense.description}`,
     })),
     ...(domains ?? []).map((domain) => ({
+      date: domain.expires_on,
       href: `/dominios?focus=${domain.id}` as Route,
       id: `domain-${domain.id}`,
       meta: `${domain.clients?.name ?? "Cliente"} · ${formatDatePtBr(domain.expires_on)}`,
@@ -117,6 +122,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
             : `Domínio ${dueLabel(domain.expires_on, today)}: ${domain.domain}`,
     })),
     ...(adjustments ?? []).map((service) => ({
+      date: service.next_adjustment_date!,
       href: `/clientes/${service.client_id}` as Route,
       id: `adjustment-${service.id}`,
       meta: `${service.clients?.name ?? "Cliente"} · ${formatDatePtBr(service.next_adjustment_date)}`,
@@ -130,6 +136,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
 
   return items.sort((left, right) => {
     if (left.severity !== right.severity) return left.severity === "danger" ? -1 : 1;
-    return left.meta.localeCompare(right.meta, "pt-BR");
+    if (left.date !== right.date) return left.date < right.date ? -1 : 1;
+    return left.title.localeCompare(right.title, "pt-BR");
   });
 });

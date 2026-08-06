@@ -34,7 +34,6 @@ export function SelectField({
   optional = false,
   options,
   placeholder = "Selecione…",
-  required = false,
   value: controlledValue,
 }: {
   defaultValue?: string;
@@ -45,7 +44,6 @@ export function SelectField({
   optional?: boolean;
   options: SelectOption[];
   placeholder?: string;
-  required?: boolean;
   value?: string;
 }) {
   const listId = useId();
@@ -145,7 +143,10 @@ export function SelectField({
         {label} {optional ? <span className="field__optional">opcional</span> : null}
         {hint}
       </label>
-      <input name={name} required={required} type="hidden" value={value} />
+      {/* Sem `required`: campo oculto não participa da validação de restrições do HTML,
+          então a marca só daria a impressão de proteger. Todo select do sistema abre com
+          um valor default e a garantia real fica com o schema no servidor. */}
+      <input name={name} type="hidden" value={value} />
       <button
         aria-controls={open ? listId : undefined}
         aria-expanded={open}
