@@ -52,6 +52,13 @@ export type Database = {
             foreignKeyName: "activity_events_client_fk"
             columns: ["workspace_id", "client_id"]
             isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "activity_events_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
           },
@@ -201,6 +208,13 @@ export type Database = {
             foreignKeyName: "charges_client_fk"
             columns: ["workspace_id", "client_id"]
             isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
           },
@@ -267,6 +281,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "client_contacts_client_fk"
             columns: ["workspace_id", "client_id"]
@@ -389,6 +410,13 @@ export type Database = {
             foreignKeyName: "client_services_client_fk"
             columns: ["workspace_id", "client_id"]
             isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_services_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
           },
@@ -411,6 +439,7 @@ export type Database = {
           email: string | null
           id: string
           kind: string
+          links: Json
           name: string
           notes: string | null
           phone: string | null
@@ -432,6 +461,7 @@ export type Database = {
           email?: string | null
           id?: string
           kind: string
+          links?: Json
           name: string
           notes?: string | null
           phone?: string | null
@@ -453,6 +483,7 @@ export type Database = {
           email?: string | null
           id?: string
           kind?: string
+          links?: Json
           name?: string
           notes?: string | null
           phone?: string | null
@@ -528,6 +559,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "domains_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "domains_client_fk"
             columns: ["workspace_id", "client_id"]
@@ -647,6 +685,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "expenses_client_fk"
             columns: ["workspace_id", "client_id"]
@@ -1166,6 +1211,13 @@ export type Database = {
             foreignKeyName: "charges_client_fk"
             columns: ["workspace_id", "client_id"]
             isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
           },
@@ -1178,6 +1230,36 @@ export type Database = {
           },
           {
             foreignKeyName: "charges_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_directory: {
+        Row: {
+          active_services: number | null
+          archived_at: string | null
+          commercial_status: string | null
+          email: string | null
+          expiring_domains: number | null
+          first_service_start: string | null
+          id: string | null
+          lifetime_revenue: number | null
+          links: Json | null
+          name: string | null
+          notes: string | null
+          overdue_charges: number | null
+          phone: string | null
+          status_rank: number | null
+          trade_name: string | null
+          website: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -1233,9 +1315,16 @@ export type Database = {
           workspace_id: string
         }[]
       }
-      delete_catalog_service: { Args: { p_service_id: string }; Returns: string }
+      delete_catalog_service: {
+        Args: { p_detach: boolean; p_service_id: string }
+        Returns: string
+      }
       delete_client_record: { Args: { p_client_id: string }; Returns: string }
-      delete_client_service_cascade: { Args: { p_service_id: string }; Returns: string }
+      delete_client_service_cascade: {
+        Args: { p_force: boolean; p_service_id: string }
+        Returns: string
+      }
+      delete_domain_record: { Args: { p_domain_id: string }; Returns: string }
       delete_workspace_record: {
         Args: { p_record_id: string; p_record_type: string }
         Returns: string
@@ -1288,6 +1377,10 @@ export type Database = {
       settle_charge_and_schedule_next: {
         Args: { p_charge_id: string; p_payment_method: string }
         Returns: string
+      }
+      settle_client_service_charges: {
+        Args: { p_payment_method: string; p_service_id: string }
+        Returns: number
       }
       update_current_workspace_configuration: {
         Args: {

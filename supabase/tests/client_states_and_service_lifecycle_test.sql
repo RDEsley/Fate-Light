@@ -128,7 +128,8 @@ select results_eq(
 -- Exclusão do catálogo respeita os vínculos existentes.
 select results_eq(
   $$select public.delete_catalog_service(
-    (select id from public.services where lower(name) = 'gestão de tráfego' limit 1)
+    (select id from public.services where lower(name) = 'gestão de tráfego' limit 1),
+    false
   )$$,
   $$values ('blocked'::text)$$,
   'Bloqueia excluir serviço do catálogo em uso por um cliente'
