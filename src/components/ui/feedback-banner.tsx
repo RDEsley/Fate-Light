@@ -20,7 +20,7 @@ export function FeedbackBanner({
 
   return (
     <div
-      className={`${styles[tone]} feedback-banner mb-5 rounded-xl border-2 px-4 py-3 text-sm leading-5`}
+      className={`${styles[tone]} feedback-banner mb-5 rounded-xl border px-4 py-3 text-sm leading-5`}
       role={tone === "error" ? "alert" : "status"}
     >
       <strong className="block font-black">{titles[tone]}</strong>

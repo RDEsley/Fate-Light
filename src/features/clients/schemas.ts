@@ -130,10 +130,11 @@ export const priorRevenueSchema = z.object({
 
 export function parsePriorRevenue(formData: FormData) {
   const raw = String(formData.get("priorRevenue") ?? "").trim();
-  if (!raw) return null;
+  if (!raw || Number(raw) === 0) return { data: null, success: true as const };
   const parsed = priorRevenueSchema.safeParse({
     priorRevenue: raw,
     priorRevenueDate: formData.get("priorRevenueDate"),
   });
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return { error: parsed.error, success: false as const };
+  return { data: parsed.data, success: true as const };
 }

@@ -6,6 +6,7 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
 import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
@@ -49,7 +50,7 @@ export default async function ChargesPage({
     ? parameters.state!
     : "all";
   const chargeColumns =
-    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name)";
+    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)";
 
   // Em "Todos", duas consultas de propósito: pendentes sobem ordenadas pelo vencimento
   // mais próximo, resolvidas descem ordenadas pela mais recente. Um único `order` não
@@ -174,7 +175,6 @@ export default async function ChargesPage({
             id: service.id,
             name: service.name,
           }))}
-          today={today}
         />
       </details>
 
@@ -296,10 +296,23 @@ export default async function ChargesPage({
                       </div>
                     </div>
                   ) : charge.paid_at ? (
-                    <p className="charge-card__footnote">
-                      <Icon className="size-4" name="check" /> Pago em{" "}
-                      {new Date(charge.paid_at).toLocaleString("pt-BR")} via {charge.payment_method}
-                    </p>
+                    <>
+                      <p className="charge-card__footnote">
+                        <Icon className="size-4" name="check" /> Pago em{" "}
+                        {new Date(charge.paid_at).toLocaleString("pt-BR")} via{" "}
+                        {charge.payment_method}
+                      </p>
+                      <FiscalDocumentPanel
+                        documents={(charge.fiscal_documents ?? []).map((document) => ({
+                          createdAt: document.created_at,
+                          id: document.id,
+                          mimeType: document.mime_type,
+                          sizeBytes: document.size_bytes,
+                        }))}
+                        entityId={charge.id}
+                        entityType="charge"
+                      />
+                    </>
                   ) : charge.status === "cancelled" ? (
                     <div className="charge-card__actions">
                       <form action={deleteOperationalRecord}>

@@ -36,6 +36,7 @@ async function alwaysRejects(_state: ActionState, formData: FormData): Promise<A
 async function chooseClient(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("combobox", { name: "Cliente" }));
   await user.click(screen.getByRole("option", { name: /Ana Ativa/ }));
+  await user.type(screen.getByRole("combobox", { name: "Data de expiração" }), "10012027");
 }
 
 describe("preservação do formulário quando o servidor recusa", () => {

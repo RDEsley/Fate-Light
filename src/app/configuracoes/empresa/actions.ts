@@ -110,15 +110,25 @@ export async function resetWorkspaceOperationalData(
     return { status: "error", message: "Digite EXCLUIR TUDO para confirmar a limpeza." };
   }
   const { supabase } = await requireWorkspaceContext();
-  const { error } = await supabase.rpc("reset_current_workspace_operational_data", {
-    p_confirmation: confirmation.data,
-  });
+  const { data: objectPaths, error } = await supabase.rpc(
+    "reset_current_workspace_operational_data_with_documents",
+    { p_confirmation: confirmation.data },
+  );
   if (error) {
     return { status: "error", message: "Não foi possível excluir os dados operacionais." };
+  }
+  let storageWarning = false;
+  if (objectPaths?.length) {
+    const { error: storageError } = await supabase.storage
+      .from("workspace-documents")
+      .remove(objectPaths);
+    storageWarning = Boolean(storageError);
   }
   revalidatePath("/", "layout");
   return {
     status: "success",
-    message: "Dados operacionais excluídos. Sua conta e configurações foram preservadas.",
+    message: storageWarning
+      ? "Dados excluídos. Alguns anexos privados aguardam limpeza técnica; sua conta foi preservada."
+      : "Dados operacionais excluídos. Sua conta e configurações foram preservadas.",
   };
 }

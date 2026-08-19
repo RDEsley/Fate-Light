@@ -13,7 +13,6 @@ import { SelectField } from "@/components/ui/select-field";
 import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import type { ClientLink } from "@/features/clients/schemas";
 import { clientStatusOptions } from "@/features/clients/status";
-import { isoToday } from "@/features/mvp/format";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 import { ClientLinksField } from "./client-links-field";
@@ -225,6 +224,7 @@ export function ClientForm({
               </FieldHint>
             </span>
             <input
+              aria-invalid={Boolean(errors.priorRevenue)}
               defaultValue={sent.text("priorRevenue")}
               min="0"
               name="priorRevenue"
@@ -232,9 +232,11 @@ export function ClientForm({
               step="0.01"
               type="number"
             />
+            <FieldError message={errors.priorRevenue} />
           </label>
           <DateField
-            defaultValue={sent.text("priorRevenueDate", isoToday())}
+            defaultValue={sent.text("priorRevenueDate")}
+            error={errors.priorRevenueDate}
             label="Data de referência"
             name="priorRevenueDate"
           />

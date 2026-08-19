@@ -119,6 +119,7 @@ export async function deleteClientService(formData: FormData) {
   });
   const path = `/clientes/${clientId.data}`;
   if (error || data === "not_found") statusRedirect(path, "delete-error");
+  if (data === "documents_attached") statusRedirect(path, "service-documents-attached");
   if (data === "blocked") statusRedirect(path, "service-delete-blocked");
   revalidatePath(path);
   revalidatePath("/cobrancas");
