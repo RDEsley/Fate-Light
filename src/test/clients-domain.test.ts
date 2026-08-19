@@ -109,16 +109,30 @@ describe("client domain boundaries", () => {
     withValue.set("priorRevenue", "24000");
     withValue.set("priorRevenueDate", "2026-01-31");
     expect(parsePriorRevenue(withValue)).toEqual({
-      priorRevenue: 24000,
-      priorRevenueDate: "2026-01-31",
+      data: {
+        priorRevenue: 24000,
+        priorRevenueDate: "2026-01-31",
+      },
+      success: true,
     });
 
-    expect(parsePriorRevenue(clientForm())).toBeNull();
+    expect(parsePriorRevenue(clientForm())).toEqual({ data: null, success: true });
 
     const zeroed = clientForm();
     zeroed.set("priorRevenue", "0");
     zeroed.set("priorRevenueDate", "2026-01-31");
-    expect(parsePriorRevenue(zeroed)).toBeNull();
+    expect(parsePriorRevenue(zeroed)).toEqual({ data: null, success: true });
+  });
+
+  it("recusa receita anterior sem uma data válida", () => {
+    const missingDate = clientForm();
+    missingDate.set("priorRevenue", "24000");
+
+    const parsed = parsePriorRevenue(missingDate);
+    expect(parsed.success).toBe(false);
+    expect(parsed.success ? {} : parsed.error.flatten().fieldErrors).toHaveProperty(
+      "priorRevenueDate",
+    );
   });
 
   it("limita e preserva filtros válidos na paginação", () => {

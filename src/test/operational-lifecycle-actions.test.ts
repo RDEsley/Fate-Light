@@ -153,6 +153,18 @@ describe("operational lifecycle actions", () => {
     );
   });
 
+  it("preserva o serviço enquanto houver nota fiscal anexada", async () => {
+    lifecycleMocks.rpc.mockResolvedValue({ data: "documents_attached", error: null });
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+    formData.set("force", "on");
+
+    await expect(deleteClientService(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=service-documents-attached`,
+    );
+  });
+
   it("atualiza somente a agenda futura do serviço", async () => {
     const formData = new FormData();
     formData.set("billingType", "annual");
