@@ -2,8 +2,10 @@ import { vi } from "vitest";
 
 const workspaceMocks = vi.hoisted(() => ({
   claims: vi.fn(),
+  remove: vi.fn(),
   revalidatePath: vi.fn(),
   rpc: vi.fn(),
+  storageFrom: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: workspaceMocks.revalidatePath }));
@@ -15,7 +17,10 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 vi.mock("@/lib/auth/workspace-context", () => ({
   requireWorkspaceContext: vi.fn(async () => ({
-    supabase: { rpc: workspaceMocks.rpc },
+    supabase: {
+      rpc: workspaceMocks.rpc,
+      storage: { from: workspaceMocks.storageFrom },
+    },
     workspaceId: "workspace-id",
   })),
 }));
@@ -60,7 +65,11 @@ describe("workspace configuration action", () => {
       error: null,
     });
     workspaceMocks.rpc.mockReset();
-    workspaceMocks.rpc.mockResolvedValue({ data: [{}], error: null });
+    workspaceMocks.rpc.mockResolvedValue({ data: [], error: null });
+    workspaceMocks.storageFrom.mockReset();
+    workspaceMocks.storageFrom.mockReturnValue({ remove: workspaceMocks.remove });
+    workspaceMocks.remove.mockReset();
+    workspaceMocks.remove.mockResolvedValue({ error: null });
     workspaceMocks.revalidatePath.mockClear();
   });
 
@@ -105,8 +114,26 @@ describe("workspace configuration action", () => {
     await expect(resetWorkspaceOperationalData(initialActionState, valid)).resolves.toMatchObject({
       status: "success",
     });
-    expect(workspaceMocks.rpc).toHaveBeenCalledWith("reset_current_workspace_operational_data", {
-      p_confirmation: "EXCLUIR TUDO",
+    expect(workspaceMocks.rpc).toHaveBeenCalledWith(
+      "reset_current_workspace_operational_data_with_documents",
+      { p_confirmation: "EXCLUIR TUDO" },
+    );
+  });
+
+  it("remove do Storage os anexos devolvidos pela limpeza transacional", async () => {
+    workspaceMocks.rpc.mockResolvedValue({
+      data: ["workspace/fiscal/nota-1.pdf", "workspace/fiscal/nota-2.pdf"],
+      error: null,
     });
+    const valid = new FormData();
+    valid.set("confirmation", "EXCLUIR TUDO");
+
+    await resetWorkspaceOperationalData(initialActionState, valid);
+
+    expect(workspaceMocks.storageFrom).toHaveBeenCalledWith("workspace-documents");
+    expect(workspaceMocks.remove).toHaveBeenCalledWith([
+      "workspace/fiscal/nota-1.pdf",
+      "workspace/fiscal/nota-2.pdf",
+    ]);
   });
 });

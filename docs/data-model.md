@@ -446,6 +446,18 @@ As invariantes de soma são validadas na mesma transação por função/trigger 
 | Workspace/RLS | Documento exige membership; avatar exige próprio usuário. Global admin não possui policy. |
 | Derivado/não armazenar | URL assinada nunca é armazenada; binário fica no Storage; não guardar nome original se revelar PII desnecessária. |
 
+### `fiscal_documents` (implementado no MVP)
+
+| Aspecto | Definição |
+|---|---|
+| Finalidade | Metadados imutáveis de notas fiscais privadas anexadas a cobranças ou despesas já pagas. |
+| Campos | `id`, `workspace_id`, exatamente um entre `charge_id` e `expense_id`, `bucket`, `object_path`, `safe_filename`, `mime_type`, `size_bytes`, `checksum_sha256`, `created_at`, `created_by`. |
+| FKs/constraints | Pai no mesmo workspace; status do pai deve ser `paid`; PDF/JPEG/PNG/WebP; 1 byte a 4 MB; SHA-256 e caminho únicos. |
+| Índices | `(workspace_id,charge_id,created_at desc)` e `(workspace_id,expense_id,created_at desc)`. |
+| Arquivamento/histórico | Sem update. A exclusão remove o objeto privado e os metadados; contas pagas continuam protegidas contra exclusão comum. |
+| Workspace/RLS | Somente owner ativo do workspace pode listar, anexar, baixar por URL assinada de cinco minutos ou remover. |
+| Derivado/não armazenar | Nome original e URL assinada não são persistidos; o servidor valida MIME, extensão e assinatura binária. |
+
 ## 9. Auditoria e importação
 
 ### `audit_events`

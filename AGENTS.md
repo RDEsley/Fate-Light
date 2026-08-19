@@ -1,69 +1,107 @@
-# Instruções do projeto para agentes
+# Instruções do Fate Light para agentes
 
-Estas regras são a fonte operacional única para todo o repositório.
+Estas regras são a fonte operacional do repositório. O produto se chama **Fate Light**, foi
+desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa a assinatura
+“Clareza financeira. Caminho certo.”.
 
-## Contexto e fontes de verdade
+## Fontes de verdade e escopo atual
 
-- Leia `PLAN.md` e os documentos relevantes em `docs/` antes de mudanças substanciais.
-- Preserve os guardrails de segurança, as invariantes dos ADRs e o escopo da fase aprovada.
-- Não implemente antecipadamente autenticação, domínio financeiro ou infraestrutura de fases
-  futuras.
-- Se uma decisão alterar segurança, isolamento, privacidade, invariantes financeiras, datas ou
-  infraestrutura, registre um ADR antes da implementação.
+- Leia `README.md`, `docs/product-requirements.md`, `docs/architecture.md`, `docs/data-model.md`,
+  `docs/implementation-plan.md`, `docs/decisions.md` e os ADRs relacionados antes de mudanças
+  substanciais.
+- O sistema já possui autenticação, onboarding, isolamento por workspace, clientes, catálogo e
+  aplicação de serviços, cobranças, despesas, domínios, alertas, histórico, importação e
+  configurações. Não trate o repositório como uma fundação vazia.
+- Preserve invariantes financeiras, isolamento multi-tenant, histórico e privacidade. Registre um
+  ADR antes de alterar uma decisão estrutural de segurança, dinheiro, datas, retenção ou
+  infraestrutura.
+- Não leia, copie ou processe arquivos em `private/` sem autorização explícita.
 
-## Fundação técnica
+## Arquitetura e código
 
-- Next.js com App Router, React Server Components por padrão, TypeScript estrito e código em `src/`.
-- Componentes cliente devem ter justificativa concreta e começar com `"use client"`.
-- Use o alias `@/*` para imports a partir de `src/`.
-- Reutilize tokens de `src/app/globals.css`; mantenha tema claro/escuro, foco visível, contraste e
-  `prefers-reduced-motion`.
-- Adicione dependências somente quando usadas. Fixe versões exatas e mantenha `package-lock.json`.
-- Não inicialize shadcn/ui nem bibliotecas de formulário, tabela ou gráfico antes do primeiro uso.
+- Next.js App Router, React 19, TypeScript estrito e código da aplicação em `src/`.
+- Use React Server Components por padrão. Adicione `"use client"` somente quando interação, estado
+  ou API do navegador exigirem e mantenha a fronteira cliente pequena.
+- Server Actions são endpoints públicos: autentique, autorize o workspace, valide todo `FormData` e
+  filtre operações pelo identificador e pelo `workspace_id` obtido da sessão.
+- Use o alias `@/*`, nomes técnicos em inglês e textos de interface em português do Brasil.
+- Prefira funções pequenas, retornos antecipados e comentários que expliquem decisões, não sintaxe.
+- Não use `any`, casts para ocultar incompatibilidades ou supressões de lint sem justificativa.
+- Adicione dependências apenas com uso concreto, versões exatas e atualização do `package-lock.json`.
 
-## Supabase e banco de dados
+## Produto, UI e acessibilidade
 
-- Use somente as chaves publishable e secret nos contratos de ambiente.
-- O cliente do navegador pode acessar apenas variáveis `NEXT_PUBLIC_*`.
-- A chave secret é exclusiva do servidor, nunca deve aparecer em Client Components e não deve criar
-  um cliente privilegiado até existir um caso de uso aprovado.
-- Nesta fundação, mantenha apenas clientes browser/server e configuração local reproduzível.
-- Não crie autenticação, proxy de sessão, tabelas, migrations de domínio, RLS, Storage, Functions,
-  Cron ou seed sem a fase correspondente aprovada.
-- Mudanças futuras de schema devem ser versionadas em migrations, revisadas com foco em RLS e
-  validadas localmente antes de qualquer aplicação remota.
+- O Fate Light possui somente tema claro, suave e de baixo cansaço visual. Não reintroduza modo
+  escuro nem controles de tema.
+- Preserve a identidade clean-cartoon: formas amigáveis, cores semânticas e microinterações leves,
+  sem aparência de template genérico, sombras duras excessivas ou bordas inconsistentes.
+- Reutilize os tokens e componentes de `src/app/globals.css` e `src/components/ui/`; não crie uma
+  variação visual isolada quando um padrão existente puder ser refinado.
+- Formulários devem ser compactos, responsivos e mobile-first, com rótulo visível, foco claro,
+  feedback junto ao campo e preservação dos valores após erro.
+- Datas são exibidas em `DD/MM/AAAA`, trafegam como `YYYY-MM-DD` e usam o calendário PT-BR.
+  Campos de data obrigatórios começam vazios em novos registros; só edições podem vir preenchidas.
+- Ícones são SVG do componente `Icon`; não use emoji, bitmap ou caractere desfocado como ícone.
+- Toda interação precisa funcionar por teclado, ter nome acessível, contraste suficiente e respeitar
+  `prefers-reduced-motion` e as preferências internas de animação.
+- Cores comunicam estado: verde para positivo/pago, vermelho para negativo/vencido/perigoso,
+  amarelo para atenção e violeta/verde da marca para navegação e ações neutras.
 
-## Segurança e dados privados
+## Dinheiro, datas e automação
 
-- Nunca exponha, registre, envie ou versione segredos, credenciais, tokens, arquivos `.env`, chaves
-  privadas ou valores de ambiente reais.
-- Nunca leia, copie ou versione planilhas e dados em `private/` sem autorização explícita.
-- `.mcp.json` e configurações locais equivalentes permanecem ignoradas e privadas.
-- Não registre valores de configuração em erros. Mensagens de validação podem informar somente os
-  nomes das variáveis inválidas.
-- Execute `npm run security:check` antes de preparar uma publicação.
-- Preserve os bloqueios do `.gitignore`; não versione dependências, builds, cobertura ou relatórios
-  de teste.
+- Valores monetários persistidos usam `numeric`; não use ponto flutuante para regras financeiras.
+- Receita própria, verba de mídia e repasses permanecem separados conforme ADR-0001 e ADR-0018.
+- Não reescreva cobranças já liquidadas ao editar serviços. Recorrências devem ser idempotentes.
+- `date` nunca deve ser convertido com `new Date('YYYY-MM-DD')`; acrescente horário/UTC conforme os
+  helpers existentes. Instantes são UTC e exibidos no locale/timezone apropriado.
+- A automação deve reduzir edição manual sem tomar decisões financeiras silenciosas pelo usuário.
 
-## Qualidade e verificação
+## Supabase, RLS e Storage
 
-- Antes de concluir uma mudança de código, execute em ordem: `npm run format:check`, `npm run lint`,
-  `npm run typecheck`, `npm run test`, `npm run test:coverage`, `npm run build` e
-  `npm run test:e2e`.
-- Testes devem cobrir comportamento, limites público/servidor e acessibilidade relevante.
-- Não reduza thresholds de cobertura para mascarar código não testado.
-- CI usa somente placeholders e não depende de um projeto Supabase real.
-- Se um gate não puder ser executado, informe exatamente qual foi o impedimento.
+- Toda alteração de schema é uma migration criada pela CLI, revisada e coberta por pgTAP.
+- Toda tabela em schema exposto usa RLS forçada e grants mínimos. Policies combinam autenticação com
+  autorização de workspace; `to authenticated` sozinho não é autorização.
+- Views expostas usam `security_invoker = true`. Funções `security definer` ficam no schema
+  `private`, fixam `search_path`, verificam `auth.uid()` e têm grants explícitos.
+- O navegador acessa somente `NEXT_PUBLIC_*`. Chave secret/service role nunca entra em Client
+  Components, logs, commits ou respostas ao usuário.
+- Documentos financeiros ficam em bucket privado, com MIME, extensão, assinatura e tamanho
+  validados. URLs assinadas têm curta duração e nunca são persistidas.
+- Upload, leitura e remoção no Storage precisam de policies por workspace; nunca use bucket público
+  para notas fiscais, comprovantes ou dados de clientes.
 
-## Convenções de código
+## Segurança e privacidade
 
-- Prefira nomes claros, funções pequenas, validação nas bordas e comentários apenas para decisões
-  não óbvias.
-- Não use `any` sem uma justificativa documentada.
-- Server Components não devem importar módulos marcados com `"use client"` fora da composição normal
-  de React.
-- Não acople componentes de interface diretamente a clientes privilegiados ou segredos.
-- Preserve textos de interface em português do Brasil e nomes técnicos de código em inglês.
+- Nunca exponha, registre, envie ou versione segredos, cookies, tokens, `.env`, chaves privadas,
+  nomes originais sensíveis de arquivos ou dados reais de clientes.
+- `.mcp.json`, artefatos locais, builds, dependências, cobertura e relatórios permanecem ignorados.
+- Mensagens públicas não revelam existência de contas, detalhes internos do banco ou configuração.
+- Execute `npm audit` e `npm run security:check`; corrija vulnerabilidades de forma compatível, sem
+  `--force`, e documente riscos residuais.
+
+## Testes e gates
+
+- Toda correção de bug recebe teste de regressão no nível mais próximo: Vitest para regras/UI,
+  pgTAP para banco/RLS/Storage e Playwright para jornadas e acessibilidade.
+- Não reduza cobertura, não marque teste como skip para esconder falha e não altere expectativa para
+  acomodar comportamento incorreto.
+- Antes de publicar, execute: `npm ci`, `npm audit`, `npm run format:check`, `npm run lint`,
+  `npm run typecheck`, `npm run test`, `npm run test:coverage`, `npm run build`,
+  `npm run test:e2e`, `npm run security:check`, `git diff --check`.
+- O computador local não possui Docker. Testes `db:*` e a jornada autenticada podem depender do CI;
+  quando não puderem rodar localmente, valide SQL estaticamente e confirme esses gates no GitHub
+  Actions antes de concluir.
+- CI usa placeholders para o front-end e uma pilha Supabase efêmera; nunca depende de segredos ou do
+  projeto remoto de produção.
+
+## GitHub e documentação
+
+- Remoto oficial: `https://github.com/RDEsley/Fate-Light.git`; branch padrão: `main`.
+- Use Conventional Commits, issues com escopo e critérios de aceite, PRs com impacto/causa/testes e
+  GitHub Projects para acompanhar trabalho solicitado.
+- Actions de terceiros permanecem fixadas por SHA. Conceda apenas permissões mínimas ao workflow.
+- Atualize documentação somente quando comportamento, operação ou decisão mudar; evite ruído de
+  formatação sem relação com a entrega.
 
 ## Identidade Git obrigatória
 
@@ -84,7 +122,7 @@ Quando Richard disser **"Manda pro github"** — incluindo variações inequívo
 "sobe pro GitHub" ou "commita e envia" — execute o fluxo completo sem confirmação adicional:
 
 1. Leia `git status`, o diff completo, o histórico recente, a branch atual, os remotes e as tags.
-2. Confirme que `origin` aponta para `https://github.com/RDEsley/FateEight.git`.
+2. Confirme que `origin` aponta para `https://github.com/RDEsley/Fate-Light.git`.
 3. Configure e valide localmente a identidade Git obrigatória.
 4. Execute `npm run security:check` e verifique segredos e gerados no conjunto de mudanças.
 5. Separe assuntos logicamente distintos; faça staging explícito e nunca use `git add .` ou

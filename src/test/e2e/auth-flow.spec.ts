@@ -93,7 +93,7 @@ test.describe("authenticated MVP journey", () => {
 
     await page.getByRole("link", { name: "Novo cliente" }).click();
     await page.getByLabel("Nome", { exact: true }).fill("Cliente MVP");
-    await page.getByLabel(/empresa opcional/i).fill("Empresa Cliente MVP");
+    await page.getByLabel(/razão social ou nome fantasia/i).fill("Empresa Cliente MVP");
     await page.getByLabel(/e-mail opcional/i).fill("cliente-mvp@example.test");
     await page.getByLabel(/telefone opcional/i).fill("81999999999");
     await page.getByRole("button", { name: "Criar cliente" }).click();
@@ -136,6 +136,7 @@ test.describe("authenticated MVP journey", () => {
     await expensePanel.locator("summary").click();
     await expensePanel.getByLabel("Descrição").fill("Ferramenta mensal");
     await expensePanel.getByLabel("Valor").fill("200");
+    await fillDate(expensePanel.getByLabel("Vencimento ou data"), dateOffset(0));
     await expensePanel.locator('select[name="status"]').selectOption("paid");
     await expensePanel.getByRole("button", { name: "Criar despesa" }).click();
     await expect(page.getByText("Ferramenta mensal")).toBeVisible();
