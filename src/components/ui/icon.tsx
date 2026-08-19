@@ -14,7 +14,9 @@ export type IconName =
   | "chevron-down"
   | "chevron-up"
   | "dashboard"
+  | "download"
   | "edit"
+  | "file"
   | "filter"
   | "globe"
   | "help"
@@ -24,6 +26,7 @@ export type IconName =
   | "logout"
   | "menu"
   | "pause"
+  | "paperclip"
   | "play"
   | "plus"
   | "receipt"
@@ -65,7 +68,9 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     "chevron-down": <path d="m7 10 5 5 5-5" />,
     "chevron-up": <path d="m7 14 5-5 5 5" />,
     dashboard: <path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" />,
+    download: <path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14" />,
     edit: <path d="M12 20h8M4 20h3l10-10a2.1 2.1 0 0 0-3-3L4 17v3Z" />,
+    file: <path d="M6 2h8l4 4v16H6V2Zm8 0v5h5M9 12h6m-6 4h6" />,
     filter: <path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z" />,
     globe: (
       <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0 0c2.2-2.2 3.3-5.5 3.3-10S14.2 4.2 12 2m0 20c-2.2-2.2-3.3-5.5-3.3-10S9.8 4.2 12 2M2 12h20" />
@@ -81,6 +86,9 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     logout: <path d="M10 17l5-5-5-5m5 5H3m10-9h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />,
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
     pause: <path d="M9 5v14M15 5v14" />,
+    paperclip: (
+      <path d="m20.5 11.5-8.7 8.7a5.3 5.3 0 0 1-7.5-7.5l9.1-9.1a3.6 3.6 0 0 1 5.1 5.1l-9.1 9.1a1.9 1.9 0 0 1-2.7-2.7l8.4-8.4" />
+    ),
     play: <path d="M7 4.5v15l12-7.5-12-7.5Z" />,
     plus: <path d="M12 5v14M5 12h14" />,
     receipt: <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6m-6 4h3" />,

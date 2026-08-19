@@ -12,7 +12,7 @@ set local role authenticated;
 select lives_ok(
   $$select * from public.bootstrap_identity_workspace(
     'Owner Prior Revenue', 'Workspace Prior Revenue',
-    array['20000000-0000-4000-8000-000000000001'::uuid, '20000000-0000-4000-8000-000000000002'::uuid]
+    array['10000000-0000-4000-8000-000000000001'::uuid, '10000000-0000-4000-8000-000000000002'::uuid]
   )$$,
   'Cria o workspace de teste'
 );

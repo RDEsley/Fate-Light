@@ -158,13 +158,14 @@ Se houver uma investigação que exija conteúdo privado no futuro, ela precisar
 
 Buckets privados:
 
-- `workspace-documents`: PDF, JPEG, PNG e WebP, até 10 MB.
+- `workspace-documents`: PDF, JPEG, PNG e WebP, até 4 MB por upload via Server Action. O limite
+  reserva a sobrecarga do formulário dentro do payload máximo de 4,5 MB da Vercel.
 - `profile-avatars`: JPEG, PNG e WebP, até 2 MB.
 
 Estrutura de objeto:
 
 ```text
-workspace-documents/{workspace_id}/{entity_type}/{entity_id}/{attachment_id}/{safe_filename}
+workspace-documents/{workspace_id}/fiscal/{charge|expense}/{entity_id}/{document_id}/{safe_filename}
 profile-avatars/{user_id}/{attachment_id}/{safe_filename}
 ```
 
@@ -175,7 +176,8 @@ Regras:
 - Extensão, MIME declarado, assinatura do arquivo e tamanho precisam concordar.
 - SVG, HTML, executáveis, macros e arquivos compactados ficam fora do MVP.
 - Download usa autorização ou URL assinada com validade de 5 minutos.
-- Remoção apaga o objeto somente após registrar evento e atualizar metadados; falhas são reconciliáveis.
+- Remoção individual apaga primeiro o objeto e só então os metadados, permitindo nova tentativa se o
+  banco falhar. A limpeza total é transacional no banco e remove do Storage os caminhos devolvidos.
 
 ## 10. Dinheiro e serialização
 

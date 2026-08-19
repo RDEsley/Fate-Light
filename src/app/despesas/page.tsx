@@ -5,8 +5,9 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
 import { Icon } from "@/components/ui/icon";
-import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
+import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { ExpenseForm } from "./expense-form";
@@ -38,7 +39,7 @@ export default async function ExpensesPage({
   let expensesRequest = context.supabase
     .from("expenses")
     .select(
-      "id, description, category, amount, due_date, status, paid_at, expense_type, clients(name)",
+      "id, description, category, amount, due_date, status, paid_at, expense_type, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)",
     )
     .eq("workspace_id", context.workspaceId)
     .order("due_date", { ascending: false })
@@ -116,7 +117,6 @@ export default async function ExpensesPage({
             status: client.commercial_status,
             tradeName: client.trade_name,
           }))}
-          today={isoToday()}
         />
       </details>
       {error ? (
@@ -163,9 +163,21 @@ export default async function ExpensesPage({
                   </form>
                 </div>
               ) : (
-                <span className="text-muted text-sm">
-                  {expense.paid_at ? new Date(expense.paid_at).toLocaleString("pt-BR") : ""}
-                </span>
+                <>
+                  <span className="text-muted text-sm">
+                    {expense.paid_at ? new Date(expense.paid_at).toLocaleString("pt-BR") : ""}
+                  </span>
+                  <FiscalDocumentPanel
+                    documents={(expense.fiscal_documents ?? []).map((document) => ({
+                      createdAt: document.created_at,
+                      id: document.id,
+                      mimeType: document.mime_type,
+                      sizeBytes: document.size_bytes,
+                    }))}
+                    entityId={expense.id}
+                    entityType="expense"
+                  />
+                </>
               )}
             </article>
           ))}

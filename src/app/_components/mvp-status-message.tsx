@@ -17,6 +17,8 @@ const messages: Record<string, string> = {
   "service-deleted": "Serviço removido do catálogo.",
   "service-delete-blocked":
     "Este serviço está em uso por algum cliente. Use “Desvincular e excluir” para tirá-lo do catálogo sem apagar o trabalho já feito.",
+  "service-documents-attached":
+    "Este serviço possui notas fiscais anexadas. Remova os anexos nas cobranças pagas antes de excluir o histórico.",
   "service-detached":
     "Serviço removido do catálogo. Os clientes que já o usavam seguem com o serviço ativo.",
   "service-ended": "Serviço encerrado. As cobranças já criadas continuam no histórico.",
@@ -30,13 +32,22 @@ const messages: Record<string, string> = {
   "service-invalid": "Revise os dados do serviço.",
   "domain-deleted": "Domínio removido do acompanhamento.",
   "domain-updated": "Domínio atualizado.",
+  "invoice-deleted": "Nota fiscal removida com segurança.",
+  "invoice-error": "Não foi possível concluir a operação com a nota fiscal.",
+  "invoice-invalid": "Escolha uma nota fiscal válida em PDF, JPEG, PNG ou WebP.",
+  "invoice-too-large": "A nota fiscal ultrapassa o limite de 4 MB.",
+  "invoice-unavailable": "Anexe a nota fiscal somente depois de marcar a conta como paga.",
+  "invoice-uploaded": "Nota fiscal anexada e protegida no armazenamento privado.",
 };
 
 export function MvpStatusMessage({ status }: { status?: string }) {
   const message = status ? messages[status] : undefined;
   if (!message) return null;
   const tone =
-    status?.includes("error") || status?.includes("invalid")
+    status?.includes("error") ||
+    status?.includes("invalid") ||
+    status?.includes("too-large") ||
+    status?.includes("unavailable")
       ? "error"
       : status?.includes("blocked")
         ? "warning"

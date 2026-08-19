@@ -109,6 +109,18 @@ describe("client actions", () => {
     );
   });
 
+  it("não cria o cliente quando a receita anterior não tem data", async () => {
+    const formData = validClientForm();
+    formData.set("priorRevenue", "24000");
+
+    const result = await createClient(initialActionState, formData);
+
+    expect(result.status).toBe("error");
+    expect(result.fieldErrors).toHaveProperty("priorRevenueDate");
+    expect(clientActionMocks.insert).not.toHaveBeenCalled();
+    expect(clientActionMocks.redirect).not.toHaveBeenCalled();
+  });
+
   it("inativa por update limitado ao workspace em vez de excluir", async () => {
     const formData = new FormData();
     formData.set("clientId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");

@@ -714,6 +714,80 @@ export type Database = {
           },
         ]
       }
+      fiscal_documents: {
+        Row: {
+          bucket: string
+          charge_id: string | null
+          checksum_sha256: string
+          created_at: string
+          created_by: string
+          expense_id: string | null
+          id: string
+          mime_type: string
+          object_path: string
+          safe_filename: string
+          size_bytes: number
+          workspace_id: string
+        }
+        Insert: {
+          bucket?: string
+          charge_id?: string | null
+          checksum_sha256: string
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          id?: string
+          mime_type: string
+          object_path: string
+          safe_filename: string
+          size_bytes: number
+          workspace_id: string
+        }
+        Update: {
+          bucket?: string
+          charge_id?: string | null
+          checksum_sha256?: string
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          id?: string
+          mime_type?: string
+          object_path?: string
+          safe_filename?: string
+          size_bytes?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documents_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "fiscal_documents_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges_overview"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "fiscal_documents_expense_fk"
+            columns: ["workspace_id", "expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "fiscal_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           confirmed_at: string
@@ -1401,6 +1475,10 @@ export type Database = {
       reset_current_workspace_operational_data: {
         Args: { p_confirmation: string }
         Returns: Json
+      }
+      reset_current_workspace_operational_data_with_documents: {
+        Args: { p_confirmation: string }
+        Returns: string[]
       }
       settle_charge_and_schedule_next: {
         Args: { p_charge_id: string; p_payment_method: string }

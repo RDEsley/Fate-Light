@@ -33,13 +33,11 @@ export function ChargeForm({
   defaultClientId,
   defaultServiceId,
   services,
-  today,
 }: {
   clients: ClientOption[];
   defaultClientId?: string;
   defaultServiceId?: string;
   services: { clientName?: string; id: string; name: string }[];
-  today: string;
 }) {
   const [state, formAction] = useActionState(createCharge, initialActionState);
   const errors = state.fieldErrors ?? {};
@@ -80,7 +78,7 @@ export function ChargeForm({
         <FieldError message={errors.description} />
       </label>
       <DateField
-        defaultValue={sent.text("dueDate", today)}
+        defaultValue={sent.text("dueDate")}
         error={errors.dueDate}
         label="Vencimento"
         name="dueDate"

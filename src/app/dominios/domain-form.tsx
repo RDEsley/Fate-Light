@@ -8,7 +8,6 @@ import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
 import { ClientCombobox, DateField, type ClientOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
-import { isoToday } from "@/features/mvp/format";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 export type DomainValues = {
@@ -98,7 +97,7 @@ export function DomainForm({
         ) : null}
       </label>
       <DateField
-        defaultValue={domain?.expiresOn ?? isoToday()}
+        defaultValue={domain?.expiresOn}
         error={errors.expiresOn}
         label="Data de expiração"
         name="expiresOn"
