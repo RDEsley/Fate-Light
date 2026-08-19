@@ -52,19 +52,33 @@ async function selectClient(panel: Locator, name: string) {
   await panel.getByRole("listbox").getByRole("option").filter({ hasText: name }).click();
 }
 
+async function selectField(panel: Locator, name: string, option: string) {
+  const field = panel.locator(`input[name="${name}"]`).locator("..");
+  await field.getByRole("combobox").click();
+  await field.getByRole("option", { name: new RegExp(`^${option}\\b`) }).click();
+}
+
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
   await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
-  await panel.getByLabel("Valor cheio").fill(values.own);
-  const firstDueDate = panel.getByLabel("Primeiro vencimento");
+  // O rótulo contém uma ajuda contextual acessível. O nome do campo é o contrato
+  // estável do formulário e evita acoplar o fluxo E2E ao texto dessa explicação.
+  await panel.locator('input[name="listPrice"]').fill(values.own);
+  const firstDueDate = panel.getByLabel("Primeiro vencimento", { exact: true });
   await fillDate(firstDueDate, dateOffset(7));
-  const mediaBudget = panel.getByLabel("Verba de mídia");
+  const mediaBudget = panel.locator('input[name="mediaBudget"]');
   await panel.getByText("Personalizar preço e agenda", { exact: true }).click();
   await expect(mediaBudget).toBeVisible();
+  await fillDate(panel.getByLabel("Início do serviço", { exact: true }), dateOffset(0));
   await mediaBudget.fill(values.media);
-  await panel.getByRole("button", { name: "Aplicar serviço e criar cobrança" }).click();
-  await expect(page.getByText("Serviço adicionado ao cliente.")).toBeVisible();
+  const submit = panel.getByRole("button", { name: "Aplicar serviço e criar cobrança" });
+  await submit.click();
+  if (Number(values.own) === 0) {
+    await expect(panel.getByText("Vale conferir antes de continuar")).toBeVisible();
+    await submit.click();
+  }
+  await expect(page.getByText("Serviço aplicado e cobrança criada.")).toBeVisible();
 }
 
 test.describe("authenticated MVP journey", () => {
@@ -93,7 +107,7 @@ test.describe("authenticated MVP journey", () => {
 
     await page.getByRole("link", { name: "Novo cliente" }).click();
     await page.getByLabel("Nome", { exact: true }).fill("Cliente MVP");
-    await page.getByLabel(/empresa opcional/i).fill("Empresa Cliente MVP");
+    await page.getByLabel(/razão social ou nome fantasia/i).fill("Empresa Cliente MVP");
     await page.getByLabel(/e-mail opcional/i).fill("cliente-mvp@example.test");
     await page.getByLabel(/telefone opcional/i).fill("81999999999");
     await page.getByRole("button", { name: "Criar cliente" }).click();
@@ -107,28 +121,28 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.getByRole("heading", { level: 3, name: "Landing Page" })).toBeVisible();
 
     const adsCard = page.locator("article").filter({ hasText: "Gestão de Google Ads" });
-    await adsCard.getByRole("link", { name: "Criar cobrança" }).click();
-    let chargePanel = page.locator("details").filter({ hasText: "Nova cobrança" });
+    await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
+    let chargePanel = page.locator("details").filter({ hasText: "Cobrança avulsa" });
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
-    await fillDate(chargePanel.getByLabel("Vencimento"), dateOffset(0));
-    await chargePanel.getByLabel("Receita própria").fill("500");
-    await chargePanel.getByLabel("Verba de mídia").fill("1000");
+    await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
+    await chargePanel.locator('input[name="companyRevenue"]').fill("500");
+    await chargePanel.locator('input[name="mediaBudget"]').fill("1000");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
     const paidCharge = page.locator("article").filter({ hasText: "Mensalidade Ads" });
-    await paidCharge.getByLabel("Forma de pagamento").selectOption({ label: "Pix" });
+    await selectField(paidCharge, "paymentMethod", "Pix");
     await paidCharge.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
 
-    chargePanel = page.locator("details").filter({ hasText: "Nova cobrança" });
+    chargePanel = page.locator("details").filter({ hasText: "Cobrança avulsa" });
     await chargePanel.locator("summary").click();
     await selectClient(chargePanel, "Cliente MVP");
     await chargePanel.getByLabel("Descrição").fill("Pendência operacional");
-    await fillDate(chargePanel.getByLabel("Vencimento"), dateOffset(-1));
-    await chargePanel.getByLabel("Receita própria").fill("100");
-    await chargePanel.getByLabel("Verba de mídia").fill("0");
+    await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(-1));
+    await chargePanel.locator('input[name="companyRevenue"]').fill("100");
+    await chargePanel.locator('input[name="mediaBudget"]').fill("0");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
     await expect(
-      page.locator("article").filter({ hasText: "Pendência operacional" }).getByText("Vencido"),
+      page.locator("article").filter({ hasText: "Pendência operacional" }).getByText("Vencida"),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Despesas" }).click();
@@ -136,30 +150,29 @@ test.describe("authenticated MVP journey", () => {
     await expensePanel.locator("summary").click();
     await expensePanel.getByLabel("Descrição").fill("Ferramenta mensal");
     await expensePanel.getByLabel("Valor").fill("200");
-    await expensePanel.locator('select[name="status"]').selectOption("paid");
+    await fillDate(expensePanel.getByLabel("Vencimento ou data", { exact: true }), dateOffset(0));
+    await selectField(expensePanel, "status", "Paga");
     await expensePanel.getByRole("button", { name: "Criar despesa" }).click();
     await expect(page.getByText("Ferramenta mensal")).toBeVisible();
 
     await page.getByRole("link", { name: "Domínios" }).click();
     const domainPanel = page.locator("details").filter({ hasText: "Novo domínio" });
-    await domainPanel.locator("summary").click();
+    await domainPanel.locator(":scope > summary").click();
     await selectClient(domainPanel, "Cliente MVP");
     await domainPanel.getByLabel("Domínio").fill("cliente-mvp.example");
-    await fillDate(domainPanel.getByLabel("Data de expiração"), dateOffset(7));
+    await fillDate(domainPanel.getByLabel("Data de expiração", { exact: true }), dateOffset(7));
     await domainPanel.getByRole("button", { name: "Criar domínio" }).click();
     await expect(page.getByText("Vence em até 7 dias")).toBeVisible();
 
     await page.getByRole("link", { name: "Dashboard" }).click();
-    await expect(
-      page.locator("article").filter({ hasText: "Receita própria recebida" }),
-    ).toContainText(/R\$\s*500,00/);
-    await expect(page.getByText("Verba administrada").locator("..")).toContainText(
+    await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
+      /R\$\s*500,00/,
+    );
+    await expect(page.getByText("Verba e repasses", { exact: true }).locator("..")).toContainText(
       /R\$\s*2\.000,00/,
     );
-    await expect(page.locator("article").filter({ hasText: "Despesas pagas" })).toContainText(
-      /R\$\s*200,00/,
-    );
-    await expect(page.locator("article").filter({ hasText: "Resultado gerencial" })).toContainText(
+    await expect(page.getByRole("link", { name: /Despesas pagas/ })).toContainText(/R\$\s*200,00/);
+    await expect(page.getByRole("link", { name: /Resultado gerencial/ })).toContainText(
       /R\$\s*300,00/,
     );
     await expect(page.getByRole("heading", { name: "Cobranças vencidas (1)" })).toBeVisible();

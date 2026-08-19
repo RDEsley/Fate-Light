@@ -53,11 +53,13 @@ insert into public.expenses (
 
 set local role authenticated;
 
+reset role;
 select results_eq(
   $$select public from storage.buckets where id = 'workspace-documents'$$,
   array[false],
   'O bucket de documentos é privado'
 );
+set local role authenticated;
 
 select lives_ok(
   format(
