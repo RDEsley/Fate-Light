@@ -67,8 +67,8 @@ em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 | 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e alertas de vencimento                         |
 | 👥 **Clientes**   | Seis situações comerciais, site e até três links extras, observações em destaque, arquivamento, histórico anterior e ordenação por receita |
 | 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, edição do serviço aplicado, pausa reversível, encerramento, promoções e nove cadências             |
-| 💳 **Cobranças**  | Geração automática, baixa com próxima recorrência, motivo de atraso e de cancelamento, registro de cobrança já paga                        |
-| 🧾 **Despesas**   | Categorias operacionais, despesas fixas ou variáveis, cliente opcional, baixa e exclusão de registros não pagos                            |
+| 💳 **Cobranças**  | Geração automática, baixa com recorrência, motivos de atraso/cancelamento e NF privada em contas pagas                                     |
+| 🧾 **Despesas**   | Categorias operacionais, despesas fixas/variáveis, cliente opcional, baixa e NF privada em contas pagas                                    |
 | 🌐 **Domínios**   | Painel de vencimentos, edição, exclusão, registrador como link, sugestão a partir do cliente e atalho para o cadastro dele                 |
 | 🔔 **Alertas**    | Antecedência configurável no perfil, faixas de atrasado/hoje/esta semana e link direto para o item citado                                  |
 | 🕘 **Histórico**  | Linha do tempo dentro do perfil, pesquisável por cliente e tipo, preservando baixas, atrasos, encerramentos e reativações                  |

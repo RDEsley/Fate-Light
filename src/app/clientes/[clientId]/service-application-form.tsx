@@ -10,7 +10,7 @@ import { DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
 import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
-import { formatCurrency, isoToday } from "@/features/mvp/format";
+import { formatCurrency } from "@/features/mvp/format";
 import { billingFrequencies, type BillingFrequency } from "@/features/mvp/recurrence";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -220,7 +220,7 @@ export function ServiceApplicationForm({
           value={billingType}
         />
         <DateField
-          defaultValue={service?.nextDueDate ?? isoToday()}
+          defaultValue={service?.nextDueDate ?? undefined}
           error={errors.nextDueDate}
           label="Primeiro vencimento"
           name="nextDueDate"
@@ -302,7 +302,7 @@ export function ServiceApplicationForm({
             <input name="installmentCount" type="hidden" value="1" />
           )}
           <DateField
-            defaultValue={service?.startDate ?? isoToday()}
+            defaultValue={service?.startDate}
             error={errors.startDate}
             label="Início do serviço"
             name="startDate"

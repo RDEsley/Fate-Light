@@ -24,11 +24,9 @@ const statusOptions = [
 export function ExpenseForm({
   categoryOptions,
   clients,
-  today,
 }: {
   categoryOptions: { label: string; value: string }[];
   clients: ClientOption[];
-  today: string;
 }) {
   const [state, formAction] = useActionState(createExpense, initialActionState);
   const errors = state.fieldErrors ?? {};
@@ -93,7 +91,7 @@ export function ExpenseForm({
         <FieldError message={errors.amount} />
       </label>
       <DateField
-        defaultValue={sent.text("dueDate", today)}
+        defaultValue={sent.text("dueDate")}
         error={errors.dueDate}
         label="Vencimento ou data"
         name="dueDate"

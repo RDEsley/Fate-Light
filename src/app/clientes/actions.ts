@@ -13,6 +13,10 @@ import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 /** "Nome" aqui é o do cliente. */
 const clientLabels = { description: "Observações", name: "Nome do cliente" };
+const priorRevenueLabels = {
+  priorRevenue: "Total já recebido",
+  priorRevenueDate: "Data de referência",
+};
 
 const identifierSchema = z.string().uuid();
 const clientStatusSchema = z.enum(clientStatusValues);
@@ -30,9 +34,8 @@ async function recordPriorRevenue(
   supabase: Awaited<ReturnType<typeof requireWorkspaceContext>>["supabase"],
   workspaceId: string,
   clientId: string,
-  formData: FormData,
+  prior: { priorRevenue: number; priorRevenueDate: string } | null,
 ): Promise<"failed" | "recorded" | "skipped"> {
-  const prior = parsePriorRevenue(formData);
   if (!prior) return "skipped";
   const { error } = await supabase.from("charges").insert({
     client_id: clientId,
@@ -59,6 +62,11 @@ export async function createClient(_state: ActionState, formData: FormData): Pro
     const { fieldErrors, message } = formErrors(values.error, clientLabels);
     return rejectSubmission(formData, message, fieldErrors);
   }
+  const prior = parsePriorRevenue(formData);
+  if (!prior.success) {
+    const { fieldErrors, message } = formErrors(prior.error, priorRevenueLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("clients")
@@ -68,10 +76,13 @@ export async function createClient(_state: ActionState, formData: FormData): Pro
   if (error || !data) {
     return rejectSubmission(formData, "Não foi possível salvar o cliente. Tente de novo.");
   }
-  const prior = await recordPriorRevenue(supabase, workspaceId, data.id, formData);
+  const priorResult = await recordPriorRevenue(supabase, workspaceId, data.id, prior.data);
   revalidatePath("/clientes");
   revalidatePath("/dashboard");
-  statusRedirect(`/clientes/${data.id}`, prior === "failed" ? "prior-revenue-error" : "created");
+  statusRedirect(
+    `/clientes/${data.id}`,
+    priorResult === "failed" ? "prior-revenue-error" : "created",
+  );
 }
 
 export async function updateClient(_state: ActionState, formData: FormData): Promise<ActionState> {
@@ -80,6 +91,11 @@ export async function updateClient(_state: ActionState, formData: FormData): Pro
   const values = parseClientForm(formData);
   if (!values.success) {
     const { fieldErrors, message } = formErrors(values.error, clientLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
+  const prior = parsePriorRevenue(formData);
+  if (!prior.success) {
+    const { fieldErrors, message } = formErrors(prior.error, priorRevenueLabels);
     return rejectSubmission(formData, message, fieldErrors);
   }
   const { supabase, workspaceId } = await requireWorkspaceContext();
@@ -94,13 +110,13 @@ export async function updateClient(_state: ActionState, formData: FormData): Pro
   if (error || !data) {
     return rejectSubmission(formData, "Não foi possível salvar o cliente. Tente de novo.");
   }
-  const prior = await recordPriorRevenue(supabase, workspaceId, clientId.data, formData);
+  const priorResult = await recordPriorRevenue(supabase, workspaceId, clientId.data, prior.data);
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${clientId.data}`);
   revalidatePath("/dashboard");
   statusRedirect(
     `/clientes/${clientId.data}`,
-    prior === "failed" ? "prior-revenue-error" : "updated",
+    priorResult === "failed" ? "prior-revenue-error" : "updated",
   );
 }
 
@@ -114,14 +130,14 @@ export async function updatePriorRevenueEntry(formData: FormData) {
   if (!clientId.success || !chargeId.success) statusRedirect("/clientes", "error");
   const prior = parsePriorRevenue(formData);
   const path = `/clientes/${clientId.data}/editar`;
-  if (!prior) statusRedirect(path, "invalid");
+  if (!prior.success || !prior.data) statusRedirect(path, "invalid");
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("charges")
     .update({
-      company_revenue: prior.priorRevenue,
-      due_date: prior.priorRevenueDate,
-      paid_at: new Date(`${prior.priorRevenueDate}T12:00:00.000Z`).toISOString(),
+      company_revenue: prior.data.priorRevenue,
+      due_date: prior.data.priorRevenueDate,
+      paid_at: new Date(`${prior.data.priorRevenueDate}T12:00:00.000Z`).toISOString(),
     })
     .eq("id", chargeId.data)
     .eq("client_id", clientId.data)
