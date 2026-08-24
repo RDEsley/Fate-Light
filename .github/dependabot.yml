@@ -19,6 +19,17 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # These majors require coordinated ecosystem/runtime migrations.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
     labels:
       - dependencies
 
