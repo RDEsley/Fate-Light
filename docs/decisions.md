@@ -2,19 +2,19 @@
 
 ## Fundação técnica da Fase 2
 
-Decisões consolidadas e revisadas em 2026-07-30:
+Decisões consolidadas e revisadas em 2026-08-24:
 
 - Runtime fixado em Node.js `24.18.1` LTS e npm `11.16.0`. A versão foi confirmada no índice e nos
   arquivos de distribuição oficiais, além do manifesto consumido pelo `actions/setup-node`.
 - Os tipos do runtime usam `@types/node` `24.13.3`, na mesma linha principal do Node executado.
-- Aplicação fixada em Next.js `16.3.0` e React/React DOM `19.2.8`, releases estáveis atuais, sem
+- Aplicação fixada em Next.js `16.3.2` e React/React DOM `19.2.8`, releases estáveis atuais, sem
   preview ou canary.
 - TypeScript `6.0.3`, modo `strict`, App Router, diretório `src/` e Server Components por padrão.
   A linha 7 foi adiada até que o ecossistema de lint do Next usado pelo projeto seja compatível.
 - ESLint `9.39.5` permanece porque o `eslint-config-next` estável ainda carrega plugins cuja árvore
   não foi atualizada de forma compatível para a correção transitiva de `minimatch`.
-- Não há overrides após a atualização para Next.js `16.3.0`: o pacote pai passou a aceitar Sharp
-  `^0.35.3`; Next usa PostCSS `8.5.23`, enquanto Tailwind e Vite compartilham `8.5.25`, todas versões
+- Não há overrides após a atualização para Next.js `16.3.2`: o pacote pai aceita Sharp
+  `^0.35.3`; Next usa PostCSS `8.5.23`, enquanto Tailwind e Vite compartilham `8.5.26`, todas versões
   corrigidas e dentro dos contratos declarados.
 - Os overrides de Sharp, PostCSS, minimatch e brace-expansion foram removidos quando deixaram de ser
   necessários ou excediam os intervalos declarados pelos pacotes pais. Advisories sem correção compatível ficam

@@ -115,7 +115,7 @@ passou a impedir arquivos proibidos e padrões de segredo sem imprimir seus valo
   `24.18.1` como estável/LTS e publica o respectivo artefato Linux x64.
 - npm `11.16.0` acompanha essa distribuição e foi usado para gerar o lockfile v3 e executar
   `npm ci`.
-- Todas as dependências diretas estão fixadas sem ranges. Next.js `16.3.0` e React/React DOM
+- Todas as dependências diretas estão fixadas sem ranges. Next.js `16.3.2` e React/React DOM
   `19.2.8` são estáveis, sem preview ou canary.
 - `@types/node` foi corrigido da linha 26 para `24.13.3`, compatível com o runtime.
 - Os únicos scripts de instalação transitivos foram revisados e permitidos por versão exata:
@@ -126,17 +126,17 @@ passou a impedir arquivos proibidos e padrões de segredo sem imprimir seus valo
 
 | Dependência | Pacote pai e versão resolvida | Advisory | Decisão e compatibilidade | Alternativa pelo pai |
 |---|---|---|---|---|
-| PostCSS | Next.js `16.3.0` instala `8.5.23`; Tailwind e Vite usam a dependência direta `8.5.25` | `GHSA-qx2v-qp2m-jg93` afeta `<8.5.10`; `GHSA-6g55-p6wh-862q` afeta `<=8.5.11`; `GHSA-r28c-9q8g-f849` afeta `<=8.5.17` | Override removido. As duas versões instaladas estão corrigidas e cada pacote permanece dentro do próprio contrato semântico. | Resolvido pela atualização do pacote pai; não é mais necessário forçar uma única versão. |
-| Sharp | Next.js `16.3.0` declara o opcional `^0.35.3` e resolve `0.35.3` | `GHSA-f88m-g3jw-g9cj` afeta `<0.35.0` | Sem override. A versão corrigida agora pertence ao range oficialmente aceito pelo Next.js. | Resolvido pela atualização direta do Next.js para a versão estável `16.3.0`. |
-| minimatch | ESLint `9.39.5`, `@eslint/config-array` `0.21.2`, `@eslint/eslintrc` `3.3.6` e os plugins import/jsx-a11y/react declaram `^3.1.x`, resolvendo `3.1.5` | Exposto por `brace-expansion` no `GHSA-mh99-v99m-4gvg`; o audit marca `2.0.0 - 10.0.2` | Override `10.2.6` removido por exceder todos os ranges `^3.1.x`. | ESLint 10 atualiza parte da árvore, mas os plugins estáveis carregados pelo `eslint-config-next` ainda declaram `^3.1.x`. |
-| brace-expansion | Introduzido por `minimatch 3.1.5`, que declara a linha 1 e resolvia `1.1.18` | `GHSA-mh99-v99m-4gvg` afeta `<=5.0.7` | Override `5.0.9` removido: ele está fora da linha aceita e sua API não é compatível com minimatch 3. | Não há release corrigida na linha 1 nem atualização estável de todos os pais. |
+| PostCSS | Next.js `16.3.2` instala `8.5.23`; Tailwind e Vite usam a dependência direta `8.5.26` | `GHSA-qx2v-qp2m-jg93` afeta `<8.5.10`; `GHSA-6g55-p6wh-862q` afeta `<=8.5.11`; `GHSA-r28c-9q8g-f849` afeta `<=8.5.17` | Sem override. As duas versões instaladas estão corrigidas e cada pacote permanece dentro do próprio contrato semântico. | Resolvido pela atualização dos pacotes pais; não é necessário forçar uma única versão. |
+| Sharp | Next.js `16.3.2` declara o opcional `^0.35.3` e resolve `0.35.3` | `GHSA-f88m-g3jw-g9cj` afeta `<0.35.0` | Sem override. A versão corrigida pertence ao range oficialmente aceito pelo Next.js. | Resolvido pela atualização direta do Next.js para a versão estável `16.3.2`. |
+| minimatch | ESLint `9.39.5`, `@eslint/config-array` `0.21.2`, `@eslint/eslintrc` `3.3.6` e os plugins import/jsx-a11y/react declaram `^3.1.x`, resolvendo `3.1.5` | O caminho relevante chega a `brace-expansion`; `minimatch 3.1.5` não é marcado como vulnerável pelo audit atual | Sem override. Forçar `10.2.6` excederia os ranges `^3.1.x` e quebraria o contrato dos pais. | ESLint 10 ainda é incompatível com os plugins carregados pelo `eslint-config-next 16.3.2`; manter a linha 9 é a solução compatível. |
+| brace-expansion | Introduzido por `minimatch 3.1.5`, que declara a linha 1 e resolve `1.1.18` | `GHSA-mh99-v99m-4gvg` afeta a linha 1 antes de `1.1.17` | Sem override. `1.1.18` corrige o advisory dentro da linha aceita por `minimatch 3.1.5`. | Resolvido pela atualização transitiva dentro do range do pacote pai. |
 
 ### Resultado do npm audit
 
 Em 2026-08-03, um novo advisory de alta severidade para Sharp `<0.35.0` passou a ser reportado.
-O projeto foi atualizado diretamente de Next.js `16.2.12` para a release estável `16.3.0`, cujo
-contrato aceita Sharp `^0.35.3`. Depois de `npm ci`, o lockfile resolve Sharp `0.35.3`, PostCSS
-`8.5.23` para Next e PostCSS `8.5.25` para Tailwind/Vite, todos sem override.
+O projeto foi atualizado diretamente de Next.js `16.2.12` para a linha estável `16.3` e atualmente
+usa `16.3.2`, cujo contrato aceita Sharp `^0.35.3`. Depois de `npm ci`, o lockfile resolve Sharp
+`0.35.3`, PostCSS `8.5.23` para Next e PostCSS `8.5.26` para Tailwind/Vite, todos sem override.
 
-O `npm audit` atual reporta **zero vulnerabilidades** em 514 pacotes auditados. `npm audit fix --force`
+O `npm audit` de 2026-08-24 reporta **zero vulnerabilidades** em 507 pacotes auditados. `npm audit fix --force`
 não foi executado em nenhuma etapa.
