@@ -23,6 +23,7 @@ test-results/
 blob-report/
 
 # TypeScript, lint and tool caches
+next-env.d.ts
 *.tsbuildinfo
 .eslintcache
 .stylelintcache
