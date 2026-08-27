@@ -19,6 +19,7 @@ env:
   NEXT_PUBLIC_APP_URL: https://example.invalid
   NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
 
 jobs:
   database:

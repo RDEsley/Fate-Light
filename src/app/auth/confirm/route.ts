@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { appendNextPath, sanitizeNextPath } from "@/lib/auth/redirects";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const acceptedTypes = new Set<EmailOtpType>(["email", "magiclink"]);
+const acceptedTypes = new Set<EmailOtpType>(["email", "magiclink", "recovery"]);
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");

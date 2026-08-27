@@ -30,6 +30,20 @@ describe("environment validation", () => {
     ).toMatchObject({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "turnstile-site-key" });
   });
 
+  it("exige Turnstile em produção e mantém desenvolvimento flexível", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(() => parsePublicEnvironment(validPublicEnvironment)).toThrow(
+      "Configuração pública inválida: NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+    );
+    expect(
+      parsePublicEnvironment({
+        ...validPublicEnvironment,
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "production-site-key",
+      }),
+    ).toMatchObject({ NEXT_PUBLIC_TURNSTILE_SITE_KEY: "production-site-key" });
+    vi.unstubAllEnvs();
+  });
+
   it("falha cedo e informa somente a chave pública inválida", () => {
     expect(() =>
       parsePublicEnvironment({
