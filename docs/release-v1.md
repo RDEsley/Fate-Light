@@ -10,8 +10,8 @@ explicitamente.
   trabalho não possui Docker.
 - Cinco migrations deste hardening ainda estão somente no branch e não foram aplicadas ao projeto
   remoto.
-- O projeto Vercel está vinculado e os deployments atuais estão prontos, porém a variável pública
-  do Turnstile ainda não está cadastrada em Production/Preview.
+- O projeto Vercel está vinculado e a chave oficial de teste do Turnstile foi cadastrada em Preview;
+  a chave real de produção ainda precisa ser criada para os domínios finais.
 - Confirmação de e-mail, SMTP e templates hospedados ainda precisam de validação manual no Supabase.
 
 Por esses motivos, a versão continua 0.6.1 e **a promoção para 1.0.0 permanece bloqueada**.
