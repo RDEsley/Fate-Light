@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { createDomain } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { Icon } from "@/components/ui/icon";
-import { addDays, formatCurrency, isoToday } from "@/features/mvp/format";
+import { addDays, formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { DomainCard } from "./domain-card";
 import { DomainForm } from "./domain-form";
 
 export const metadata: Metadata = { title: "Domínios" };
+const pageSize = 40;
 
 const stateFilters = [
   ["all", "Todos"],
@@ -22,23 +24,27 @@ const stateFilters = [
 export default async function DomainsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; state?: string; status?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; state?: string; status?: string }>;
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
   const query = parameters.q?.trim().slice(0, 80) ?? "";
   const state = stateFilters.some(([value]) => value === parameters.state)
     ? parameters.state!
     : "all";
-  const today = isoToday();
+  const today = isoDateInTimeZone(context.workspaceTimezone);
   const nextMonth = addDays(today, 30);
+  const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
+  const firstRow = (page - 1) * pageSize;
 
   let domainsRequest = context.supabase
     .from("domains")
     .select(
       "id, client_id, domain, registrar, expires_on, auto_renew, cost, payment_responsibility, status, notes, clients(name)",
+      { count: "exact" },
     )
     .eq("workspace_id", context.workspaceId)
-    .order("expires_on");
+    .order("expires_on")
+    .range(firstRow, firstRow + pageSize - 1);
   if (query) domainsRequest = domainsRequest.ilike("domain", `%${query}%`);
   if (state === "active" || state === "cancelled") {
     domainsRequest = domainsRequest.eq("status", state);
@@ -47,7 +53,11 @@ export default async function DomainsPage({
     domainsRequest = domainsRequest.eq("status", "active").lte("expires_on", nextMonth);
   }
 
-  const [{ data: clients }, { data: domains, error }] = await Promise.all([
+  const [
+    { data: clients },
+    { data: domains, error, count },
+    { data: summary, error: summaryError },
+  ] = await Promise.all([
     context.supabase
       .from("clients")
       .select("id, name, trade_name, email, website, commercial_status")
@@ -55,6 +65,13 @@ export default async function DomainsPage({
       .is("archived_at", null)
       .order("name"),
     domainsRequest,
+    context.supabase
+      .rpc("domain_operational_summary", {
+        p_next_week: addDays(today, 7),
+        p_today: today,
+        p_workspace_id: context.workspaceId,
+      })
+      .maybeSingle(),
   ]);
 
   const clientOptions = (clients ?? []).map((client) => ({
@@ -67,13 +84,19 @@ export default async function DomainsPage({
   }));
 
   const rows = domains ?? [];
-  const active = rows.filter((domain) => domain.status === "active");
-  const overdue = active.filter((domain) => domain.expires_on < today).length;
-  const dueToday = active.filter((domain) => domain.expires_on === today).length;
-  const dueThisWeek = active.filter(
-    (domain) => domain.expires_on > today && domain.expires_on <= addDays(today, 7),
-  ).length;
-  const totalCost = active.reduce((total, domain) => total + Number(domain.cost ?? 0), 0);
+  const overdue = Number(summary?.overdue ?? 0);
+  const dueToday = Number(summary?.due_today ?? 0);
+  const dueThisWeek = Number(summary?.due_this_week ?? 0);
+  const totalCost = Number(summary?.active_cost ?? 0);
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  const domainHref = (targetPage: number) => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    if (state !== "all") next.set("state", state);
+    if (targetPage > 1) next.set("page", String(targetPage));
+    const suffix = next.toString();
+    return ("/dominios" + (suffix ? "?" + suffix : "")) as never;
+  };
 
   return (
     <AccountShell
@@ -82,6 +105,11 @@ export default async function DomainsPage({
     >
       <MvpStatusMessage status={parameters.status} />
 
+      {summaryError ? (
+        <p className="panel-card mb-4" role="alert">
+          Não foi possível calcular o resumo completo dos domínios.
+        </p>
+      ) : null}
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Vencidos" tone="negative" value={String(overdue)} />
         <SummaryCard label="Vencem hoje" tone="warning" value={String(dueToday)} />
@@ -182,6 +210,18 @@ export default async function DomainsPage({
           </p>
         </section>
       )}
+      {totalPages > 1 ? (
+        <nav
+          aria-label="Paginação de domínios"
+          className="mt-6 flex items-center justify-between gap-3 text-sm"
+        >
+          {page > 1 ? <Link href={domainHref(page - 1)}>Anterior</Link> : <span />}
+          <span>
+            Página {Math.min(page, totalPages)} de {totalPages}
+          </span>
+          {page < totalPages ? <Link href={domainHref(page + 1)}>Próxima</Link> : <span />}
+        </nav>
+      ) : null}
     </AccountShell>
   );
 }

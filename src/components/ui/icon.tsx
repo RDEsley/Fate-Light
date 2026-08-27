@@ -16,6 +16,8 @@ export type IconName =
   | "dashboard"
   | "download"
   | "edit"
+  | "eye"
+  | "eye-off"
   | "file"
   | "filter"
   | "globe"
@@ -70,6 +72,18 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     dashboard: <path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" />,
     download: <path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14" />,
     edit: <path d="M12 20h8M4 20h3l10-10a2.1 2.1 0 0 0-3-3L4 17v3Z" />,
+    eye: (
+      <>
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+        <circle cx="12" cy="12" r="2.5" />
+      </>
+    ),
+    "eye-off": (
+      <>
+        <path d="m3 3 18 18M10.6 6.2A10 10 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.2 2.8M6.3 6.3C3.9 8 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.4 4-1" />
+        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      </>
+    ),
     file: <path d="M6 2h8l4 4v16H6V2Zm8 0v5h5M9 12h6m-6 4h6" />,
     filter: <path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z" />,
     globe: (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { deleteOperationalRecord, markExpensePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
@@ -13,6 +14,7 @@ import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { ExpenseForm } from "./expense-form";
 
 export const metadata: Metadata = { title: "Despesas" };
+const pageSize = 40;
 
 const categories = [
   ["tools", "Ferramentas"],
@@ -31,22 +33,25 @@ const categoryOptions = categories.map(([value, label]) => ({ label, value }));
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; state?: string; status?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; state?: string; status?: string }>;
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
   const query = parameters.q?.trim().slice(0, 80) ?? "";
   const state = ["pending", "paid"].includes(parameters.state ?? "") ? parameters.state! : "all";
+  const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
+  const firstRow = (page - 1) * pageSize;
   let expensesRequest = context.supabase
     .from("expenses")
     .select(
       "id, description, category, amount, due_date, status, paid_at, expense_type, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)",
+      { count: "exact" },
     )
     .eq("workspace_id", context.workspaceId)
     .order("due_date", { ascending: false })
-    .limit(100);
+    .range(firstRow, firstRow + pageSize - 1);
   if (query) expensesRequest = expensesRequest.ilike("description", `%${query}%`);
   if (state !== "all") expensesRequest = expensesRequest.eq("status", state);
-  const [{ data: clients }, { data: expenses, error }] = await Promise.all([
+  const [{ data: clients }, { data: expenses, error, count }] = await Promise.all([
     context.supabase
       .from("clients")
       .select("id, name, trade_name, commercial_status")
@@ -55,6 +60,15 @@ export default async function ExpensesPage({
       .order("name"),
     expensesRequest,
   ]);
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  const expenseHref = (targetPage: number) => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    if (state !== "all") next.set("state", state);
+    if (targetPage > 1) next.set("page", String(targetPage));
+    const suffix = next.toString();
+    return `/despesas${suffix ? `?${suffix}` : ""}` as never;
+  };
   return (
     <AccountShell
       description="Registre custos pagos ou pendentes e relacione-os a um cliente quando necessário."
@@ -187,6 +201,18 @@ export default async function ExpensesPage({
           <h2 className="text-xl font-semibold">Nenhuma despesa</h2>
         </section>
       )}
+      {totalPages > 1 ? (
+        <nav
+          aria-label="Paginação de despesas"
+          className="mt-6 flex items-center justify-between gap-3 text-sm"
+        >
+          {page > 1 ? <Link href={expenseHref(page - 1)}>Anterior</Link> : <span />}
+          <span>
+            Página {Math.min(page, totalPages)} de {totalPages}
+          </span>
+          {page < totalPages ? <Link href={expenseHref(page + 1)}>Próxima</Link> : <span />}
+        </nav>
+      ) : null}
     </AccountShell>
   );
 }

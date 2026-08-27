@@ -10,6 +10,7 @@ import { formatDateTimePtBr } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export const metadata: Metadata = { title: "Histórico" };
+const pageSize = 50;
 
 const entityOptions = [
   ["all", "Tudo"],
@@ -40,24 +41,28 @@ const entityMeta: Record<string, { icon: IconName; label: string }> = {
 export default async function HistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ clientId?: string; q?: string; type?: string }>;
+  searchParams: Promise<{ clientId?: string; page?: string; q?: string; type?: string }>;
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
   const query = parameters.q?.trim().slice(0, 80) ?? "";
   const entityType = entityOptions.some(([value]) => value === parameters.type)
     ? parameters.type!
     : "all";
+  const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
+  const firstRow = (page - 1) * pageSize;
   let eventsRequest = context.supabase
     .from("activity_events")
-    .select("id, client_id, entity_type, action, summary, occurred_at, clients(name)")
+    .select("id, client_id, entity_type, action, summary, occurred_at, clients(name)", {
+      count: "exact",
+    })
     .eq("workspace_id", context.workspaceId)
     .order("occurred_at", { ascending: false })
-    .limit(150);
+    .range(firstRow, firstRow + pageSize - 1);
   if (query) eventsRequest = eventsRequest.ilike("summary", `%${query}%`);
   if (entityType !== "all") eventsRequest = eventsRequest.eq("entity_type", entityType);
   if (parameters.clientId) eventsRequest = eventsRequest.eq("client_id", parameters.clientId);
 
-  const [{ data: events, error }, { data: clients }] = await Promise.all([
+  const [{ data: events, error, count }, { data: clients }] = await Promise.all([
     eventsRequest,
     context.supabase
       .from("clients")
@@ -66,6 +71,16 @@ export default async function HistoryPage({
       .is("archived_at", null)
       .order("name"),
   ]);
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  const historyHref = (targetPage: number) => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    if (entityType !== "all") next.set("type", entityType);
+    if (parameters.clientId) next.set("clientId", parameters.clientId);
+    if (targetPage > 1) next.set("page", String(targetPage));
+    const suffix = next.toString();
+    return `/historico${suffix ? `?${suffix}` : ""}` as never;
+  };
 
   return (
     <AccountShell
@@ -171,6 +186,18 @@ export default async function HistoryPage({
               </p>
             </section>
           )}
+          {totalPages > 1 ? (
+            <nav
+              aria-label="Paginação do histórico"
+              className="mt-6 flex items-center justify-between gap-3 text-sm"
+            >
+              {page > 1 ? <Link href={historyHref(page - 1)}>Anterior</Link> : <span />}
+              <span>
+                Página {Math.min(page, totalPages)} de {totalPages}
+              </span>
+              {page < totalPages ? <Link href={historyHref(page + 1)}>Próxima</Link> : <span />}
+            </nav>
+          ) : null}
         </div>
       </div>
     </AccountShell>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Fragment } from "react";
 
 import { deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
@@ -9,7 +10,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
-import { formatCurrency, formatDatePtBr, isoToday } from "@/features/mvp/format";
+import { newestResolvedFirst } from "@/features/charges/resolution-order";
+import { formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
 import { cancellationReasons } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
@@ -31,6 +33,7 @@ const statusLabels: Record<string, string> = {
   paid: "Paga",
   pending: "Pendente",
 };
+const pageSize = 50;
 
 export default async function ChargesPage({
   searchParams,
@@ -38,6 +41,7 @@ export default async function ChargesPage({
   searchParams: Promise<{
     clientId?: string;
     focus?: string;
+    page?: string;
     q?: string;
     serviceId?: string;
     state?: string;
@@ -49,8 +53,10 @@ export default async function ChargesPage({
   const state = ["pending", "paid", "cancelled"].includes(parameters.state ?? "")
     ? parameters.state!
     : "all";
+  const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
+  const firstRow = (page - 1) * pageSize;
   const chargeColumns =
-    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)";
+    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)";
 
   // Em "Todos", duas consultas de propósito: pendentes sobem ordenadas pelo vencimento
   // mais próximo, resolvidas descem ordenadas pela mais recente. Um único `order` não
@@ -59,44 +65,74 @@ export default async function ChargesPage({
   // ele vem, o recorte vai no banco — filtrar em memória depois do `limit` fazia "Pagas"
   // mostrar só o que sobrasse das 100 resolvidas mais recentes, que podiam ser todas
   // canceladas.
-  const buildRequest = (pending: boolean, status?: string) => {
+  const buildRequest = (status: "cancelled" | "paid" | "pending", paginated = false) => {
     let request = context.supabase
       .from("charges")
-      .select(chargeColumns)
+      .select(chargeColumns, { count: "exact" })
       .eq("workspace_id", context.workspaceId)
-      .order("due_date", { ascending: pending })
-      .limit(pending ? 200 : 100);
+      .eq("status", status)
+      .order(status === "pending" ? "due_date" : status === "paid" ? "paid_at" : "cancelled_at", {
+        ascending: status === "pending",
+        nullsFirst: false,
+      });
+    request = paginated
+      ? request.range(firstRow, firstRow + pageSize - 1)
+      : request.limit(status === "pending" ? 200 : 100);
     if (query) request = request.ilike("description", `%${query}%`);
-    return status ? request.eq("status", status) : request.neq("status", "pending");
+    return request;
   };
 
   const chargesRequest =
     state === "all"
-      ? Promise.all([buildRequest(true, "pending"), buildRequest(false)]).then(
-          ([open, resolved]) => ({
-            data: [...(open.data ?? []), ...(resolved.data ?? [])],
-            error: open.error ?? resolved.error,
-          }),
-        )
-      : buildRequest(state === "pending", state);
+      ? Promise.all([
+          buildRequest("pending"),
+          buildRequest("paid"),
+          buildRequest("cancelled"),
+        ]).then(([open, paid, cancelled]) => ({
+          data: [
+            ...(open.data ?? []),
+            ...newestResolvedFirst([...(paid.data ?? []), ...(cancelled.data ?? [])]).slice(0, 100),
+          ],
+          count: (open.count ?? 0) + (paid.count ?? 0) + (cancelled.count ?? 0),
+          error: open.error ?? paid.error ?? cancelled.error,
+          hidden: {
+            cancelled: Math.max(0, (cancelled.count ?? 0) - 100),
+            paid: Math.max(0, (paid.count ?? 0) - 100),
+            pending: Math.max(0, (open.count ?? 0) - 200),
+          },
+        }))
+      : buildRequest(state as "cancelled" | "paid" | "pending", true).then((result) => ({
+          ...result,
+          hidden: null,
+        }));
 
-  const [{ data: clients }, { data: services }, { data: charges, error }] = await Promise.all([
-    context.supabase
-      .from("clients")
-      .select("id, name, trade_name, commercial_status")
-      .eq("workspace_id", context.workspaceId)
-      .is("archived_at", null)
-      .order("name"),
-    context.supabase
-      .from("client_services")
-      .select("id, client_id, name")
-      .eq("workspace_id", context.workspaceId)
-      .eq("status", "active")
-      .order("name"),
-    chargesRequest,
-  ]);
-  const today = isoToday();
+  const [{ data: clients }, { data: services }, { data: charges, error, count, hidden }] =
+    await Promise.all([
+      context.supabase
+        .from("clients")
+        .select("id, name, trade_name, commercial_status")
+        .eq("workspace_id", context.workspaceId)
+        .is("archived_at", null)
+        .order("name"),
+      context.supabase
+        .from("client_services")
+        .select("id, client_id, name")
+        .eq("workspace_id", context.workspaceId)
+        .eq("status", "active")
+        .order("name"),
+      chargesRequest,
+    ]);
+  const today = isoDateInTimeZone(context.workspaceTimezone);
+  const totalPages = state === "all" ? 1 : Math.max(1, Math.ceil((count ?? 0) / pageSize));
   const clientNames = new Map((clients ?? []).map((client) => [client.id, client.name]));
+  const chargeHref = (targetPage: number) => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    if (state !== "all") next.set("state", state);
+    if (targetPage > 1) next.set("page", String(targetPage));
+    const suffix = next.toString();
+    return `/cobrancas${suffix ? `?${suffix}` : ""}` as never;
+  };
 
   return (
     <AccountShell
@@ -141,6 +177,19 @@ export default async function ChargesPage({
           Filtrar
         </button>
       </form>
+
+      {state === "all" && hidden && (hidden.pending || hidden.paid || hidden.cancelled) ? (
+        <aside className="helper-note mb-4" role="status">
+          <Icon className="size-4" name="info" />
+          <span>
+            Esta visão resume as 200 pendentes mais próximas e as 100 resolvidas mais recentes. Para
+            navegar por todo o histórico, use os filtros de{" "}
+            <Link href="/cobrancas?state=pending">pendentes</Link>,{" "}
+            <Link href="/cobrancas?state=paid">pagas</Link> ou{" "}
+            <Link href="/cobrancas?state=cancelled">canceladas</Link>.
+          </span>
+        </aside>
+      ) : null}
 
       <details className="panel-card form-disclosure mb-5" open={Boolean(parameters.clientId)}>
         <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
@@ -343,6 +392,18 @@ export default async function ChargesPage({
           </p>
         </section>
       )}
+      {totalPages > 1 ? (
+        <nav
+          aria-label="Paginação de cobranças"
+          className="mt-6 flex items-center justify-between gap-3 text-sm"
+        >
+          {page > 1 ? <Link href={chargeHref(page - 1)}>Anterior</Link> : <span />}
+          <span>
+            Página {Math.min(page, totalPages)} de {totalPages}
+          </span>
+          {page < totalPages ? <Link href={chargeHref(page + 1)}>Próxima</Link> : <span />}
+        </nav>
+      ) : null}
     </AccountShell>
   );
 }

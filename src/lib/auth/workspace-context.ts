@@ -14,7 +14,7 @@ export const requireWorkspaceContext = cache(async function requireWorkspaceCont
       supabase.from("profiles").select("full_name").eq("id", userId).single(),
       supabase
         .from("workspace_members")
-        .select("workspace_id, workspaces(name)")
+        .select("workspace_id, workspaces(name, timezone)")
         .eq("user_id", userId)
         .eq("role", "owner")
         .eq("status", "active")
@@ -31,5 +31,6 @@ export const requireWorkspaceContext = cache(async function requireWorkspaceCont
     userId,
     workspaceId: membership.workspace_id,
     workspaceName: membership.workspaces.name,
+    workspaceTimezone: membership.workspaces.timezone,
   };
 });
