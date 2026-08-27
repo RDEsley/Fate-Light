@@ -52,10 +52,12 @@ Git, em logs ou em capturas de tela.
 | `NEXT_PUBLIC_APP_URL` | `https://seu-dominio` | a mesma URL canônica | Sem barra final; controla metadata e links de autenticação |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL da API do projeto | mesma URL ou projeto separado | Supabase → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | chave `sb_publishable_...` | mesma chave ou projeto separado | É pública por definição; nunca use a secret key no navegador |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | obrigatória | opcional | Site key pública do Turnstile; em produção o deploy não é elegível sem ela |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | obrigatória | obrigatória no build | Site key pública real em produção; previews podem usar a chave oficial de teste |
 | `SUPABASE_SECRET_KEY` | deixar vazio | deixar vazio | O MVP não usa cliente privilegiado |
 
 As variáveis `NEXT_PUBLIC_*` são incorporadas no build. Qualquer alteração exige um novo deploy.
+Como previews da Vercel também compilam com ambiente de produção, eles precisam de uma site key;
+use neles a chave oficial de teste e reserve a chave real para o domínio de produção.
 
 Pela CLI, depois de vincular o projeto:
 
