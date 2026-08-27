@@ -1,4 +1,16 @@
-# Plano de implementação
+# Plano de implementação e estado atual
+
+## Estado atual
+
+- **Versão atual:** `0.6.1`.
+- **Próximo objetivo:** hardening e release candidate para **1.0 Production Ready**.
+- **Produto existente:** autenticação, onboarding, workspace, clientes, serviços, cobranças,
+  despesas, domínios, alertas, histórico, importação, documentos privados, perfil, configurações,
+  RLS, testes e CI/CD já possuem base implementada.
+
+As fases abaixo registram o plano de entrega original. Não devem ser interpretadas como uma ordem de
+execução pendente: a próxima frente é fechar lacunas reais de confiabilidade, segurança, cobertura,
+acessibilidade, operação e documentação, sem ampliar os módulos de negócio.
 
 ## Regras de execução
 
@@ -268,6 +280,9 @@ flowchart LR
 | Workflow legado executar em projeto errado | Remover/desativar na Fase 2 antes de habilitar CI. |
 | Complexidade de administrador global | Metadados mínimos, schema/rotas separados e zero impersonation. |
 
-## Recomendação exata para a próxima fase
+## Próximo objetivo de execução
 
-Executar somente a **Fase 2 - Fundação técnica**: substituir os workflows herdados, inicializar a aplicação com versões estáveis fixadas, configurar qualidade/testes/CI, validar ambiente e criar os clientes Supabase browser/server. Não criar ainda tabelas de negócio, migrations financeiras, recorrência ou telas funcionais além dos shells.
+Preparar o Fate Light `0.6.1` para o release candidate 1.0, seguindo o checklist de
+[release-v1.md](release-v1.md). A prioridade é: corretude financeira, segurança, confiabilidade,
+testes E2E, revisão de consultas/RLS/Storage, responsividade, acessibilidade e operação. Não criar
+novos módulos de negócio enquanto os gates existentes não estiverem concluídos.

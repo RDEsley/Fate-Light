@@ -1,6 +1,11 @@
 # ADR-0014 — Dispensa temporária da confirmação de e-mail no cadastro por senha
 
-Status: aceita em 2026-08-05.
+Status: superada para produção; pendente de ativação manual no ambiente remoto.
+
+> A dispensa descrita abaixo continua sendo o registro fiel do contexto de testes internos em
+> 2026-08-05. Ela não é aceitável para a preparação do release 1.0. A ativação de **Confirm email**
+> no Supabase de produção, junto com a validação do SMTP e dos redirects, é um passo manual ainda
+> pendente; consulte [deployment-vercel.md](../deployment-vercel.md).
 
 ## Contexto
 
