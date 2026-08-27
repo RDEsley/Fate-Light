@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand-mark";
+import { LandingHeroTitle } from "@/components/landing-hero-title";
 import { Icon, type IconName } from "@/components/ui/icon";
 
 const highlights: { description: string; icon: IconName; title: string }[] = [
@@ -45,12 +46,13 @@ export default function Home() {
 
         <section className="grid min-h-[calc(100vh-8rem)] items-center gap-12 py-14 lg:grid-cols-[1.05fr_.95fr]">
           <div className="relative z-10">
+            <span aria-hidden="true" className="landing-feather landing-feather--one" />
+            <span aria-hidden="true" className="landing-feather landing-feather--two" />
+            <span aria-hidden="true" className="landing-feather landing-feather--three" />
             <p className="bg-warning-soft text-warning border-warning/25 inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-black">
               <Icon className="size-4" name="sparkles" /> Gestão financeira sem cara de planilha
             </p>
-            <h1 className="mt-6 max-w-3xl text-5xl leading-[.98] font-black tracking-[-0.055em] sm:text-6xl xl:text-7xl">
-              Sua rotina financeira pode ser <span className="text-brand-strong">leve.</span>
-            </h1>
+            <LandingHeroTitle />
             <p className="text-muted mt-6 max-w-2xl text-lg leading-8">
               A Fate Light reúne clientes, cobranças, despesas e vencimentos em uma experiência
               clara, visual e gostosa de usar. Clareza financeira. Caminho Certo.
@@ -102,6 +104,15 @@ export default function Home() {
             </div>
           </aside>
         </section>
+        <footer className="text-muted flex flex-wrap justify-center gap-4 border-t py-5 text-xs">
+          <span>© 2026 Fate Eight Tech</span>
+          <Link className="hover:text-brand-strong hover:underline" href="/termos">
+            Termos de Uso
+          </Link>
+          <Link className="hover:text-brand-strong hover:underline" href="/privacidade">
+            Política de Privacidade
+          </Link>
+        </footer>
       </div>
     </main>
   );
