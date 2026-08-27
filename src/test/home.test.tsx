@@ -15,5 +15,7 @@ describe("Home", () => {
     expect(screen.getByRole("link", { name: /criar conta/i })).toHaveAttribute("href", "/cadastro");
     expect(screen.getByRole("link", { name: /^entrar$/i })).toHaveAttribute("href", "/login");
     expect(screen.getByText(/gestão financeira sem cara de planilha/i)).toBeInTheDocument();
+    expect(document.querySelectorAll(".landing-hero__word")).toHaveLength(6);
+    expect(document.querySelector(".landing-hero__period")).toHaveTextContent(".");
   });
 });
