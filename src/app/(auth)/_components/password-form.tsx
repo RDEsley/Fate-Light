@@ -14,6 +14,7 @@ const messages: Record<string, string> = {
   error: "Não foi possível criar a conta. Revise os dados ou tente novamente.",
   invalid: "Revise o nome, o e-mail, a senha e a confirmação informados.",
   "invalid-credentials": "E-mail ou senha incorretos.",
+  "password-updated": "Senha atualizada. Entre novamente com a nova senha.",
   "signed-out": "Sua sessão foi encerrada com segurança.",
 };
 
@@ -92,7 +93,17 @@ export function PasswordForm({
           />
         </label>
         <label className="field">
-          <span className="field__label">Senha</span>
+          <span className="flex items-center justify-between gap-3">
+            <span className="field__label">Senha</span>
+            {isLogin ? (
+              <Link
+                className="text-brand-strong text-xs font-bold hover:underline"
+                href="/esqueci-senha"
+              >
+                Esqueci minha senha
+              </Link>
+            ) : null}
+          </span>
           <input
             autoComplete={isLogin ? "current-password" : "new-password"}
             className="text-base"
