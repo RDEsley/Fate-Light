@@ -38,6 +38,17 @@ export function isoToday(reference = new Date()) {
   return reference.toISOString().slice(0, 10);
 }
 
+export function isoDateInTimeZone(timeZone: string, reference = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).formatToParts(reference);
+  const value = new Map(parts.map((part) => [part.type, part.value]));
+  return [value.get("year"), value.get("month"), value.get("day")].join("-");
+}
+
 export function monthBounds(reference = new Date()) {
   const year = reference.getUTCFullYear();
   const month = reference.getUTCMonth();

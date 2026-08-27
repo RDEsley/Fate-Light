@@ -7,7 +7,7 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon } from "@/components/ui/icon";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
-import { formatCurrency, isoToday } from "@/features/mvp/format";
+import { formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
 import { ownRevenue } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
@@ -90,7 +90,7 @@ export default async function ClientDetailsPage({
 
   const statusInfo = clientStatusInfo(client.archived_at ? "archived" : client.commercial_status);
   const archived = Boolean(client.archived_at);
-  const today = isoToday();
+  const today = isoDateInTimeZone(context.workspaceTimezone);
   // O adicional declarado como receita entra aqui; como repasse, não (ADR-0018). Antes
   // ele ficava de fora dos dois casos, e o total do cliente nunca fechava com o painel.
   const earned = (charges ?? [])

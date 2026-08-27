@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
+import { addDays, isoDateInTimeZone } from "@/features/mvp/format";
+
 const authE2eEnabled = process.env.AUTH_E2E_ENABLED === "true";
 const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 
@@ -30,15 +32,13 @@ async function waitForMagicLink(
     .toBe(true);
   const response = await request.get(`${mailpitUrl}/api/v1/message/${selected!.ID}`);
   const message = (await response.json()) as { HTML: string };
-  const href = message.HTML.match(/href="([^"]*token_hash[^"]*)"/i)?.[1];
+  const href = message.HTML.match(/href="([^"]*(?:token_hash|code=)[^"]*)"/i)?.[1];
   expect(href).toBeTruthy();
   return { href: href!.replaceAll("&amp;", "&"), messageId: selected!.ID };
 }
 
 function dateOffset(days: number) {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() + days);
-  const [year, month, day] = date.toISOString().slice(0, 10).split("-");
+  const [year, month, day] = addDays(isoDateInTimeZone("America/Sao_Paulo"), days).split("-");
   return `${day}/${month}/${year}`;
 }
 
@@ -86,7 +86,7 @@ test.describe("authenticated MVP journey", () => {
   test.describe.configure({ mode: "serial" });
 
   test("executa o fluxo diário completo da Fate Light", async ({ page, request }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(240_000);
     const email = `mvp-${Date.now()}@example.test`;
     const password = "Mvp-Teste-2026!";
     await page.goto("/cadastro");
@@ -181,6 +181,48 @@ test.describe("authenticated MVP journey", () => {
     ).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
+    await page.getByRole("link", { name: "Abrir central de alertas" }).click();
+    const overdueAlert = page.locator("article").filter({ hasText: "Pendência operacional" });
+    await overdueAlert.getByRole("link", { name: "Abrir origem" }).click();
+    await expect(page).toHaveURL(/\/cobrancas\?focus=/);
+    await expect(
+      page.locator("article").filter({ hasText: "Pendência operacional" }),
+    ).toBeVisible();
+
+    await page.getByRole("link", { name: "Histórico" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Histórico" })).toBeVisible();
+    await expect(page.getByText(/pagamento|cobrança/i).first()).toBeVisible();
+
+    await page.getByRole("link", { name: "Importar dados" }).click();
+    const importedClient = "Cliente Importado " + Date.now();
+    const csv = [
+      "Tipo,Cliente,Empresa,Email,Telefone,Site,Status",
+      [
+        "cliente",
+        importedClient,
+        "Empresa Importada",
+        "importado@example.test",
+        "",
+        "importado.example",
+        "ativo",
+      ].join(","),
+    ].join("\r\n");
+    await page.locator('input[type="file"]').setInputFiles({
+      buffer: Buffer.from(csv, "utf8"),
+      mimeType: "text/csv",
+      name: "clientes-e2e.csv",
+    });
+    await page.getByRole("button", { name: "Gerar prévia" }).click();
+    await expect(
+      page.getByText("Planilha validada. Revise o resumo antes de confirmar."),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Confirmar 1 registros" }).click();
+    await expect(page.getByText("Importação concluída com sucesso.")).toBeVisible();
+    await page.getByRole("link", { name: "Clientes" }).click();
+    await page.getByPlaceholder("Buscar cliente...").fill(importedClient);
+    await page.getByRole("button", { name: "Filtrar" }).click();
+    await expect(page.getByRole("link", { name: importedClient, exact: true })).toBeVisible();
+
     await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("button", { name: "Sair" }).click();
     await page.getByLabel("E-mail").fill(email);
@@ -197,5 +239,54 @@ test.describe("authenticated MVP journey", () => {
     const login = await waitForMagicLink(request, email);
     await page.goto(login.href);
     await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
+    await page.getByRole("button", { name: "Sair" }).click();
+    await page.getByRole("link", { name: "Esqueci minha senha" }).click();
+    await page.getByLabel("E-mail").fill(email);
+    await page.getByRole("button", { name: "Enviar link de recuperação" }).click();
+    await expect(page.getByText(/enviaremos um link seguro/i)).toBeVisible();
+    const recovery = await waitForMagicLink(request, email, new Set([login.messageId]));
+    await page.goto(recovery.href);
+    await expect(page).toHaveURL(/\/redefinir-senha/);
+    const newPassword = "Mvp-Nova-Senha-2026!";
+    await page.getByLabel("Nova senha", { exact: true }).fill(newPassword);
+    await page.getByLabel("Confirmar nova senha").fill(newPassword);
+    await page.getByRole("button", { name: "Atualizar senha" }).click();
+    await expect(page).toHaveURL(/\/login\?status=password-updated/);
+    await page.getByLabel("E-mail").fill(email);
+    await page.getByLabel("Senha", { exact: true }).fill(newPassword);
+    await page.getByRole("button", { name: /^entrar$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    for (const route of [
+      "/dashboard",
+      "/clientes",
+      "/cobrancas",
+      "/despesas",
+      "/dominios",
+      "/alertas",
+      "/importar",
+      "/perfil",
+      "/configuracoes/empresa",
+    ]) {
+      await page.goto(route);
+      const critical = (await new AxeBuilder({ page }).analyze()).violations.filter(
+        ({ impact }) => impact === "critical",
+      );
+      expect(critical, "Violações críticas de acessibilidade em " + route).toEqual([]);
+    }
+
+    for (const width of [360, 390, 768, 1280]) {
+      await page.setViewportSize({ height: 900, width });
+      for (const route of ["/dashboard", "/cobrancas", "/importar", "/perfil"]) {
+        await page.goto(route);
+        await expect
+          .poll(() =>
+            page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+          )
+          .toBe(true);
+      }
+    }
   });
 });

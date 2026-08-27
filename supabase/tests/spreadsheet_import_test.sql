@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(14);
 
 create or replace function pg_temp.statement_fails(p_sql text)
 returns boolean language plpgsql as $$
@@ -41,6 +41,14 @@ select ok(
   ) and not has_function_privilege(
     'anon',
     'public.import_workspace_spreadsheet(uuid,text,text,jsonb)',
+    'EXECUTE'
+  ) and has_function_privilege(
+    'authenticated',
+    'public.import_workspace_spreadsheet_v2(uuid,text,text,jsonb)',
+    'EXECUTE'
+  ) and not has_function_privilege(
+    'anon',
+    'public.import_workspace_spreadsheet_v2(uuid,text,text,jsonb)',
     'EXECUTE'
   ),
   'Somente authenticated pode executar a importação'
@@ -85,12 +93,12 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 set local role authenticated;
 
 select lives_ok(
-  $$select public.import_workspace_spreadsheet(
+  $$select public.import_workspace_spreadsheet_v2(
     current_setting('test.import_workspace_a')::uuid,
     repeat('a', 64),
     'csv',
     '{
-      "clients":[{"companyName":"Empresa Teste","email":"financeiro@example.test","name":"Cliente Importado","notes":"","phone":"11999999999","status":"active"}],
+      "clients":[{"companyName":"Empresa Teste","email":"financeiro@example.test","name":"Cliente Importado","notes":"","phone":"11999999999","status":"active","website":"cliente.example"}],
       "services":[{"additionalFee":"25.00","billingType":"monthly","clientName":"Cliente Importado","companyRevenue":"500.00","description":"Serviço mensal","mediaBudget":"1000.00","name":"Gestão","nextDueDate":"2026-09-01","notes":"","startDate":"2026-08-01"}],
       "charges":[{"additionalFee":"25.00","clientName":"Cliente Importado","companyRevenue":"500.00","description":"Mensalidade","dueDate":"2026-09-01","mediaBudget":"1000.00","notes":"","paidAt":"","paymentMethod":"","serviceName":"Gestão","status":"pending"}],
       "expenses":[{"amount":"120.00","category":"software","clientName":"Cliente Importado","description":"Ferramenta","dueDate":"2026-09-02","expenseType":"fixed","notes":"","paidAt":"","status":"pending"}],
@@ -109,6 +117,12 @@ select results_eq(
       (select count(*) from public.domains where domain = 'cliente.example')$$,
   $$values (1::bigint, 1::bigint, 1::bigint, 1::bigint, 1::bigint)$$,
   'O lote cria todas as entidades esperadas'
+);
+
+select results_eq(
+  $$select website from public.clients where name = 'Cliente Importado'$$,
+  $$values ('cliente.example'::text)$$,
+  'O site do cliente é confirmado dentro da mesma transação'
 );
 
 select results_eq(
@@ -133,7 +147,7 @@ select ok(
 );
 
 select results_eq(
-  $$select public.import_workspace_spreadsheet(
+  $$select public.import_workspace_spreadsheet_v2(
       current_setting('test.import_workspace_a')::uuid,
       repeat('a', 64), 'csv',
       '{"clients":[{"name":"Nunca duplicar"}],"services":[],"charges":[],"expenses":[],"domains":[]}'::jsonb
@@ -146,7 +160,7 @@ select set_config('request.jwt.claim.sub', '42424242-4242-4242-8242-424242424242
 select ok(
   pg_temp.statement_fails(
     format(
-      'select public.import_workspace_spreadsheet(%L::uuid,%L,%L,%L::jsonb)',
+      'select public.import_workspace_spreadsheet_v2(%L::uuid,%L,%L,%L::jsonb)',
       current_setting('test.import_workspace_a'), repeat('b', 64), 'csv',
       '{"clients":[{"name":"Tentativa"}],"services":[],"charges":[],"expenses":[],"domains":[]}'
     )
