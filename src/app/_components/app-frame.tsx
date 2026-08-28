@@ -27,6 +27,7 @@ const navigation: { href: Route; icon: IconName; label: string }[] = [
 export function AppFrame({
   actions,
   attentionItems,
+  attentionTotal,
   children,
   description,
   fullName,
@@ -35,6 +36,7 @@ export function AppFrame({
 }: {
   actions?: ReactNode;
   attentionItems: AttentionItem[];
+  attentionTotal: number;
   children: ReactNode;
   description: string;
   fullName: string;
@@ -125,11 +127,11 @@ export function AppFrame({
               >
                 <Icon className="size-[1.35rem] shrink-0" name={item.icon} />
                 {!collapsed ? <span>{item.label}</span> : null}
-                {item.href === "/alertas" && attentionItems.length ? (
+                {item.href === "/alertas" && attentionTotal ? (
                   <span
                     className={`${collapsed ? "absolute -mt-6 ml-5" : "ml-auto"} bg-negative grid min-w-5 place-items-center rounded-full px-1.5 text-[0.65rem] leading-5 text-white`}
                   >
-                    {attentionItems.length > 99 ? "99+" : attentionItems.length}
+                    {attentionTotal > 99 ? "99+" : attentionTotal}
                   </span>
                 ) : null}
               </Link>
@@ -190,7 +192,7 @@ export function AppFrame({
           <div className="relative ml-auto flex items-center gap-2">
             <details className="group" data-tour="notifications">
               <summary
-                aria-label={`Notificações: ${unreadCount} novas, ${attentionItems.length} abertas`}
+                aria-label={`Notificações: ${unreadCount} novas, ${attentionTotal} abertas`}
                 className="cartoon-card relative grid size-10 cursor-pointer place-items-center"
                 onClick={markNotificationsSeen}
                 role="button"
@@ -213,7 +215,7 @@ export function AppFrame({
                     </p>
                   </div>
                   <span className="bg-brand-soft text-brand-strong rounded-full px-2.5 py-1 text-xs font-bold">
-                    {attentionItems.length}
+                    {attentionTotal}
                   </span>
                 </div>
                 <div className="max-h-80 overflow-auto p-2">

@@ -15,12 +15,29 @@ const optionalSecretKey = z.preprocess(
   z.string().min(16).optional(),
 );
 
-export const publicEnvironmentSchema = z.strictObject(publicEnvironmentShape);
+function requireProductionTurnstile<T extends { NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string }>(
+  value: T,
+  context: z.RefinementCtx,
+) {
+  if (process.env.NODE_ENV === "production" && !value.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+    context.addIssue({
+      code: "custom",
+      message: "Turnstile é obrigatório em produção.",
+      path: ["NEXT_PUBLIC_TURNSTILE_SITE_KEY"],
+    });
+  }
+}
 
-export const serverEnvironmentSchema = z.strictObject({
-  ...publicEnvironmentShape,
-  SUPABASE_SECRET_KEY: optionalSecretKey,
-});
+export const publicEnvironmentSchema = z
+  .strictObject(publicEnvironmentShape)
+  .superRefine(requireProductionTurnstile);
+
+export const serverEnvironmentSchema = z
+  .strictObject({
+    ...publicEnvironmentShape,
+    SUPABASE_SECRET_KEY: optionalSecretKey,
+  })
+  .superRefine(requireProductionTurnstile);
 
 export type PublicEnvironment = z.infer<typeof publicEnvironmentSchema>;
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;

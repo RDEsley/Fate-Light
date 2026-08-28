@@ -47,6 +47,20 @@ describe("auth confirmation route", () => {
     );
   });
 
+  it("aceita o token oficial de recuperação de senha", async () => {
+    const response = await GET(
+      request("token_hash=recovery-token&type=recovery&next=%2Fredefinir-senha"),
+    );
+
+    expect(authMocks.verifyOtp).toHaveBeenCalledWith({
+      token_hash: "recovery-token",
+      type: "recovery",
+    });
+    expect(response.headers.get("location")).toBe(
+      "https://example.invalid/auth/continue?next=%2Fredefinir-senha",
+    );
+  });
+
   it("rejeita parâmetros inválidos sem trocar uma sessão", async () => {
     const response = await GET(request("type=email&next=https%3A%2F%2Fevil.example"));
 

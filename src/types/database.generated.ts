@@ -921,6 +921,59 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_alerts: {
+        Row: {
+          created_at: string
+          created_by: string
+          due_on: string
+          id: string
+          notes: string | null
+          resolved_at: string | null
+          severity: string
+          state: string
+          title: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          due_on: string
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string
+          title: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          due_on?: string
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_alerts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_status: string
@@ -1417,6 +1470,29 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      dashboard_financial_summary: {
+        Args: {
+          p_due_end: string
+          p_end: string
+          p_next_month: string
+          p_next_week: string
+          p_start: string
+          p_today: string
+          p_workspace_id: string
+        }
+        Returns: {
+          active_clients: number
+          due_soon_charges: number
+          expenses_paid: number
+          expired_domains: number
+          media_period: number
+          overdue_charges: number
+          overdue_expenses: number
+          own_pending: number
+          own_received: number
+          upcoming_domains: number
+        }[]
+      }
       delete_catalog_service: {
         Args: { p_detach: boolean; p_service_id: string }
         Returns: string
@@ -1430,6 +1506,15 @@ export type Database = {
       delete_workspace_record: {
         Args: { p_record_id: string; p_record_type: string }
         Returns: string
+      }
+      domain_operational_summary: {
+        Args: { p_next_week: string; p_today: string; p_workspace_id: string }
+        Returns: {
+          active_cost: number
+          due_this_week: number
+          due_today: number
+          overdue: number
+        }[]
       }
       get_current_account_gate: {
         Args: never
@@ -1454,6 +1539,15 @@ export type Database = {
         }[]
       }
       import_workspace_spreadsheet: {
+        Args: {
+          p_payload: Json
+          p_source_checksum: string
+          p_source_type: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
+      import_workspace_spreadsheet_v2: {
         Args: {
           p_payload: Json
           p_source_checksum: string
