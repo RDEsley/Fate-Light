@@ -11,7 +11,9 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
+    actionTimeout: 15_000,
     baseURL,
+    navigationTimeout: 30_000,
     screenshot: "only-on-failure",
     trace: "on-first-retry",
   },
