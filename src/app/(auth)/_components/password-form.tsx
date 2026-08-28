@@ -63,11 +63,14 @@ export function PasswordForm({
           />
         </div>
         {!isLogin ? (
-          <label className="field">
-            <span className="field__label">Nome ou nome da empresa</span>
+          <div className="field">
+            <label className="field__label" htmlFor={`${mode}-password-display-name`}>
+              Nome ou nome da empresa
+            </label>
             <input
               autoComplete="name"
               className="text-base"
+              id={`${mode}-password-display-name`}
               maxLength={120}
               minLength={2}
               name="displayName"
@@ -78,23 +81,28 @@ export function PasswordForm({
             <span className="field__hint">
               Usaremos esse nome para preparar seu primeiro acesso.
             </span>
-          </label>
+          </div>
         ) : null}
-        <label className="field">
-          <span className="field__label">E-mail</span>
+        <div className="field">
+          <label className="field__label" htmlFor={`${mode}-password-email`}>
+            E-mail
+          </label>
           <input
             autoComplete="email"
             className="text-base"
+            id={`${mode}-password-email`}
             maxLength={254}
             name="email"
             placeholder="voce@empresa.com.br"
             required
             type="email"
           />
-        </label>
-        <label className="field">
+        </div>
+        <div className="field">
           <span className="flex items-center justify-between gap-3">
-            <span className="field__label">Senha</span>
+            <label className="field__label" htmlFor={`${mode}-password`}>
+              Senha
+            </label>
             {isLogin ? (
               <Link
                 className="text-brand-strong text-xs font-bold hover:underline"
@@ -107,6 +115,7 @@ export function PasswordForm({
           <input
             autoComplete={isLogin ? "current-password" : "new-password"}
             className="text-base"
+            id={`${mode}-password`}
             maxLength={72}
             minLength={8}
             name="password"
@@ -114,20 +123,23 @@ export function PasswordForm({
             type="password"
           />
           {!isLogin ? <span className="field__hint">Use pelo menos 8 caracteres.</span> : null}
-        </label>
+        </div>
         {!isLogin ? (
-          <label className="field">
-            <span className="field__label">Confirmar senha</span>
+          <div className="field">
+            <label className="field__label" htmlFor={`${mode}-password-confirm`}>
+              Confirmar senha
+            </label>
             <input
               autoComplete="new-password"
               className="text-base"
+              id={`${mode}-password-confirm`}
               maxLength={72}
               minLength={8}
               name="confirmPassword"
               required
               type="password"
             />
-          </label>
+          </div>
         ) : null}
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
         <SubmitButton
