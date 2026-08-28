@@ -259,6 +259,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByLabel("E-mail").fill(email);
     await waitForCaptcha(page);
     await page.getByRole("button", { name: "Enviar link de recuperação" }).click();
+    await expect(page).toHaveURL(/\/esqueci-senha\?status=sent$/, { timeout: 15_000 });
     await expect(page.getByText(/enviaremos um link seguro/i)).toBeVisible();
     const recovery = await waitForMagicLink(request, email, new Set([login.messageId]));
     await page.goto(recovery.href);
