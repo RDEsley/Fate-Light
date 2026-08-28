@@ -1508,11 +1508,7 @@ export type Database = {
         Returns: string
       }
       domain_operational_summary: {
-        Args: {
-          p_next_week: string
-          p_today: string
-          p_workspace_id: string
-        }
+        Args: { p_next_week: string; p_today: string; p_workspace_id: string }
         Returns: {
           active_cost: number
           due_this_week: number
