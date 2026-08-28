@@ -19,10 +19,15 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
+      exclude: ["src/features/alerts/attention.ts"],
       include: [
         "src/app/page.tsx",
         "src/components/**/*.tsx",
         "src/config/env/**/*.ts",
+        "src/features/**/*.ts",
+        "src/lib/auth/redirects.ts",
+        "src/lib/forms/**/*.ts",
+        "src/lib/profile/**/*.ts",
         "src/lib/supabase/**/*.ts",
       ],
       thresholds: {

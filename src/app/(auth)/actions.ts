@@ -42,6 +42,21 @@ const passwordRequestSchema = z
     }
   });
 
+const recoveryRequestSchema = z.object({
+  captchaToken: z.string().max(4096).optional(),
+  email: z.string().trim().email().max(254),
+  website: z.string().max(256),
+});
+
+const passwordResetSchema = z
+  .object({
+    confirmPassword: z.string().min(8).max(72),
+    password: z.string().min(8).max(72),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+  });
+
 type AuthStatus =
   | "captcha"
   | "confirmation-sent"
@@ -192,6 +207,55 @@ export async function authenticateWithPassword(formData: FormData) {
   if (!hasSession) redirect(statusPath(mode, "confirmation-sent"));
   const destination = await getAccountDestination(supabase, nextPath);
   redirect(destination.path as Route);
+}
+
+export async function requestPasswordRecovery(formData: FormData) {
+  const parsed = recoveryRequestSchema.safeParse({
+    captchaToken: formData.get("captchaToken") || undefined,
+    email: formData.get("email"),
+    website: formData.get("website") ?? "",
+  });
+
+  if (!parsed.success) redirect("/esqueci-senha?status=invalid");
+  if (parsed.data.website) redirect("/esqueci-senha?status=sent");
+  if (publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !parsed.data.captchaToken) {
+    redirect("/esqueci-senha?status=captcha");
+  }
+
+  const confirmationUrl = new URL("/auth/confirm", publicEnvironment.NEXT_PUBLIC_APP_URL);
+  confirmationUrl.searchParams.set("next", "/redefinir-senha");
+  let rateLimited = false;
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+      captchaToken: parsed.data.captchaToken,
+      redirectTo: confirmationUrl.toString(),
+    });
+    rateLimited = isEmailRateLimitError(error);
+  } catch (error) {
+    rateLimited = isEmailRateLimitError(error);
+  }
+
+  redirect(`/esqueci-senha?status=${rateLimited ? "email-rate-limit" : "sent"}` as Route);
+}
+
+export async function updateRecoveredPassword(formData: FormData) {
+  const parsed = passwordResetSchema.safeParse({
+    confirmPassword: formData.get("confirmPassword"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) redirect("/redefinir-senha?status=invalid");
+
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase.auth.getClaims();
+  if (typeof data?.claims?.sub !== "string") redirect("/auth/error");
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) redirect("/redefinir-senha?status=error");
+
+  await supabase.auth.signOut({ scope: "local" });
+  redirect("/login?status=password-updated");
 }
 
 export async function signOut() {

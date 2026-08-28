@@ -174,7 +174,7 @@ Consolidada em 2026-08-06:
 | ADR-0011 | Importação de planilha em memória, idempotente e transacional | Aceita | [ADR](adr/0011-transactional-spreadsheet-import.md) |
 | ADR-0012 | Contrato de versões do runtime na Vercel | Aceita | [ADR](adr/0012-vercel-runtime-version-contract.md) |
 | ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
-| ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha | Aceita | [ADR](adr/0014-temporary-email-confirmation-waiver.md) |
+| ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha | Superada para produção; ativação manual pendente | [ADR](adr/0014-temporary-email-confirmation-waiver.md) |
 | ADR-0015 | Estados do cliente, pausa de serviço e ciclos promocionais gratuitos | Aceita | [ADR](adr/0015-client-states-and-service-lifecycle-experience.md) |
 | ADR-0016 | Exclusão forçada pelo dono, links do cliente e liquidação em lote | Aceita | [ADR](adr/0016-owner-forced-deletion-and-client-links.md) |
 | ADR-0017 | Edição e exclusão do lançamento de receita anterior ao sistema | Aceita | [ADR](adr/0017-editable-prior-revenue-entry.md) |

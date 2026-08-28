@@ -9,11 +9,12 @@ import {
   dashboardPeriodBounds,
   formatCurrency,
   formatDatePtBr,
-  isoToday,
+  isoDateInTimeZone,
   type DashboardPeriod,
 } from "@/features/mvp/format";
-import { ownRevenue } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
+
+import { FinancialPrivacy } from "./financial-privacy";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -24,10 +25,6 @@ const periods = [
   { label: "90 dias", value: "90d" },
   { label: "Este mês", value: "month" },
 ] as const;
-
-function sum<T>(items: T[], value: (item: T) => number | string) {
-  return items.reduce((total, item) => total + Number(value(item)), 0);
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -41,7 +38,7 @@ export default async function DashboardPage({
   const period: DashboardPeriod = periods.some(({ value }) => value === requestedPeriod)
     ? (requestedPeriod as DashboardPeriod)
     : "month";
-  const today = isoToday();
+  const today = isoDateInTimeZone(context.workspaceTimezone);
   const { dueEnd, end, start } = dashboardPeriodBounds(period, today);
   const nextWeek = addDays(today, 7);
   const nextMonth = addDays(today, 30);
@@ -50,111 +47,94 @@ export default async function DashboardPage({
   // silêncio assim que o workspace crescia. Cada consulta abaixo pede só o que a página
   // realmente lê, e o horizonte das pendentes vai até o maior entre o fim do período e a
   // janela de 7 dias — os dois recortes que os cards mostram.
-  const chargeColumns =
-    "id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, status, paid_at, clients(name)";
-  const pendingHorizon = dueEnd > nextWeek ? dueEnd : nextWeek;
+  const chargeColumns = "id, description, due_date, clients(name)";
   const [
-    { data: paidCharges, error: paidChargesError },
-    { data: dueCharges, error: dueChargesError },
-    { data: openCharges, error: openChargesError },
-    { data: paidExpenseRows, error: paidExpensesError },
-    { data: openExpenseRows, error: openExpensesError },
-    { data: domains, error: domainsError },
-    { count: activeClients, error: clientsError },
+    { data: summary, error: summaryError },
+    { data: overdueRows, error: overdueError },
+    { data: dueSoonRows, error: dueSoonError },
+    { data: overdueExpenseRows, error: overdueExpensesError },
+    { data: expiredDomainRows, error: expiredDomainsError },
+    { data: upcomingDomainRows, error: upcomingDomainsError },
   ] = await Promise.all([
     context.supabase
-      .from("charges")
-      .select(chargeColumns)
-      .eq("workspace_id", context.workspaceId)
-      .eq("status", "paid")
-      .gte("paid_at", start)
-      .lt("paid_at", addDays(end, 1))
-      .order("paid_at", { ascending: false }),
+      .rpc("dashboard_financial_summary", {
+        p_due_end: dueEnd,
+        p_end: end,
+        p_next_month: nextMonth,
+        p_next_week: nextWeek,
+        p_start: start,
+        p_today: today,
+        p_workspace_id: context.workspaceId,
+      })
+      .maybeSingle(),
     context.supabase
       .from("charges")
       .select(chargeColumns)
-      .eq("workspace_id", context.workspaceId)
-      .neq("status", "cancelled")
-      .gte("due_date", start)
-      .lte("due_date", dueEnd)
-      .order("due_date"),
-    context.supabase
-      .from("charges")
-      .select(chargeColumns)
-      .eq("workspace_id", context.workspaceId)
-      .eq("status", "pending")
-      .lte("due_date", pendingHorizon)
-      .order("due_date"),
-    context.supabase
-      .from("expenses")
-      .select("id, description, amount, due_date, status, paid_at")
-      .eq("workspace_id", context.workspaceId)
-      .eq("status", "paid")
-      .gte("paid_at", start)
-      .lt("paid_at", addDays(end, 1))
-      .order("paid_at", { ascending: false }),
-    context.supabase
-      .from("expenses")
-      .select("id, description, amount, due_date, status, paid_at")
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .lt("due_date", today)
-      .order("due_date"),
+      .order("due_date")
+      .limit(4),
+    context.supabase
+      .from("charges")
+      .select(chargeColumns)
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "pending")
+      .gte("due_date", today)
+      .lte("due_date", nextWeek)
+      .order("due_date")
+      .limit(4),
+    context.supabase
+      .from("expenses")
+      .select("id, description, amount, due_date")
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "pending")
+      .lt("due_date", today)
+      .order("due_date")
+      .limit(4),
     context.supabase
       .from("domains")
       .select("id, domain, expires_on, clients(name)")
       .eq("workspace_id", context.workspaceId)
       .eq("status", "active")
-      .lte("expires_on", nextMonth)
-      .order("expires_on"),
+      .lt("expires_on", today)
+      .order("expires_on")
+      .limit(4),
     context.supabase
-      .from("clients")
-      .select("id", { count: "exact", head: true })
+      .from("domains")
+      .select("id, domain, expires_on, clients(name)")
       .eq("workspace_id", context.workspaceId)
-      .eq("commercial_status", "active")
-      .is("archived_at", null),
+      .eq("status", "active")
+      .gte("expires_on", today)
+      .lte("expires_on", nextMonth)
+      .order("expires_on")
+      .limit(4),
   ]);
 
-  const paidInPeriod = paidCharges ?? [];
-  const chargesInPeriod = dueCharges ?? [];
-  // Pendentes até o horizonte: alimenta "vencidas" e "próximos 7 dias", que são sobre
-  // agora, não sobre o período escolhido no topo da página.
-  const pending = openCharges ?? [];
-  // Só o que vence dentro do período escolhido: é o que o card "Receita própria
-  // pendente" mostra, e antes dessa distinção ele somava pendência de qualquer data,
-  // inclusive de meses futuros, mesmo com "Este mês" selecionado.
-  const pendingInPeriod = pending.filter(
-    (charge) => charge.due_date >= start && charge.due_date <= dueEnd,
-  );
-  const paidExpenses = paidExpenseRows ?? [];
-  const ownReceived = sum(paidInPeriod, ownRevenue);
-  const ownPending = sum(pendingInPeriod, ownRevenue);
-  // Repasse não é receita: verba de mídia e adicional de terceiro andam juntos (ADR-0018).
-  const mediaPeriod = sum(
-    chargesInPeriod,
-    (charge) =>
-      Number(charge.media_budget) +
-      (charge.additional_fee_is_revenue ? 0 : Number(charge.additional_fee)),
-  );
-  const expensesPaid = sum(paidExpenses, (expense) => expense.amount);
+  const ownReceived = Number(summary?.own_received ?? 0);
+  const ownPending = Number(summary?.own_pending ?? 0);
+  const mediaPeriod = Number(summary?.media_period ?? 0);
+  const expensesPaid = Number(summary?.expenses_paid ?? 0);
   const result = ownReceived - expensesPaid;
-  const overdue = pending.filter((charge) => charge.due_date < today);
-  const dueSoon = pending.filter(
-    (charge) => charge.due_date >= today && charge.due_date <= nextWeek,
-  );
-  const overdueExpenses = openExpenseRows ?? [];
-  const expiredDomains = (domains ?? []).filter((domain) => domain.expires_on < today);
-  const upcomingDomains = (domains ?? []).filter((domain) => domain.expires_on >= today);
+  const overdue = overdueRows ?? [];
+  const dueSoon = dueSoonRows ?? [];
+  const overdueExpenses = overdueExpenseRows ?? [];
+  const expiredDomains = expiredDomainRows ?? [];
+  const upcomingDomains = upcomingDomainRows ?? [];
+  const overdueCount = Number(summary?.overdue_charges ?? 0);
+  const dueSoonCount = Number(summary?.due_soon_charges ?? 0);
+  const overdueExpensesCount = Number(summary?.overdue_expenses ?? 0);
+  const expiredDomainsCount = Number(summary?.expired_domains ?? 0);
+  const upcomingDomainsCount = Number(summary?.upcoming_domains ?? 0);
   const attentionTotal =
-    overdue.length + dueSoon.length + overdueExpenses.length + (domains?.length ?? 0);
+    overdueCount + dueSoonCount + overdueExpensesCount + expiredDomainsCount + upcomingDomainsCount;
   const hasError = Boolean(
-    paidChargesError ||
-    dueChargesError ||
-    openChargesError ||
-    paidExpensesError ||
-    openExpensesError ||
-    domainsError ||
-    clientsError,
+    summaryError ||
+    overdueError ||
+    dueSoonError ||
+    overdueExpensesError ||
+    expiredDomainsError ||
+    upcomingDomainsError,
   );
   const maxFlow = Math.max(ownReceived, mediaPeriod, expensesPaid, Math.abs(result), 1);
   const firstName = context.fullName.trim().split(/\s+/)[0] || context.fullName;
@@ -209,190 +189,199 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      <section
-        className={`${attentionTotal ? "bg-warning-soft border-warning/30" : "bg-positive-soft border-positive/25"} mb-5 overflow-hidden rounded-2xl border-2 p-4 sm:p-5`}
-        aria-labelledby="attention-title"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span
-              className={`${attentionTotal ? "bg-warning text-white" : "bg-positive text-white"} grid size-11 shrink-0 place-items-center rounded-2xl border-2 border-slate-700/20 shadow-[2px_2px_0_rgba(37,50,58,.12)]`}
-            >
-              <Icon name={attentionTotal ? "bell" : "check"} />
-            </span>
-            <div>
-              <p className="text-xs font-black tracking-[.12em] uppercase">Precisa de atenção</p>
-              <h2 className="mt-1 text-xl font-black" id="attention-title">
-                {attentionTotal
-                  ? `${attentionTotal} item${attentionTotal === 1 ? "" : "s"} no seu radar`
-                  : "Nenhuma urgência agora"}
-              </h2>
-              <p className="text-muted mt-1 text-sm">
-                {attentionTotal
-                  ? `${overdue.length + overdueExpenses.length + expiredDomains.length} atrasado(s) e ${dueSoon.length + upcomingDomains.length} próximo(s).`
-                  : "Tudo em dia. Aproveite para planejar o próximo passo."}
-              </p>
-            </div>
-          </div>
-          <Link
-            className="border-warning/40 hover:bg-warning-soft min-h-11 rounded-xl border-2 bg-white px-4 py-2.5 text-center text-sm font-black"
-            href="/alertas"
-          >
-            Abrir central de alertas
-          </Link>
-        </div>
-      </section>
-
-      <section
-        aria-label="Resumo financeiro"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-        data-animate="stagger"
-      >
-        <KpiCard
-          href="/cobrancas?state=paid"
-          icon="arrow-up"
-          label="Receita própria recebida"
-          tone="positive"
-          value={formatCurrency(ownReceived)}
-          helper="Caixa · pagamentos confirmados"
-        />
-        <KpiCard
-          href="/cobrancas?state=pending"
-          icon="receipt"
-          label="Receita própria pendente"
-          tone="warning"
-          value={formatCurrency(ownPending)}
-          helper={`${pendingInPeriod.length} cobrança${pendingInPeriod.length === 1 ? "" : "s"} aberta${pendingInPeriod.length === 1 ? "" : "s"} no período`}
-        />
-        <KpiCard
-          href="/despesas?state=paid"
-          icon="arrow-down"
-          label="Despesas pagas"
-          tone="negative"
-          value={formatCurrency(expensesPaid)}
-          helper="Custos pagos no período"
-        />
-        <KpiCard
-          href="/historico"
-          icon={result >= 0 ? "sparkles" : "alert"}
-          label="Resultado gerencial"
-          tone={result >= 0 ? "positive" : "negative"}
-          value={formatCurrency(result)}
-          helper="Receita própria menos despesas"
-          prominent
-        />
-      </section>
-
-      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
-        <section className="panel-card">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="section-heading">
-              <span className="section-heading__icon bg-violet-soft text-violet">
-                <Icon name="dashboard" />
+      <FinancialPrivacy>
+        <section
+          className={`${attentionTotal ? "bg-warning-soft border-warning/30" : "bg-positive-soft border-positive/25"} mb-5 overflow-hidden rounded-2xl border-2 p-4 sm:p-5`}
+          aria-labelledby="attention-title"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span
+                className={`${attentionTotal ? "bg-warning text-white" : "bg-positive text-white"} grid size-11 shrink-0 place-items-center rounded-2xl border-2 border-slate-700/20 shadow-[2px_2px_0_rgba(37,50,58,.12)]`}
+              >
+                <Icon name={attentionTotal ? "bell" : "check"} />
               </span>
               <div>
-                <h2>Movimento do período</h2>
-                <p>Comparação visual sem misturar as naturezas financeiras.</p>
+                <p className="text-xs font-black tracking-[.12em] uppercase">Precisa de atenção</p>
+                <h2 className="mt-1 text-xl font-black" id="attention-title">
+                  {attentionTotal
+                    ? `${attentionTotal} item${attentionTotal === 1 ? "" : "s"} no seu radar`
+                    : "Nenhuma urgência agora"}
+                </h2>
+                <p className="text-muted mt-1 text-sm">
+                  {attentionTotal
+                    ? `${overdueCount + overdueExpensesCount + expiredDomainsCount} atrasado(s) e ${dueSoonCount + upcomingDomainsCount} próximo(s).`
+                    : "Tudo em dia. Aproveite para planejar o próximo passo."}
+                </p>
               </div>
             </div>
-            <span className="bg-violet-soft text-violet rounded-full px-3 py-1 text-xs font-black">
-              {periods.find(({ value }) => value === period)?.label}
-            </span>
+            <Link
+              className="border-warning/40 hover:bg-warning-soft min-h-11 rounded-xl border-2 bg-white px-4 py-2.5 text-center text-sm font-black"
+              href="/alertas"
+            >
+              Abrir central de alertas
+            </Link>
           </div>
-          <div className="mt-7 space-y-5">
-            <FlowBar color="brand" label="Receita própria" max={maxFlow} value={ownReceived} />
-            <FlowBar color="violet" label="Verba e repasses" max={maxFlow} value={mediaPeriod} />
-            <FlowBar color="negative" label="Despesas pagas" max={maxFlow} value={expensesPaid} />
-            <FlowBar
-              color={result >= 0 ? "positive" : "negative"}
-              label="Resultado"
-              max={maxFlow}
-              value={Math.abs(result)}
-              displayValue={result}
-            />
-          </div>
-          <p className="helper-note mt-6">
-            <Icon className="size-4 shrink-0" name="alert" /> Verba de mídia é apresentada
-            separadamente e não compõe o resultado da empresa.
-          </p>
         </section>
 
-        <section className="panel-card">
-          <div className="section-heading">
-            <span className="section-heading__icon bg-brand-soft text-brand-strong">
-              <Icon name="plus" />
-            </span>
-            <div>
-              <h2>Ações rápidas</h2>
-              <p>Atalhos para a rotina de hoje.</p>
+        <section
+          aria-label="Resumo financeiro"
+          className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+          data-animate="stagger"
+        >
+          <KpiCard
+            href="/cobrancas?state=paid"
+            icon="arrow-up"
+            label="Receita própria recebida"
+            tone="positive"
+            value={formatCurrency(ownReceived)}
+            helper="Caixa · pagamentos confirmados"
+          />
+          <KpiCard
+            href="/cobrancas?state=pending"
+            icon="receipt"
+            label="Receita própria pendente"
+            tone="warning"
+            value={formatCurrency(ownPending)}
+            helper="Cobranças abertas no período"
+          />
+          <KpiCard
+            href="/despesas?state=paid"
+            icon="arrow-down"
+            label="Despesas pagas"
+            tone="negative"
+            value={formatCurrency(expensesPaid)}
+            helper="Custos pagos no período"
+          />
+          <KpiCard
+            href="/historico"
+            icon={result >= 0 ? "sparkles" : "alert"}
+            label="Resultado gerencial"
+            tone={result >= 0 ? "positive" : "negative"}
+            value={formatCurrency(result)}
+            helper="Receita própria menos despesas"
+            prominent
+          />
+        </section>
+
+        <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
+          <section className="panel-card">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="section-heading">
+                <span className="section-heading__icon bg-violet-soft text-violet">
+                  <Icon name="dashboard" />
+                </span>
+                <div>
+                  <h2>Movimento do período</h2>
+                  <p>Comparação visual sem misturar as naturezas financeiras.</p>
+                </div>
+              </div>
+              <span className="bg-violet-soft text-violet rounded-full px-3 py-1 text-xs font-black">
+                {periods.find(({ value }) => value === period)?.label}
+              </span>
             </div>
-          </div>
-          <div className="mt-5 grid gap-2" data-animate="stagger">
-            <QuickAction href="/clientes/novo" icon="users" label="Novo cliente" color="brand" />
-            <QuickAction href="/cobrancas" icon="receipt" label="Nova cobrança" color="warning" />
-            <QuickAction href="/despesas" icon="wallet" label="Nova despesa" color="negative" />
-            <QuickAction href="/dominios" icon="globe" label="Acompanhar domínio" color="violet" />
-          </div>
-          <Link
-            className="mt-5 block rounded-xl bg-[#f1f3ef] p-4 hover:bg-[#e9ece5]"
-            href="/clientes?state=active"
-          >
-            <p className="text-muted text-xs font-bold uppercase">Clientes ativos</p>
-            <p className="mt-1 text-2xl font-black tabular-nums">{activeClients ?? 0}</p>
-          </Link>
-        </section>
-      </div>
+            <div className="mt-7 space-y-5">
+              <FlowBar color="brand" label="Receita própria" max={maxFlow} value={ownReceived} />
+              <FlowBar color="violet" label="Verba e repasses" max={maxFlow} value={mediaPeriod} />
+              <FlowBar color="negative" label="Despesas pagas" max={maxFlow} value={expensesPaid} />
+              <FlowBar
+                color={result >= 0 ? "positive" : "negative"}
+                label="Resultado"
+                max={maxFlow}
+                value={Math.abs(result)}
+                displayValue={result}
+              />
+            </div>
+            <p className="helper-note mt-6">
+              <Icon className="size-4 shrink-0" name="alert" /> Verba de mídia é apresentada
+              separadamente e não compõe o resultado da empresa.
+            </p>
+          </section>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <AlertList
-          empty="Nenhuma cobrança vencida."
-          href="/cobrancas"
-          items={overdue.map(
-            (charge) =>
-              `${charge.clients?.name ?? "Cliente"} — ${charge.description} (${formatDatePtBr(charge.due_date)})`,
-          )}
-          title={`Cobranças vencidas (${overdue.length})`}
-          tone="danger"
-        />
-        <AlertList
-          empty="Nenhuma cobrança nos próximos 7 dias."
-          href="/cobrancas"
-          items={dueSoon.map(
-            (charge) =>
-              `${charge.clients?.name ?? "Cliente"} — ${charge.description} (${formatDatePtBr(charge.due_date)})`,
-          )}
-          title={`Próximos 7 dias (${dueSoon.length})`}
-          tone="warning"
-        />
-        <AlertList
-          empty="Nenhuma despesa vencida."
-          href="/despesas?state=pending"
-          items={overdueExpenses.map(
-            (expense) =>
-              `${expense.description} — ${formatCurrency(expense.amount)} (${formatDatePtBr(expense.due_date)})`,
-          )}
-          title={`Despesas vencidas (${overdueExpenses.length})`}
-          tone="danger"
-        />
-        <AlertList
-          empty="Nenhum domínio vencido."
-          href="/dominios"
-          items={expiredDomains.map(
-            (domain) => `${domain.domain} — ${domain.clients?.name ?? "Cliente"}`,
-          )}
-          title={`Domínios vencidos (${expiredDomains.length})`}
-          tone="danger"
-        />
-        <AlertList
-          empty="Nenhum domínio expira nos próximos 30 dias."
-          href="/dominios"
-          items={upcomingDomains.map(
-            (domain) => `${domain.domain} — ${formatDatePtBr(domain.expires_on)}`,
-          )}
-          title={`Domínios nos próximos 30 dias (${upcomingDomains.length})`}
-          tone="warning"
-        />
-      </div>
+          <section className="panel-card">
+            <div className="section-heading">
+              <span className="section-heading__icon bg-brand-soft text-brand-strong">
+                <Icon name="plus" />
+              </span>
+              <div>
+                <h2>Ações rápidas</h2>
+                <p>Atalhos para a rotina de hoje.</p>
+              </div>
+            </div>
+            <div className="mt-5 grid gap-2" data-animate="stagger">
+              <QuickAction href="/clientes/novo" icon="users" label="Novo cliente" color="brand" />
+              <QuickAction href="/cobrancas" icon="receipt" label="Nova cobrança" color="warning" />
+              <QuickAction href="/despesas" icon="wallet" label="Nova despesa" color="negative" />
+              <QuickAction
+                href="/dominios"
+                icon="globe"
+                label="Acompanhar domínio"
+                color="violet"
+              />
+            </div>
+            <Link
+              className="mt-5 block rounded-xl bg-[#f1f3ef] p-4 hover:bg-[#e9ece5]"
+              href="/clientes?state=active"
+            >
+              <p className="text-muted text-xs font-bold uppercase">Clientes ativos</p>
+              <p className="mt-1 text-2xl font-black tabular-nums">
+                {summary?.active_clients ?? 0}
+              </p>
+            </Link>
+          </section>
+        </div>
+
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <AlertList
+            empty="Nenhuma cobrança vencida."
+            href="/cobrancas"
+            items={overdue.map(
+              (charge) =>
+                `${charge.clients?.name ?? "Cliente"} — ${charge.description} (${formatDatePtBr(charge.due_date)})`,
+            )}
+            title={`Cobranças vencidas (${overdueCount})`}
+            tone="danger"
+          />
+          <AlertList
+            empty="Nenhuma cobrança nos próximos 7 dias."
+            href="/cobrancas"
+            items={dueSoon.map(
+              (charge) =>
+                `${charge.clients?.name ?? "Cliente"} — ${charge.description} (${formatDatePtBr(charge.due_date)})`,
+            )}
+            title={`Próximos 7 dias (${dueSoonCount})`}
+            tone="warning"
+          />
+          <AlertList
+            empty="Nenhuma despesa vencida."
+            href="/despesas?state=pending"
+            items={overdueExpenses.map(
+              (expense) =>
+                `${expense.description} — ${formatCurrency(expense.amount)} (${formatDatePtBr(expense.due_date)})`,
+            )}
+            title={`Despesas vencidas (${overdueExpensesCount})`}
+            tone="danger"
+          />
+          <AlertList
+            empty="Nenhum domínio vencido."
+            href="/dominios"
+            items={expiredDomains.map(
+              (domain) => `${domain.domain} — ${domain.clients?.name ?? "Cliente"}`,
+            )}
+            title={`Domínios vencidos (${expiredDomainsCount})`}
+            tone="danger"
+          />
+          <AlertList
+            empty="Nenhum domínio expira nos próximos 30 dias."
+            href="/dominios"
+            items={upcomingDomains.map(
+              (domain) => `${domain.domain} — ${formatDatePtBr(domain.expires_on)}`,
+            )}
+            title={`Domínios nos próximos 30 dias (${upcomingDomainsCount})`}
+            tone="warning"
+          />
+        </div>
+      </FinancialPrivacy>
     </AccountShell>
   );
 }
@@ -431,6 +420,7 @@ function KpiCard({
         </span>
       </div>
       <p
+        data-financial-value
         className={`${tone === "negative" ? "text-negative" : tone === "positive" ? "text-positive" : "text-foreground"} mt-4 text-2xl font-black tracking-[-0.035em] tabular-nums`}
       >
         {value}
@@ -464,7 +454,9 @@ function FlowBar({
     <div>
       <div className="mb-2 flex items-center justify-between gap-3 text-sm">
         <span className="font-bold">{label}</span>
-        <strong className="tabular-nums">{formatCurrency(displayValue ?? value)}</strong>
+        <strong className="tabular-nums" data-financial-value>
+          {formatCurrency(displayValue ?? value)}
+        </strong>
       </div>
       <div className="border-line h-3 overflow-hidden rounded-full border bg-[#edf0ec]">
         <span

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
@@ -167,6 +168,13 @@ export function OnboardingForm({
                     {document.content_markdown}
                   </pre>
                 </details>
+                <Link
+                  className="text-brand-strong mt-3 inline-block text-sm font-bold hover:underline"
+                  href={document.document_type === "terms_of_use" ? "/termos" : "/privacidade"}
+                  target="_blank"
+                >
+                  Abrir documento completo
+                </Link>
                 <label className="mt-4 flex items-start gap-3 text-sm leading-6">
                   <input
                     className="mt-1"

@@ -1,6 +1,12 @@
-# Plano do Sistema Financeiro Fate Eight Tech
+# Plano histórico do Fate Light
 
-Status: plano revisado e aprovado. A Fase 1 limita-se a planejamento e segurança do repositório.
+> **Documento histórico.** Este é o plano aprovado na origem do projeto, preservado para registrar as
+> decisões iniciais. Ele não descreve o estado atual da aplicação nem a próxima etapa de entrega.
+> Para o estado de trabalho, consulte [docs/implementation-plan.md](docs/implementation-plan.md),
+> [README.md](README.md) e os ADRs.
+
+Status histórico: plano revisado e aprovado antes da implementação. A versão atual é `0.6.1`, em
+hardening para o objetivo **1.0 Production Ready**.
 
 ## 1. Visão do produto
 

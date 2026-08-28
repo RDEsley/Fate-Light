@@ -52,10 +52,12 @@ Git, em logs ou em capturas de tela.
 | `NEXT_PUBLIC_APP_URL` | `https://seu-dominio` | a mesma URL canônica | Sem barra final; controla metadata e links de autenticação |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL da API do projeto | mesma URL ou projeto separado | Supabase → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | chave `sb_publishable_...` | mesma chave ou projeto separado | É pública por definição; nunca use a secret key no navegador |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | opcional | opcional | Só preencher depois de configurar Turnstile no Supabase Auth |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | obrigatória | obrigatória no build | Site key pública real em produção; previews podem usar a chave oficial de teste |
 | `SUPABASE_SECRET_KEY` | deixar vazio | deixar vazio | O MVP não usa cliente privilegiado |
 
 As variáveis `NEXT_PUBLIC_*` são incorporadas no build. Qualquer alteração exige um novo deploy.
+Como previews da Vercel também compilam com ambiente de produção, eles precisam de uma site key;
+use neles a chave oficial de teste e reserve a chave real para o domínio de produção.
 
 Pela CLI, depois de vincular o projeto:
 
@@ -92,7 +94,37 @@ executado após os gates e a revisão do SQL.
 
 Para usar Cloudflare Turnstile, cadastre os domínios na Cloudflare, informe a site key na Vercel e a
 secret key diretamente em **Supabase → Authentication → Bot and Abuse Protection**. A aplicação não
-precisa nem deve receber a secret do Turnstile.
+precisa nem deve receber a secret do Turnstile. Em produção, aplique o Turnstile a cadastro, login,
+magic link e recuperação de senha; previews podem usar a configuração de desenvolvimento.
+
+## Autenticação de produção
+
+Antes de liberar o cadastro público, em **Supabase → Authentication**:
+
+1. ative **Confirm email**;
+2. configure um SMTP/remetente de produção e teste a entrega em caixa real;
+3. revise os templates de confirmação, magic link e recuperação de senha para usar
+   `{{ .RedirectTo }}` e links SSR seguros;
+4. configure a URL de recuperação para a rota pública de redefinição do Fate Light;
+5. execute os fluxos completos de cadastro, confirmação, login por senha, magic link e recuperação
+   com URLs de produção e preview permitidas.
+
+O requisito de confirmação foi temporariamente dispensado para testes internos e está registrado no
+[ADR-0014](adr/0014-temporary-email-confirmation-waiver.md). A ativação é manual no dashboard:
+não execute `supabase config push` para esse único ajuste.
+
+## Headers e superfície pública
+
+Antes da promoção a produção, valide no navegador e em uma resposta HTTP real que os headers de
+segurança definidos pela aplicação estão ativos e não quebram Supabase, Turnstile, fontes ou imagens:
+
+- `Content-Security-Policy`, incluindo `frame-ancestors`, `object-src`, `base-uri` e `form-action`;
+- `Strict-Transport-Security` no domínio HTTPS;
+- `X-Content-Type-Options`, `Referrer-Policy` e `Permissions-Policy`;
+- ausência de segredos, URLs assinadas ou dados financeiros nos logs e respostas de erro.
+
+Não considere essa seção uma declaração de que todos os headers já estão em produção: ela é um gate
+de validação do release.
 
 ## Validar antes e depois do deploy
 
@@ -116,6 +148,6 @@ npx vercel@latest
 npx vercel@latest --prod
 ```
 
-Após o deploy, valide cadastro, login por senha, magic link, logout, criação de registros, alertas e
-uma importação fictícia pequena. Em seguida, confira os logs da Vercel sem registrar dados privados e
-os advisors de segurança do Supabase.
+Após o deploy, valide cadastro, confirmação de e-mail, login por senha, magic link, recuperação de
+senha, logout, criação de registros, alertas e uma importação fictícia pequena. Em seguida, confira
+os logs da Vercel sem registrar dados privados e os advisors de segurança do Supabase.

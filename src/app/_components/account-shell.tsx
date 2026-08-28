@@ -14,12 +14,13 @@ type AccountShellProps = {
 
 export async function AccountShell({ actions, children, description, title }: AccountShellProps) {
   const context = await requireWorkspaceContext();
-  const attentionItems = await getAttentionItems(context);
+  const attention = await getAttentionItems(context);
 
   return (
     <AppFrame
       actions={actions}
-      attentionItems={attentionItems}
+      attentionItems={attention.items}
+      attentionTotal={attention.total}
       description={description}
       fullName={context.fullName}
       title={title}

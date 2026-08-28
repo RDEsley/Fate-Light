@@ -3,7 +3,12 @@ import {
   dashboardPeriodBounds,
   expiryLabel,
   formatCurrency,
+  formatDatePtBr,
+  formatDateTimePtBr,
+  isoDateInTimeZone,
+  looksLikeHost,
   monthBounds,
+  parseDatePtBr,
 } from "@/features/mvp/format";
 import {
   chargeSchema,
@@ -11,7 +16,8 @@ import {
   domainSchema,
   ownRevenue,
 } from "@/features/mvp/schemas";
-import { billingFrequencyLabel } from "@/features/mvp/recurrence";
+import { addBillingPeriod, billingFrequencyLabel } from "@/features/mvp/recurrence";
+import { databaseErrorMessage } from "@/features/mvp/messages";
 
 describe("MVP financial boundaries", () => {
   const baseCharge = {
@@ -165,5 +171,59 @@ describe("MVP financial boundaries", () => {
 
     expect(service.billingType).toBe("semiannual");
     expect(billingFrequencyLabel(service.billingType)).toBe("A cada 6 meses");
+  });
+
+  it("avança todas as cadências sem deslocar fim de mês", () => {
+    expect(addBillingPeriod("2026-08-03", "daily")).toBe("2026-08-04");
+    expect(addBillingPeriod("2026-08-03", "weekly", 2)).toBe("2026-08-17");
+    expect(addBillingPeriod("2026-08-03", "biweekly")).toBe("2026-08-17");
+    expect(addBillingPeriod("2026-01-31", "monthly")).toBe("2026-02-28");
+    expect(addBillingPeriod("2024-01-31", "monthly")).toBe("2024-02-29");
+    expect(addBillingPeriod("2026-01-31", "quarterly")).toBe("2026-04-30");
+    expect(addBillingPeriod("2026-01-31", "annual")).toBe("2027-01-31");
+    expect(billingFrequencyLabel("custom")).toBe("Personalizada");
+  });
+
+  it("trata datas civis e datas inválidas sem trocar o dia", () => {
+    expect(formatDatePtBr(null)).toBe("Data não informada");
+    expect(formatDatePtBr("2026-08-27")).toBe("27/08/2026");
+    expect(formatDatePtBr("texto")).toBe("texto");
+    expect(parseDatePtBr("27/08/2026")).toBe("2026-08-27");
+    expect(parseDatePtBr("31/02/2026")).toBeNull();
+    expect(parseDatePtBr("2026-08-27")).toBeNull();
+    expect(formatDateTimePtBr("inválida")).toBe("inválida");
+    expect(formatDateTimePtBr("2026-08-27T12:00:00Z")).toContain("27/08/2026");
+  });
+
+  it("calcula hoje no fuso do workspace, não no UTC do servidor", () => {
+    const instant = new Date("2026-08-28T01:30:00.000Z");
+    expect(isoDateInTimeZone("America/Sao_Paulo", instant)).toBe("2026-08-27");
+    expect(isoDateInTimeZone("Asia/Tokyo", instant)).toBe("2026-08-28");
+  });
+
+  it("reconhece hosts e traduz falhas conhecidas do banco", () => {
+    expect(looksLikeHost("cliente.example.com")).toBe(true);
+    expect(looksLikeHost("sem dominio")).toBe(false);
+    expect(looksLikeHost(null)).toBe(false);
+    expect(databaseErrorMessage({ message: "discount exceeds list price" })).toContain("desconto");
+    expect(
+      databaseErrorMessage({ message: "installment count exceeds divisible amount" }),
+    ).toContain("dividir");
+    expect(databaseErrorMessage({ message: "catalog service is not available" })).toContain(
+      "catálogo",
+    );
+    expect(databaseErrorMessage({ message: "active workspace owner required" })).toContain(
+      "sessão",
+    );
+    expect(databaseErrorMessage({ message: "charges_values_check" })).toContain("negativos");
+    expect(databaseErrorMessage({ message: "client_services_promotion_check" })).toContain(
+      "promoção",
+    );
+    expect(databaseErrorMessage({ message: "client_services_price_policy_check" })).toContain(
+      "desconto",
+    );
+    expect(databaseErrorMessage({ code: "23505" })).toContain("Já existe");
+    expect(databaseErrorMessage({ code: "23503" })).toContain("vinculados");
+    expect(databaseErrorMessage(null)).toContain("Não foi possível");
   });
 });
