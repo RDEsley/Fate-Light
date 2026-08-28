@@ -256,6 +256,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("button", { name: "Sair" }).click();
     await page.getByRole("link", { name: "Esqueci minha senha" }).click();
+    await expect(page).toHaveURL(/\/esqueci-senha$/);
     await page.getByLabel("E-mail").fill(email);
     await waitForCaptcha(page);
     await page.getByRole("button", { name: "Enviar link de recuperação" }).click();
