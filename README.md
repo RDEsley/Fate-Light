@@ -8,7 +8,7 @@
   </p>
   <p>
     <a href="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml"><img src="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-    <a href="package.json"><img src="https://img.shields.io/badge/version-0.6.1-2563EB.svg" alt="Versão 0.6.1" /></a>
+    <a href="package.json"><img src="https://img.shields.io/badge/version-0.6.2-2563EB.svg" alt="Versão 0.6.2" /></a>
     <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16.3.2-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3.2" /></a>
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=0B1F2A" alt="React 19.2.8" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0.3" /></a>
@@ -58,9 +58,9 @@ A aplicação acompanha o ciclo completo, do cadastro do cliente ao recebimento,
 e-mail e senha ou magic link, isolamento por workspace e políticas de segurança no banco. Interface
 em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 
-> **Status:** versão `0.6.1`, em hardening para o release 1.0. O núcleo operacional está
-> implementado; os gates de segurança, operações e testes de produção ainda determinam quando a V1
-> poderá ser declarada pronta.
+> **Status:** versão `0.6.2`, candidata ao release 1.0. Aplicação, banco, jornada autenticada,
+> CodeQL e preview da Vercel estão aprovados; a publicação da V1 ainda depende da configuração de
+> SMTP e Turnstile, aplicação controlada das migrations remotas e smoke test em produção.
 
 ## ✨ Funcionalidades
 
@@ -329,8 +329,9 @@ npm run test:e2e:auth
 ```
 
 O E2E autenticado cobre o fluxo operacional completo: conta, workspace, cliente, dois serviços,
-cobrança, pagamento, despesa, domínio, dashboard e novo login. Execuções repetidas podem atingir o
-limite local de envio de e-mails; aguarde a janela ou reinicie a pilha local antes de tentar novamente.
+cobrança, pagamento, despesa, domínio, dashboard, importação, login por senha, magic link,
+recuperação e troca de senha. Em caso de falha no CI, screenshots, traces e o relatório do Playwright
+ficam disponíveis temporariamente como artefato da execução.
 
 ### Comandos úteis
 
