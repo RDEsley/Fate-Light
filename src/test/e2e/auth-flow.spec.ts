@@ -168,6 +168,8 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.getByText("Vence em até 7 dias")).toBeVisible();
 
     await page.getByRole("link", { name: "Dashboard" }).click();
+    await page.getByRole("link", { name: "Todo o período" }).click();
+    await expect(page).toHaveURL(/\/dashboard\?period=all$/);
     await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
       /R\$\s*500,00/,
     );
