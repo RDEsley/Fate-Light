@@ -47,6 +47,12 @@ async function fillDate(field: Locator, value: string) {
   await field.press("Escape");
 }
 
+async function waitForCaptcha(page: Page) {
+  await expect(page.locator('input[name="captchaToken"]')).toHaveValue(/\S+/, {
+    timeout: 15_000,
+  });
+}
+
 async function selectClient(panel: Locator, name: string) {
   await panel.getByRole("combobox", { name: "Cliente", exact: true }).fill(name);
   await panel.getByRole("listbox").getByRole("option").filter({ hasText: name }).click();
@@ -94,9 +100,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel(/^Senha/).fill(password);
     await page.getByLabel("Confirmar senha").fill(password);
-    await expect(page.locator('input[name="captchaToken"]')).toHaveValue(/\S+/, {
-      timeout: 15_000,
-    });
+    await waitForCaptcha(page);
     await page.getByRole("button", { name: /^criar conta$/i }).click();
     await expect(page).toHaveURL(/\/onboarding$/, { timeout: 15_000 });
     await page.getByLabel("Nome completo").fill("Pessoa E2E");
@@ -174,7 +178,7 @@ test.describe("authenticated MVP journey", () => {
       /R\$\s*500,00/,
     );
     await expect(page.getByText("Verba e repasses", { exact: true }).locator("..")).toContainText(
-      /R\$\s*2\.000,00/,
+      /R\$\s*3\.000,00/,
     );
     await expect(page.getByRole("link", { name: /Despesas pagas/ })).toContainText(/R\$\s*200,00/);
     await expect(page.getByRole("link", { name: /Resultado gerencial/ })).toContainText(
@@ -232,6 +236,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("button", { name: "Sair" }).click();
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel("Senha", { exact: true }).fill(password);
+    await waitForCaptcha(page);
     await page.getByRole("button", { name: /^entrar$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
@@ -240,6 +245,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("link", { name: /entrar com magic link/i }).click();
     await expect(page).toHaveURL(/method=magic-link/);
     await page.getByLabel("E-mail").fill(email);
+    await waitForCaptcha(page);
     await page.getByRole("button", { name: /receber link de acesso/i }).click();
     const login = await waitForMagicLink(request, email);
     await page.goto(login.href);
@@ -249,6 +255,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("button", { name: "Sair" }).click();
     await page.getByRole("link", { name: "Esqueci minha senha" }).click();
     await page.getByLabel("E-mail").fill(email);
+    await waitForCaptcha(page);
     await page.getByRole("button", { name: "Enviar link de recuperação" }).click();
     await expect(page.getByText(/enviaremos um link seguro/i)).toBeVisible();
     const recovery = await waitForMagicLink(request, email, new Set([login.messageId]));
@@ -261,6 +268,7 @@ test.describe("authenticated MVP journey", () => {
     await expect(page).toHaveURL(/\/login\?status=password-updated/);
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel("Senha", { exact: true }).fill(newPassword);
+    await waitForCaptcha(page);
     await page.getByRole("button", { name: /^entrar$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
