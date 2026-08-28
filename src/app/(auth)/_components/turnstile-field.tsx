@@ -16,7 +16,7 @@ export function TurnstileField({ siteKey }: { siteKey?: string }) {
         onError={() => setToken("")}
         onExpire={() => setToken("")}
         onSuccess={setToken}
-        options={{ language: "pt-BR", theme: "light" }}
+        options={{ language: "auto", theme: "light" }}
         siteKey={siteKey}
       />
       <input name="captchaToken" type="hidden" value={token} />

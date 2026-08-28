@@ -94,6 +94,9 @@ test.describe("authenticated MVP journey", () => {
     await page.getByLabel("E-mail").fill(email);
     await page.getByLabel(/^Senha/).fill(password);
     await page.getByLabel("Confirmar senha").fill(password);
+    await expect(page.locator('input[name="captchaToken"]')).toHaveValue(/\S+/, {
+      timeout: 15_000,
+    });
     await page.getByRole("button", { name: /^criar conta$/i }).click();
     await expect(page).toHaveURL(/\/onboarding$/, { timeout: 15_000 });
     await page.getByLabel("Nome completo").fill("Pessoa E2E");
