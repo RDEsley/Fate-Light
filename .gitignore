@@ -12,8 +12,13 @@ out/
 dist/
 build/
 .vercel/
+
+# Local planning files
 .PLAN.md
 PLAN.md
+
+# Duplicate source assets (the served copies live in public/favicons)
+/favicons/
 
 # Test and coverage output
 coverage/
@@ -96,6 +101,3 @@ Desktop.ini
 # - documentation
 # - lockfiles
 # - Supabase migrations and fictitious seeds
-
-.vercel
-.env*
