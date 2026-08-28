@@ -12,7 +12,6 @@ export async function CurrentLegalDocument({ type }: { type: LegalDocumentType }
     .from("legal_documents")
     .select("content_markdown, document_type, effective_at, version")
     .eq("document_type", type)
-    .eq("status", "published")
     .order("effective_at", { ascending: false })
     .limit(1)
     .maybeSingle();
