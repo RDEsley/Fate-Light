@@ -198,6 +198,8 @@ test.describe("authenticated MVP journey", () => {
       page.locator("article").filter({ hasText: "Pendência operacional" }),
     ).toBeVisible();
 
+    await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
+    await page.getByRole("link", { name: "Perfil e sistema" }).click();
     await page.getByRole("link", { name: "Histórico" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Histórico" })).toBeVisible();
     await expect(page.getByText(/pagamento|cobrança/i).first()).toBeVisible();
