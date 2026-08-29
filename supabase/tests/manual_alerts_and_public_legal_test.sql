@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(11);
 
 select ok(
   (select relrowsecurity and relforcerowsecurity
@@ -23,6 +23,17 @@ select throws_ok(
 );
 reset role;
 
+select results_eq(
+  $$select version from public.legal_documents where document_type = 'terms_of_use' and status = 'published'$$,
+  array['2026.08.1'::text],
+  'Termos oficiais estão publicados na versão esperada'
+);
+select results_eq(
+  $$select version from public.legal_documents where document_type = 'privacy_policy' and status = 'published'$$,
+  array['2026.08.1'::text],
+  'Política oficial está publicada na versão esperada'
+);
+
 insert into auth.users (id, email)
 values
   ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'manual-a@example.test'),
@@ -32,7 +43,10 @@ select set_config('request.jwt.claim.sub', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd
 select set_config('request.jwt.claim.role', 'authenticated', true);
 set local role authenticated;
 select lives_ok(
-  $$select * from public.bootstrap_identity_workspace('Manual A', 'Manual A', array['10000000-0000-4000-8000-000000000001'::uuid, '10000000-0000-4000-8000-000000000002'::uuid])$$,
+  $$select * from public.bootstrap_identity_workspace(
+      'Manual A', 'Manual A',
+      (select array_agg(id order by document_type) from public.legal_documents where status = 'published' and is_required)
+    )$$,
   'Cria o workspace A'
 );
 select lives_ok(
@@ -50,7 +64,10 @@ select set_config('request.jwt.claim.sub', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee
 select set_config('request.jwt.claim.role', 'authenticated', true);
 set local role authenticated;
 select lives_ok(
-  $$select * from public.bootstrap_identity_workspace('Manual B', 'Manual B', array['10000000-0000-4000-8000-000000000001'::uuid, '10000000-0000-4000-8000-000000000002'::uuid])$$,
+  $$select * from public.bootstrap_identity_workspace(
+      'Manual B', 'Manual B',
+      (select array_agg(id order by document_type) from public.legal_documents where status = 'published' and is_required)
+    )$$,
   'Cria o workspace B'
 );
 select results_eq(
