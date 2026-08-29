@@ -31,7 +31,7 @@ select lives_ok(
       media_budget, additional_fee, additional_fee_is_revenue, status, paid_at, payment_method
     )
     select client.workspace_id, client.id, 'Recebimento ' || series.n, current_date,
-      1, 2, 1, false, 'paid', statement_timestamp(), 'Pix'
+      1, 2, 1, false, 'paid', (current_date + time '12:00') at time zone 'America/Sao_Paulo', 'Pix'
     from public.clients as client
     cross join generate_series(1, 1001) as series(n)
     where client.name = 'Cliente de volume'$$,
@@ -43,7 +43,7 @@ select lives_ok(
       workspace_id, description, category, amount, due_date, status, paid_at, expense_type
     ) values (
       current_setting('test.dashboard_workspace')::uuid, 'Despesa do período', 'tools', 200,
-      current_date, 'paid', statement_timestamp(), 'fixed'
+      current_date, 'paid', (current_date + time '12:00') at time zone 'America/Sao_Paulo', 'fixed'
     )$$,
   'Cria despesa paga'
 );
