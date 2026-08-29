@@ -11,7 +11,7 @@ select set_config('request.jwt.claim.sub', '71717171-7171-4171-8171-717171717171
 select set_config('request.jwt.claim.role', 'authenticated', true);
 set local role authenticated;
 select lives_ok(
-  $$select * from public.bootstrap_identity_workspace('Dashboard A', 'Dashboard A', array['10000000-0000-4000-8000-000000000001'::uuid, '10000000-0000-4000-8000-000000000002'::uuid])$$,
+  $$select * from public.bootstrap_identity_workspace('Dashboard A', 'Dashboard A', array['20000000-0000-4000-8000-000000000001'::uuid, '20000000-0000-4000-8000-000000000002'::uuid])$$,
   'Cria workspace A'
 );
 reset role;

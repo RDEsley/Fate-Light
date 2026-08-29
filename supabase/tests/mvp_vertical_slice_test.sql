@@ -34,7 +34,7 @@ set local role authenticated;
 select lives_ok(
   $$select * from public.bootstrap_identity_workspace(
     'Owner MVP A', 'Workspace MVP A',
-    array['10000000-0000-4000-8000-000000000001'::uuid, '10000000-0000-4000-8000-000000000002'::uuid]
+    array['20000000-0000-4000-8000-000000000001'::uuid, '20000000-0000-4000-8000-000000000002'::uuid]
   )$$,
   'Cria o workspace A'
 );
@@ -46,7 +46,7 @@ set local role authenticated;
 select lives_ok(
   $$select * from public.bootstrap_identity_workspace(
     'Owner MVP B', 'Workspace MVP B',
-    array['10000000-0000-4000-8000-000000000001'::uuid, '10000000-0000-4000-8000-000000000002'::uuid]
+    array['20000000-0000-4000-8000-000000000001'::uuid, '20000000-0000-4000-8000-000000000002'::uuid]
   )$$,
   'Cria o workspace B'
 );
