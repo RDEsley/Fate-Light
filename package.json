@@ -34,10 +34,10 @@
     "supabase:status": "supabase status"
   },
   "dependencies": {
-    "@marsidev/react-turnstile": "1.6.0",
+    "@marsidev/react-turnstile": "1.6.1",
     "@supabase/ssr": "0.12.5",
     "@supabase/supabase-js": "2.112.4",
-    "next": "16.3.2",
+    "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "read-excel-file": "9.3.10",
