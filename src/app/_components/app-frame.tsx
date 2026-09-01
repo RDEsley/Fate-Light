@@ -190,6 +190,7 @@ export function AppFrame({
           {/* O painel de notificações ancora na borda direita deste grupo, e não no sino,
               para abrir sempre logo abaixo do bloco da conta. */}
           <div className="relative ml-auto flex items-center gap-2">
+            <div className="contents" id="financial-privacy-control" />
             <details className="group" data-tour="notifications">
               <summary
                 aria-label={`Notificações: ${unreadCount} novas, ${attentionTotal} abertas`}
