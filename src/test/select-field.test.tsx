@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
 import { SelectField } from "@/components/ui/select-field";
-import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 
 const options = [
   { label: "Todo mês", value: "monthly" },
@@ -78,118 +77,5 @@ describe("select field", () => {
     await user.click(screen.getByRole("combobox"));
 
     expect(screen.getByRole("listbox")).toHaveAttribute("data-placement", "bottom");
-  });
-});
-
-describe("soft submit button", () => {
-  it("avisa no primeiro clique e envia no segundo", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
-    render(
-      <form onSubmit={onSubmit}>
-        <input defaultValue="" name="listPrice" />
-        <SoftSubmitButton
-          idleLabel="Aplicar serviço"
-          requirements={[{ message: "Informe o valor cheio do serviço.", name: "listPrice" }]}
-        />
-      </form>,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-    expect(screen.getByText("Informe o valor cheio do serviço.")).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-  });
-
-  it("envia direto quando os campos importantes estão preenchidos", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
-    render(
-      <form onSubmit={onSubmit}>
-        <input defaultValue="1500" name="listPrice" />
-        <SoftSubmitButton
-          idleLabel="Aplicar serviço"
-          requirements={[
-            { message: "Informe o valor cheio do serviço.", name: "listPrice", warnOnZero: true },
-          ]}
-        />
-      </form>,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("Informe o valor cheio do serviço.")).not.toBeInTheDocument();
-  });
-
-  it("limpa o aviso depois de um envio sem pendências", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
-    render(
-      <form onSubmit={onSubmit}>
-        <input defaultValue="" name="listPrice" />
-        <SoftSubmitButton
-          idleLabel="Aplicar serviço"
-          requirements={[{ message: "Informe o valor cheio do serviço.", name: "listPrice" }]}
-        />
-      </form>,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-    expect(screen.getByText("Informe o valor cheio do serviço.")).toBeInTheDocument();
-
-    await user.type(screen.getByRole("textbox"), "1500");
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-    // O aviso não pode sobreviver ao envio: deixá-lo na tela fazia o formulário parecer
-    // recusado depois de salvar.
-    expect(screen.queryByText("Informe o valor cheio do serviço.")).not.toBeInTheDocument();
-  });
-
-  it("volta a avisar quando o campo é esvaziado de novo", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
-    render(
-      <form onSubmit={onSubmit}>
-        <input defaultValue="1500" name="listPrice" />
-        <SoftSubmitButton
-          idleLabel="Aplicar serviço"
-          requirements={[{ message: "Informe o valor cheio do serviço.", name: "listPrice" }]}
-        />
-      </form>,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-
-    await user.clear(screen.getByRole("textbox"));
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Informe o valor cheio do serviço.")).toBeInTheDocument();
-  });
-
-  it("trata zero como campo por preencher quando pedido", async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn((event: React.FormEvent) => event.preventDefault());
-    render(
-      <form onSubmit={onSubmit}>
-        <input defaultValue="0" name="listPrice" />
-        <SoftSubmitButton
-          idleLabel="Aplicar serviço"
-          requirements={[
-            { message: "Informe o valor cheio do serviço.", name: "listPrice", warnOnZero: true },
-          ]}
-        />
-      </form>,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
-
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(screen.getByText("Informe o valor cheio do serviço.")).toBeInTheDocument();
   });
 });

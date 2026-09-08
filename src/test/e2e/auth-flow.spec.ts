@@ -64,26 +64,25 @@ async function selectField(panel: Locator, name: string, option: string) {
   await field.getByRole("option", { name: new RegExp(`^${option}\\b`) }).click();
 }
 
+async function fillMoney(field: Locator, reais: string) {
+  // MoneyField interpreta colagem com vírgula decimal (ex.: "500,00" → R$ 500,00).
+  const normalized = reais.includes(",") ? reais : `${reais},00`;
+  await field.click();
+  await field.fill(normalized);
+}
+
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
   await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
-  // O rótulo contém uma ajuda contextual acessível. O nome do campo é o contrato
-  // estável do formulário e evita acoplar o fluxo E2E ao texto dessa explicação.
-  await panel.locator('input[name="listPrice"]').fill(values.own);
+  await fillMoney(panel.getByRole("textbox", { name: "Valor cheio" }), values.own);
   const firstDueDate = panel.getByLabel("Primeiro vencimento", { exact: true });
   await fillDate(firstDueDate, dateOffset(7));
-  const mediaBudget = panel.locator('input[name="mediaBudget"]');
   await panel.getByText("Personalizar preço e agenda", { exact: true }).click();
-  await expect(mediaBudget).toBeVisible();
+  await expect(panel.getByRole("textbox", { name: "Verba de mídia" })).toBeVisible();
   await fillDate(panel.getByLabel("Início do serviço", { exact: true }), dateOffset(0));
-  await mediaBudget.fill(values.media);
-  const submit = panel.getByRole("button", { name: "Aplicar serviço e criar cobrança" });
-  await submit.click();
-  if (Number(values.own) === 0) {
-    await expect(panel.getByText("Vale conferir antes de continuar")).toBeVisible();
-    await submit.click();
-  }
+  await fillMoney(panel.getByRole("textbox", { name: "Verba de mídia" }), values.media);
+  await panel.getByRole("button", { name: "Aplicar serviço" }).click();
   await expect(page.getByText("Serviço aplicado e cobrança criada.")).toBeVisible();
 }
 
@@ -129,24 +128,25 @@ test.describe("authenticated MVP journey", () => {
 
     const adsCard = page.locator("article").filter({ hasText: "Gestão de Google Ads" });
     await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
-    let chargePanel = page.locator("details").filter({ hasText: "Cobrança avulsa" });
+    let chargePanel = page.locator("#nova-cobranca details");
+    await expect(chargePanel).toBeVisible();
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
-    await chargePanel.locator('input[name="companyRevenue"]').fill("500");
-    await chargePanel.locator('input[name="mediaBudget"]').fill("1000");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "500");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "1000");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
+    await expect(page.getByText(/cobrança criada/i)).toBeVisible();
     const paidCharge = page.locator("article").filter({ hasText: "Mensalidade Ads" });
     await selectField(paidCharge, "paymentMethod", "Pix");
     await paidCharge.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
 
-    chargePanel = page.locator("details").filter({ hasText: "Cobrança avulsa" });
+    chargePanel = page.locator("#nova-cobranca details");
     await chargePanel.locator("summary").click();
-    await selectClient(chargePanel, "Cliente MVP");
     await chargePanel.getByLabel("Descrição").fill("Pendência operacional");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(-1));
-    await chargePanel.locator('input[name="companyRevenue"]').fill("100");
-    await chargePanel.locator('input[name="mediaBudget"]').fill("0");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "100");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "0");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
     await expect(
       page.locator("article").filter({ hasText: "Pendência operacional" }).getByText("Vencida"),
@@ -156,7 +156,7 @@ test.describe("authenticated MVP journey", () => {
     const expensePanel = page.locator("details").filter({ hasText: "Nova despesa" });
     await expensePanel.locator("summary").click();
     await expensePanel.getByLabel("Descrição").fill("Ferramenta mensal");
-    await expensePanel.getByLabel("Valor").fill("200");
+    await fillMoney(expensePanel.getByRole("textbox", { name: "Valor" }), "200");
     await fillDate(expensePanel.getByLabel("Vencimento ou data", { exact: true }), dateOffset(0));
     await selectField(expensePanel, "status", "Paga");
     await expensePanel.getByRole("button", { name: "Criar despesa" }).click();

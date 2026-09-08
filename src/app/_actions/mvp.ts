@@ -1,7 +1,6 @@
 "use server";
 
 import type { Route } from "next";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
@@ -12,17 +11,40 @@ import {
   delayReasonSchema,
   domainSchema,
   expenseSchema,
+  financialReturnToSchema,
   identifierSchema,
   optional,
   operationalDeletionSchema,
+  paidFinancialDeletionSchema,
   paymentSchema,
   serviceScheduleSchema,
   serviceStateSchema,
 } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
+import { revalidateFinancialSurfaces } from "@/lib/cache/revalidate-financial-surfaces";
+import { revalidatePath } from "next/cache";
 
 function statusRedirect(path: string, status: string): never {
   redirect(`${path}${path.includes("?") ? "&" : "?"}status=${status}` as Route);
+}
+
+/** Destino pós-mutação: /cobrancas, /despesas ou /clientes/{uuid}. */
+function resolveFinancialReturnTo(raw: FormDataEntryValue | null, fallback: string): string {
+  const parsed = financialReturnToSchema.safeParse(String(raw ?? "").trim());
+  return parsed.success ? parsed.data : fallback;
+}
+
+function parsePaidDeleteResult(data: unknown): {
+  objectPaths: string[];
+  status: string;
+} {
+  if (!data || typeof data !== "object") return { objectPaths: [], status: "error" };
+  const record = data as { object_paths?: unknown; status?: unknown };
+  const status = typeof record.status === "string" ? record.status : "error";
+  const paths = Array.isArray(record.object_paths)
+    ? record.object_paths.filter((path): path is string => typeof path === "string")
+    : [];
+  return { objectPaths: paths, status };
 }
 
 /** "Descrição" muda de sentido conforme a tela; o resto dos rótulos é comum. */
@@ -68,9 +90,7 @@ export async function setClientServiceState(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) statusRedirect(`/clientes/${clientId.data}`, "service-error");
-  revalidatePath(`/clientes/${clientId.data}`);
-  revalidatePath("/cobrancas");
-  revalidatePath("/dashboard");
+  revalidateFinancialSurfaces({ clientId: clientId.data, includeCharges: true });
   statusRedirect(
     `/clientes/${clientId.data}`,
     state.data === "ended"
@@ -79,29 +99,6 @@ export async function setClientServiceState(formData: FormData) {
         ? "service-paused"
         : "service-resumed",
   );
-}
-
-/**
- * Liquida de uma vez as cobranças pendentes de um serviço, para o encerramento em que o
- * cliente já acertou tudo. Não agenda o próximo ciclo: o serviço está sendo fechado.
- */
-export async function settleServiceCharges(formData: FormData) {
-  const clientId = identifierSchema.safeParse(formData.get("clientId"));
-  const id = identifierSchema.safeParse(formData.get("id"));
-  if (!clientId.success || !id.success) statusRedirect("/clientes", "service-error");
-  const { supabase } = await requireWorkspaceContext();
-  const method = String(formData.get("paymentMethod") ?? "").trim() || "Acerto final";
-  const { error } = await supabase.rpc("settle_client_service_charges", {
-    p_payment_method: method,
-    p_service_id: id.data,
-  });
-  const path = `/clientes/${clientId.data}`;
-  if (error) statusRedirect(path, "service-error");
-  revalidatePath(path);
-  revalidatePath("/cobrancas");
-  revalidatePath("/historico");
-  revalidatePath("/dashboard");
-  statusRedirect(path, "service-settled");
 }
 
 /**
@@ -121,10 +118,7 @@ export async function deleteClientService(formData: FormData) {
   if (error || data === "not_found") statusRedirect(path, "delete-error");
   if (data === "documents_attached") statusRedirect(path, "service-documents-attached");
   if (data === "blocked") statusRedirect(path, "service-delete-blocked");
-  revalidatePath(path);
-  revalidatePath("/cobrancas");
-  revalidatePath("/historico");
-  revalidatePath("/dashboard");
+  revalidateFinancialSurfaces({ clientId: clientId.data, includeCharges: true });
   statusRedirect(path, "deleted");
 }
 
@@ -146,9 +140,7 @@ export async function updateClientServiceSchedule(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) statusRedirect(`/clientes/${values.data.clientId}`, "service-error");
-  revalidatePath(`/clientes/${values.data.clientId}`);
-  revalidatePath("/cobrancas");
-  revalidatePath("/dashboard");
+  revalidateFinancialSurfaces({ clientId: values.data.clientId, includeCharges: true });
   statusRedirect(`/clientes/${values.data.clientId}`, "service-schedule-updated");
 }
 
@@ -174,9 +166,65 @@ export async function deleteOperationalRecord(formData: FormData) {
           : "/dominios";
   if (error || data === "not_found") statusRedirect(path, "delete-error");
   if (data === "blocked") statusRedirect(path, "delete-blocked");
-  revalidatePath(path);
-  revalidatePath("/dashboard");
+  if (values.data.recordType === "charge") {
+    revalidateFinancialSurfaces({
+      clientId: values.data.clientId || null,
+      includeCharges: true,
+    });
+  } else if (values.data.recordType === "expense") {
+    revalidateFinancialSurfaces({
+      clientId: values.data.clientId || null,
+      includeExpenses: true,
+    });
+  } else if (values.data.recordType === "service") {
+    revalidateFinancialSurfaces({ clientId: values.data.clientId, includeCharges: true });
+  } else {
+    revalidatePath(path);
+    revalidatePath("/dashboard");
+  }
   statusRedirect(path, "deleted");
+}
+
+/**
+ * Exclusão corretiva de cobrança/despesa já paga: remove metadados fiscais no banco
+ * e limpa o Storage privado com os object_paths devolvidos pela RPC.
+ */
+export async function deletePaidFinancialRecord(formData: FormData) {
+  const values = paidFinancialDeletionSchema.safeParse({
+    id: formData.get("id"),
+    recordType: formData.get("recordType"),
+    returnTo: formData.get("returnTo") ?? "",
+  });
+  const fallback =
+    values.success && values.data.recordType === "expense" ? "/despesas" : "/cobrancas";
+  if (!values.success) statusRedirect(fallback, "delete-error");
+
+  const returnTo = resolveFinancialReturnTo(
+    values.data.returnTo && values.data.returnTo !== "" ? values.data.returnTo : null,
+    fallback,
+  );
+
+  const { supabase } = await requireWorkspaceContext();
+  const { data, error } = await supabase.rpc("delete_paid_financial_record", {
+    p_record_id: values.data.id,
+    p_record_type: values.data.recordType,
+  });
+  const result = parsePaidDeleteResult(data);
+  if (error || result.status === "not_found") statusRedirect(returnTo, "delete-error");
+  if (result.status === "blocked") statusRedirect(returnTo, "delete-blocked");
+  if (result.status !== "deleted") statusRedirect(returnTo, "delete-error");
+
+  if (result.objectPaths.length) {
+    await supabase.storage.from("workspace-documents").remove(result.objectPaths);
+  }
+
+  const clientMatch = returnTo.match(/^\/clientes\/([0-9a-f-]{36})$/i);
+  revalidateFinancialSurfaces({
+    clientId: clientMatch?.[1] ?? null,
+    includeCharges: values.data.recordType === "charge",
+    includeExpenses: values.data.recordType === "expense",
+  });
+  statusRedirect(returnTo, "paid-deleted");
 }
 
 export async function createCharge(_state: ActionState, formData: FormData): Promise<ActionState> {
@@ -197,6 +245,10 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
     const { fieldErrors, message } = formErrors(values.error, chargeLabels);
     return rejectSubmission(formData, message, fieldErrors);
   }
+  const returnTo = resolveFinancialReturnTo(
+    formData.get("returnTo"),
+    `/clientes/${values.data.clientId}`,
+  );
   const { supabase, workspaceId } = await requireWorkspaceContext();
   // Registrar uma cobrança passada já quitada evita ter que inventar histórico depois.
   const settled = values.data.alreadyPaid;
@@ -220,10 +272,11 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
     .select("id")
     .single();
   if (error || !data) return rejectSubmission(formData, databaseErrorMessage(error));
-  revalidatePath("/cobrancas");
-  revalidatePath("/historico");
-  revalidatePath("/dashboard");
-  statusRedirect(`/cobrancas?focus=${data.id}`, settled ? "created-paid" : "created");
+  revalidateFinancialSurfaces({ clientId: values.data.clientId, includeCharges: true });
+  if (returnTo.startsWith("/clientes/")) {
+    statusRedirect(returnTo, "charge-created");
+  }
+  statusRedirect(`${returnTo}?focus=${data.id}`, settled ? "created-paid" : "created");
 }
 
 export async function markChargePaid(formData: FormData) {
@@ -231,19 +284,22 @@ export async function markChargePaid(formData: FormData) {
     id: formData.get("id"),
     paymentMethod: formData.get("paymentMethod"),
   });
-  if (!values.success) statusRedirect("/cobrancas", "invalid");
+  const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
+  if (!values.success) statusRedirect(returnTo, "invalid");
   const { supabase } = await requireWorkspaceContext();
   const { error } = await supabase.rpc("settle_charge_and_schedule_next", {
     p_charge_id: values.data.id,
     p_payment_method: values.data.paymentMethod,
   });
-  if (error) statusRedirect("/cobrancas", "error");
-  revalidatePath("/cobrancas");
-  revalidatePath("/historico");
-  revalidatePath("/dashboard");
+  if (error) statusRedirect(returnTo, "error");
+  const clientMatch = returnTo.match(/^\/clientes\/([0-9a-f-]{36})$/i);
+  revalidateFinancialSurfaces({
+    clientId: clientMatch?.[1] ?? null,
+    includeCharges: true,
+  });
   // Sem `focus`: a cobrança acabou de descer para o bloco das resolvidas, e arrastar a
   // tela até lá tiraria o usuário de onde ele estava trabalhando.
-  statusRedirect("/cobrancas", "paid");
+  statusRedirect(returnTo, "paid");
 }
 
 export async function recordChargeDelayReason(formData: FormData) {
@@ -267,8 +323,7 @@ export async function recordChargeDelayReason(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) statusRedirect("/cobrancas", "error");
-  revalidatePath("/cobrancas");
-  revalidatePath("/historico");
+  revalidateFinancialSurfaces({ includeCharges: true });
   statusRedirect("/cobrancas", "delay-recorded");
 }
 
@@ -294,9 +349,7 @@ export async function cancelCharge(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) statusRedirect("/cobrancas", "error");
-  revalidatePath("/cobrancas");
-  revalidatePath("/historico");
-  revalidatePath("/dashboard");
+  revalidateFinancialSurfaces({ includeCharges: true });
   statusRedirect(`/cobrancas?focus=${values.data.id}`, "cancelled");
 }
 
@@ -307,6 +360,7 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
     clientId: formData.get("clientId"),
     description: formData.get("description"),
     dueDate: formData.get("dueDate"),
+    enableRecurrence: formData.get("enableRecurrence") === "on",
     expenseType: formData.get("expenseType"),
     notes: formData.get("notes"),
     status: formData.get("status"),
@@ -316,45 +370,82 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
     return rejectSubmission(formData, message, fieldErrors);
   }
   const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { error } = await supabase.from("expenses").insert({
-    amount: values.data.amount,
-    category: values.data.category,
-    client_id: values.data.clientId || null,
-    description: values.data.description,
-    due_date: values.data.dueDate,
-    expense_type: values.data.expenseType,
-    notes: optional(values.data.notes),
-    // Despesa já paga é ancorada na data informada, como a cobrança já paga: usar "agora"
-    // jogava um custo antigo no período de hoje e o resultado do painel não fechava.
-    paid_at:
-      values.data.status === "paid"
-        ? new Date(`${values.data.dueDate}T12:00:00.000Z`).toISOString()
-        : null,
-    status: values.data.status,
-    workspace_id: workspaceId,
-  });
-  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
-  revalidatePath("/despesas");
-  revalidatePath("/dashboard");
+  const clientId = values.data.clientId || null;
+
+  if (values.data.enableRecurrence && values.data.expenseType === "fixed") {
+    const { error } = await supabase.rpc("create_expense_with_recurrence", {
+      p_amount: values.data.amount,
+      p_category: values.data.category,
+      p_client_id: clientId ?? undefined,
+      p_description: values.data.description,
+      p_due_date: values.data.dueDate,
+      p_enable_recurrence: true,
+      p_expense_type: values.data.expenseType,
+      p_notes: optional(values.data.notes) ?? undefined,
+      p_status: values.data.status,
+    });
+    if (error) return rejectSubmission(formData, databaseErrorMessage(error));
+  } else {
+    const { error } = await supabase.from("expenses").insert({
+      amount: values.data.amount,
+      category: values.data.category,
+      client_id: clientId,
+      description: values.data.description,
+      due_date: values.data.dueDate,
+      expense_type: values.data.expenseType,
+      notes: optional(values.data.notes),
+      // Despesa já paga é ancorada na data informada, como a cobrança já paga: usar "agora"
+      // jogava um custo antigo no período de hoje e o resultado do painel não fechava.
+      paid_at:
+        values.data.status === "paid"
+          ? new Date(`${values.data.dueDate}T12:00:00.000Z`).toISOString()
+          : null,
+      status: values.data.status,
+      workspace_id: workspaceId,
+    });
+    if (error) return rejectSubmission(formData, databaseErrorMessage(error));
+  }
+
+  revalidateFinancialSurfaces({ clientId, includeExpenses: true });
   statusRedirect("/despesas", "created");
 }
 
 export async function markExpensePaid(formData: FormData) {
   const id = identifierSchema.safeParse(formData.get("id"));
   if (!id.success) statusRedirect("/despesas", "error");
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
-    .from("expenses")
-    .update({ paid_at: new Date().toISOString(), status: "paid" })
-    .eq("id", id.data)
-    .eq("workspace_id", workspaceId)
-    .eq("status", "pending")
-    .select("id")
-    .single();
-  if (error || !data) statusRedirect("/despesas", "error");
-  revalidatePath("/despesas");
-  revalidatePath("/dashboard");
-  statusRedirect("/despesas", "paid");
+  const { supabase } = await requireWorkspaceContext();
+  const { data, error } = await supabase.rpc("settle_expense_and_schedule_next", {
+    p_expense_id: id.data,
+  });
+  if (error || !data || typeof data !== "object") statusRedirect("/despesas", "error");
+  const status =
+    typeof (data as { status?: unknown }).status === "string"
+      ? (data as { status: string }).status
+      : "";
+  if (status === "not_found") statusRedirect("/despesas", "error");
+  if (status !== "settled") statusRedirect("/despesas", "error");
+  revalidateFinancialSurfaces({ includeExpenses: true });
+  const scheduled = Boolean((data as { scheduled?: unknown }).scheduled);
+  statusRedirect("/despesas", scheduled ? "expense-next-scheduled" : "paid");
+}
+
+export async function stopExpenseRecurrence(formData: FormData) {
+  const id = identifierSchema.safeParse(formData.get("id"));
+  if (!id.success) statusRedirect("/despesas", "error");
+  const { supabase } = await requireWorkspaceContext();
+  const { data, error } = await supabase.rpc("stop_expense_recurrence", {
+    p_expense_id: id.data,
+  });
+  if (error || !data || typeof data !== "object") statusRedirect("/despesas", "error");
+  const status =
+    typeof (data as { status?: unknown }).status === "string"
+      ? (data as { status: string }).status
+      : "";
+  if (status === "not_found") statusRedirect("/despesas", "error");
+  if (status === "not_recurring") statusRedirect("/despesas", "expense-not-recurring");
+  if (status !== "stopped") statusRedirect("/despesas", "error");
+  revalidateFinancialSurfaces({ includeExpenses: true });
+  statusRedirect("/despesas", "expense-recurrence-stopped");
 }
 
 export async function createDomain(_state: ActionState, formData: FormData): Promise<ActionState> {

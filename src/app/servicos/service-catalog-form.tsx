@@ -4,11 +4,14 @@ import { useActionState } from "react";
 
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
-import { FieldHint } from "@/components/ui/field-hint";
+import { IntegerField } from "@/components/ui/integer-field";
+import { MoneyField } from "@/components/ui/money-field";
+import { PercentField } from "@/components/ui/percent-field";
 import { SelectField } from "@/components/ui/select-field";
-import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import { billingFrequencies } from "@/features/mvp/recurrence";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
+
+import { SubmitButton } from "../_components/submit-button";
 
 const billingOptions = billingFrequencies.map(([value, label]) => ({ label, value }));
 
@@ -57,63 +60,38 @@ export function ServiceCatalogForm({
           Nomes se repetem mal: use um nome que você reconheceria em qualquer cliente.
         </span>
       </label>
-      <label className="field">
-        <span className="field__label">
-          Valor padrão
-          <FieldHint>
-            É só uma sugestão inicial. Ao aplicar o serviço em um cliente você pode mudar o valor
-            sem afetar o catálogo nem os outros clientes.
-          </FieldHint>
-        </span>
-        <input
-          aria-invalid={Boolean(errors.defaultPrice)}
-          defaultValue={sent.text("defaultPrice", stored(service?.default_price))}
-          min="0"
-          name="defaultPrice"
-          placeholder="Ex.: 1500,00"
-          step="0.01"
-          type="number"
-        />
-        <FieldError message={errors.defaultPrice} />
-      </label>
+      <MoneyField
+        defaultValue={sent.text("defaultPrice", stored(service?.default_price) || "0")}
+        error={errors.defaultPrice}
+        hint="É só uma sugestão inicial. Ao aplicar o serviço em um cliente você pode mudar o valor sem afetar o catálogo nem os outros clientes."
+        label="Valor padrão"
+        name="defaultPrice"
+      />
       <SelectField
         defaultValue={sent.text("billingType", service?.default_billing_type ?? "monthly")}
         label="Periodicidade"
         name="billingType"
         options={billingOptions}
       />
-      <label className="field">
-        <span className="field__label">
-          Reajuste a cada (meses) <span className="field__optional">opcional</span>
-        </span>
-        <input
-          aria-invalid={Boolean(errors.adjustmentIntervalMonths)}
-          defaultValue={sent.text(
-            "adjustmentIntervalMonths",
-            stored(service?.default_adjustment_interval_months),
-          )}
-          max="60"
-          min="1"
-          name="adjustmentIntervalMonths"
-          type="number"
-        />
-        <FieldError message={errors.adjustmentIntervalMonths} />
-      </label>
-      <label className="field">
-        <span className="field__label">
-          Sugestão de reajuste (%) <span className="field__optional">opcional</span>
-        </span>
-        <input
-          aria-invalid={Boolean(errors.adjustmentRate)}
-          defaultValue={sent.text("adjustmentRate", stored(service?.default_adjustment_rate))}
-          max="100"
-          min="0"
-          name="adjustmentRate"
-          step="0.01"
-          type="number"
-        />
-        <FieldError message={errors.adjustmentRate} />
-      </label>
+      <IntegerField
+        defaultValue={sent.text(
+          "adjustmentIntervalMonths",
+          stored(service?.default_adjustment_interval_months),
+        )}
+        error={errors.adjustmentIntervalMonths}
+        label="Reajuste a cada (meses)"
+        max={60}
+        min={1}
+        name="adjustmentIntervalMonths"
+        optional
+      />
+      <PercentField
+        defaultValue={sent.text("adjustmentRate", stored(service?.default_adjustment_rate))}
+        error={errors.adjustmentRate}
+        label="Sugestão de reajuste (%)"
+        name="adjustmentRate"
+        optional
+      />
       <label className="field sm:col-span-2">
         <span className="field__label">
           Descrição <span className="field__optional">opcional</span>
@@ -126,16 +104,7 @@ export function ServiceCatalogForm({
         <FieldError message={errors.description} />
       </label>
       <div className="sm:col-span-2">
-        <SoftSubmitButton
-          idleLabel={service ? "Salvar alterações" : "Criar serviço"}
-          requirements={[
-            { message: "Dê um nome ao serviço.", name: "name" },
-            {
-              message: "O valor padrão está em branco. Você poderá ajustá-lo em cada cliente.",
-              name: "defaultPrice",
-            },
-          ]}
-        />
+        <SubmitButton idleLabel={service ? "Salvar alterações" : "Criar serviço"} />
       </div>
     </form>
   );

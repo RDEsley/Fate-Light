@@ -6,7 +6,7 @@ vi.mock("@/app/_actions/mvp", () => ({
   createExpense: vi.fn(),
 }));
 
-import { ChargeForm } from "@/app/cobrancas/charge-form";
+import { ChargeForm } from "@/app/clientes/[clientId]/charge-form";
 import { ExpenseForm } from "@/app/despesas/expense-form";
 import { DomainForm } from "@/app/dominios/domain-form";
 import type { ActionState } from "@/lib/forms/action-state";
@@ -15,9 +15,11 @@ async function action(state: ActionState) {
   return state;
 }
 
+const clientId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
 describe("mandatory dates on new records", () => {
   it("starts a new charge date blank and required", () => {
-    render(<ChargeForm clients={[]} services={[]} />);
+    render(<ChargeForm clientId={clientId} services={[]} />);
 
     expect(screen.getByRole("combobox", { name: "Vencimento" })).toHaveValue("");
     expect(screen.getByRole("combobox", { name: "Vencimento" })).toBeRequired();

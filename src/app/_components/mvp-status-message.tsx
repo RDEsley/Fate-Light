@@ -5,6 +5,7 @@ const messages: Record<string, string> = {
   "cancel-invalid": "Escolha o motivo e escreva ao menos uma frase para cancelar.",
   created: "Cadastro salvo com sucesso.",
   "created-paid": "Cobrança registrada como já paga.",
+  "charge-created": "Cobrança criada na ficha do cliente.",
   deleted: "Registro excluído com segurança.",
   "delete-blocked": "Este registro possui histórico confirmado ou ainda precisa ser encerrado.",
   "delete-error": "Não foi possível excluir este registro.",
@@ -12,6 +13,13 @@ const messages: Record<string, string> = {
   invalid: "Revise os campos informados.",
   "delay-recorded": "Motivo do atraso registrado no histórico.",
   paid: "Pagamento registrado. A cobrança foi para o bloco das resolvidas e o próximo ciclo já está agendado.",
+  "paid-deleted":
+    "Registro pago excluído. A receita ou o custo saiu do dashboard e as notas fiscais anexadas foram removidas.",
+  "expense-next-scheduled":
+    "Despesa marcada como paga e próxima ocorrência mensal criada automaticamente.",
+  "expense-not-recurring": "Esta despesa não faz parte de uma série mensal.",
+  "expense-recurrence-stopped":
+    "Recorrência mensal encerrada. Novas ocorrências deixam de ser criadas automaticamente.",
   "service-activated": "Serviço reativado no catálogo.",
   "service-created": "Serviço criado no catálogo.",
   "service-deleted": "Serviço removido do catálogo.",
