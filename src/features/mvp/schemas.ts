@@ -2,7 +2,39 @@ import { z } from "zod";
 
 import { billingFrequencyValues } from "./recurrence";
 
-const money = z.coerce.number().finite().min(0).max(9_999_999_999_999.99);
+/**
+ * Aceita decimal canônico ("12.34") ou número.
+ * "" falha — use moneyFromForm ("" → 0) ou optionalMoney / nullableMoney quando fizer sentido.
+ */
+const money = z
+  .union([z.number(), z.string()])
+  .transform((value, ctx) => {
+    if (typeof value === "number") return value;
+    const trimmed = value.trim();
+    if (!trimmed) {
+      ctx.addIssue({ code: "invalid_type", expected: "number", received: "undefined" });
+      return z.NEVER;
+    }
+    // Hidden do MoneyField envia canônico com ponto; vírgula só cobre colagem residual.
+    if (!/^-?\d+([.,]\d{1,2})?$/.test(trimmed)) {
+      ctx.addIssue({ code: "custom", message: "Valor monetário inválido" });
+      return z.NEVER;
+    }
+    const parsed = Number(trimmed.replace(",", "."));
+    if (!Number.isFinite(parsed)) {
+      ctx.addIssue({ code: "custom", message: "Valor monetário inválido" });
+      return z.NEVER;
+    }
+    return parsed;
+  })
+  .pipe(z.number().finite().min(0).max(9_999_999_999_999.99));
+
+/** Campo monetário de formulário: vazio vira 0 (padrão de receita/mídia/adicional). */
+const moneyFromForm = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? 0 : value),
+  money,
+);
+
 const optionalText = (maximum: number) => z.string().trim().max(maximum);
 const optionalMoney = z.union([z.literal(""), money]);
 const nullableMoney = z.preprocess(
@@ -28,17 +60,17 @@ const additionalFeeNature = z
 
 export const clientServiceSchema = z
   .object({
-    additionalFee: money,
+    additionalFee: moneyFromForm,
     additionalFeeIsRevenue: additionalFeeNature,
     adjustmentIntervalMonths: nullableInteger(60),
     adjustmentRate: nullableMoney,
     billingType: z.enum(billingFrequencyValues),
     description: optionalText(3000),
     discountType: z.enum(["none", "percentage", "fixed"]),
-    discountValue: money,
+    discountValue: moneyFromForm,
     installmentCount: z.coerce.number().int().min(1).max(120),
-    listPrice: money,
-    mediaBudget: money,
+    listPrice: moneyFromForm,
+    mediaBudget: moneyFromForm,
     name: z.string().trim().min(2).max(120),
     nextDueDate: z.string().date(),
     notes: optionalText(5000),
@@ -75,7 +107,7 @@ export const serviceCatalogSchema = z
     adjustmentIntervalMonths: nullableInteger(60),
     adjustmentRate: nullableMoney,
     billingType: z.enum(billingFrequencyValues),
-    defaultPrice: money,
+    defaultPrice: moneyFromForm,
     description: optionalText(3000),
     name: z.string().trim().min(2).max(120),
   })
@@ -119,15 +151,15 @@ export function discountedPrice(
 
 export const chargeSchema = z
   .object({
-    additionalFee: money,
+    additionalFee: moneyFromForm,
     additionalFeeIsRevenue: additionalFeeNature,
     alreadyPaid: z.boolean(),
     clientId: identifierSchema,
     clientServiceId: z.union([z.literal(""), identifierSchema]),
-    companyRevenue: money,
+    companyRevenue: moneyFromForm,
     description: z.string().trim().min(2).max(200),
     dueDate: z.string().date(),
-    mediaBudget: money,
+    mediaBudget: moneyFromForm,
     notes: optionalText(5000),
     paymentMethod: optionalText(80),
   })
@@ -138,25 +170,48 @@ export const chargeSchema = z
     path: ["paymentMethod"],
   });
 
-export const expenseSchema = z.object({
-  amount: money.refine((value) => value > 0),
-  category: z.enum([
-    "tools",
-    "artificial_intelligence",
-    "agents",
-    "staff_contractors",
-    "domains",
-    "hosting",
-    "software",
-    "marketing",
-    "other",
-  ]),
-  clientId: z.union([z.literal(""), identifierSchema]),
-  description: z.string().trim().min(2).max(200),
-  dueDate: z.string().date(),
-  expenseType: z.enum(["fixed", "variable"]),
-  notes: optionalText(5000),
-  status: z.enum(["pending", "paid"]),
+export const expenseSchema = z
+  .object({
+    amount: money.refine((value) => value > 0),
+    category: z.enum([
+      "tools",
+      "artificial_intelligence",
+      "agents",
+      "staff_contractors",
+      "domains",
+      "hosting",
+      "software",
+      "marketing",
+      "other",
+    ]),
+    clientId: z.union([z.literal(""), identifierSchema]),
+    description: z.string().trim().min(2).max(200),
+    dueDate: z.string().date(),
+    enableRecurrence: z.boolean(),
+    expenseType: z.enum(["fixed", "variable"]),
+    notes: optionalText(5000),
+    status: z.enum(["pending", "paid"]),
+  })
+  .refine((value) => !value.enableRecurrence || value.expenseType === "fixed", {
+    path: ["enableRecurrence"],
+  });
+
+/** Destino seguro após mutação financeira: listas financeiras ou ficha do cliente. */
+export const financialReturnToSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) =>
+      value === "/cobrancas" ||
+      value === "/despesas" ||
+      /^\/clientes\/[0-9a-f-]{36}$/i.test(value),
+    { message: "Destino de retorno inválido" },
+  );
+
+export const paidFinancialDeletionSchema = z.object({
+  id: identifierSchema,
+  recordType: z.enum(["charge", "expense"]),
+  returnTo: z.union([z.literal(""), financialReturnToSchema]).optional(),
 });
 
 export const domainSchema = z.object({

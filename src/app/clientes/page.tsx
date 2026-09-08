@@ -245,12 +245,22 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                   </div>
                 ) : null}
                 <div className="border-line mt-auto flex items-center justify-between gap-3 border-t pt-4">
-                  <Link
-                    className="text-brand-strong text-sm font-black"
-                    href={`/clientes/${clientId}`}
-                  >
-                    Abrir cliente →
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                      className="text-brand-strong text-sm font-black"
+                      href={`/clientes/${clientId}`}
+                    >
+                      Abrir cliente →
+                    </Link>
+                    {!showingArchived ? (
+                      <Link
+                        className="text-muted hover:text-foreground text-xs font-bold"
+                        href={`/clientes/${clientId}?action=new-charge#nova-cobranca`}
+                      >
+                        Cobrança
+                      </Link>
+                    ) : null}
+                  </div>
                   {showingArchived ? (
                     <form action={restoreClient}>
                       <input name="clientId" type="hidden" value={clientId} />

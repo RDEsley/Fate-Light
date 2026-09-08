@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
+import { z } from "zod";
 
-import { deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
+import {
+  deleteOperationalRecord,
+  deletePaidFinancialRecord,
+  markChargePaid,
+} from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
@@ -16,7 +21,6 @@ import { cancellationReasons } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { CancelChargeForm } from "./cancel-charge-form";
-import { ChargeForm } from "./charge-form";
 import { DelayReasonForm } from "./delay-reason-form";
 import { FocusCharge } from "./focus-charge";
 
@@ -43,13 +47,14 @@ export default async function ChargesPage({
     focus?: string;
     page?: string;
     q?: string;
-    serviceId?: string;
     state?: string;
     status?: string;
   }>;
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
   const query = parameters.q?.trim().slice(0, 80) ?? "";
+  const clientFilter = z.string().uuid().safeParse(parameters.clientId);
+  const filteredClientId = clientFilter.success ? clientFilter.data : null;
   const state = ["pending", "paid", "cancelled"].includes(parameters.state ?? "")
     ? parameters.state!
     : "all";
@@ -75,6 +80,7 @@ export default async function ChargesPage({
         ascending: status === "pending",
         nullsFirst: false,
       });
+    if (filteredClientId) request = request.eq("client_id", filteredClientId);
     request = paginated
       ? request.range(firstRow, firstRow + pageSize - 1)
       : request.limit(status === "pending" ? 200 : 100);
@@ -106,29 +112,14 @@ export default async function ChargesPage({
           hidden: null,
         }));
 
-  const [{ data: clients }, { data: services }, { data: charges, error, count, hidden }] =
-    await Promise.all([
-      context.supabase
-        .from("clients")
-        .select("id, name, trade_name, commercial_status")
-        .eq("workspace_id", context.workspaceId)
-        .is("archived_at", null)
-        .order("name"),
-      context.supabase
-        .from("client_services")
-        .select("id, client_id, name")
-        .eq("workspace_id", context.workspaceId)
-        .eq("status", "active")
-        .order("name"),
-      chargesRequest,
-    ]);
+  const { data: charges, error, count, hidden } = await chargesRequest;
   const today = isoDateInTimeZone(context.workspaceTimezone);
   const totalPages = state === "all" ? 1 : Math.max(1, Math.ceil((count ?? 0) / pageSize));
-  const clientNames = new Map((clients ?? []).map((client) => [client.id, client.name]));
   const chargeHref = (targetPage: number) => {
     const next = new URLSearchParams();
     if (query) next.set("q", query);
     if (state !== "all") next.set("state", state);
+    if (filteredClientId) next.set("clientId", filteredClientId);
     if (targetPage > 1) next.set("page", String(targetPage));
     const suffix = next.toString();
     return `/cobrancas${suffix ? `?${suffix}` : ""}` as never;
@@ -136,7 +127,7 @@ export default async function ChargesPage({
 
   return (
     <AccountShell
-      description="As cobranças nascem dos serviços dos clientes. Aqui você acompanha, recebe e ajusta."
+      description="Acompanhe cobranças pendentes e resolvidas. Para criar uma nova, abra a ficha do cliente."
       title="Cobranças"
     >
       <MvpStatusMessage status={parameters.status} />
@@ -157,6 +148,7 @@ export default async function ChargesPage({
             type="search"
           />
         </label>
+        {filteredClientId ? <input name="clientId" type="hidden" value={filteredClientId} /> : null}
         <label>
           <span className="sr-only">Filtrar por status</span>
           <select
@@ -178,6 +170,19 @@ export default async function ChargesPage({
         </button>
       </form>
 
+      {filteredClientId ? (
+        <aside className="helper-note mb-4" role="status">
+          <Icon className="size-4" name="info" />
+          <span>
+            Mostrando cobranças deste cliente.{" "}
+            <Link href="/cobrancas">Ver todas</Link> ·{" "}
+            <Link href={`/clientes/${filteredClientId}?action=new-charge#nova-cobranca`}>
+              Nova cobrança na ficha
+            </Link>
+          </span>
+        </aside>
+      ) : null}
+
       {state === "all" && hidden && (hidden.pending || hidden.paid || hidden.cancelled) ? (
         <aside className="helper-note mb-4" role="status">
           <Icon className="size-4" name="info" />
@@ -190,42 +195,6 @@ export default async function ChargesPage({
           </span>
         </aside>
       ) : null}
-
-      <details className="panel-card form-disclosure mb-5" open={Boolean(parameters.clientId)}>
-        <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
-          <span className="flex items-center gap-2">
-            <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
-              <Icon className="size-4" name="plus" />
-            </span>
-            Cobrança avulsa
-          </span>
-          <span className="text-muted flex items-center gap-1 text-xs">
-            <span className="form-disclosure__closed-label">Abrir formulário</span>
-            <span className="form-disclosure__open-label">Fechar formulário</span>
-            <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-          </span>
-        </summary>
-        <p className="helper-note mt-3">
-          <Icon className="size-4" name="info" /> O caminho normal é aplicar um serviço no card do
-          cliente, que já cria e renova as cobranças. Use este formulário para lançamentos fora da
-          recorrência ou para registrar algo que já aconteceu.
-        </p>
-        <ChargeForm
-          clients={(clients ?? []).map((client) => ({
-            id: client.id,
-            name: client.name,
-            status: client.commercial_status,
-            tradeName: client.trade_name,
-          }))}
-          defaultClientId={parameters.clientId}
-          defaultServiceId={parameters.serviceId}
-          services={(services ?? []).map((service) => ({
-            clientName: clientNames.get(service.client_id),
-            id: service.id,
-            name: service.name,
-          }))}
-        />
-      </details>
 
       {error ? (
         <p role="alert">Não foi possível carregar as cobranças.</p>
@@ -319,6 +288,7 @@ export default async function ChargesPage({
                     <div className="charge-card__actions">
                       <form action={markChargePaid} className="charge-settle">
                         <input name="id" type="hidden" value={charge.id} />
+                        <input name="returnTo" type="hidden" value="/cobrancas" />
                         <SelectField
                           defaultValue="Pix"
                           label="Forma de pagamento"
@@ -361,6 +331,20 @@ export default async function ChargesPage({
                         entityId={charge.id}
                         entityType="charge"
                       />
+                      <form action={deletePaidFinancialRecord} className="mt-3">
+                        <input name="id" type="hidden" value={charge.id} />
+                        <input name="recordType" type="hidden" value="charge" />
+                        <input name="returnTo" type="hidden" value="/cobrancas" />
+                        <ConfirmDialog
+                          className="charge-action charge-action--danger"
+                          confirmLabel="Excluir cobrança paga"
+                          confirmation="A receita sai do dashboard e do histórico. Notas fiscais anexadas são removidas. Esta ação é irreversível."
+                          holdSeconds={3}
+                          icon="trash"
+                          label="Excluir paga"
+                          title={charge.description}
+                        />
+                      </form>
                     </>
                   ) : charge.status === "cancelled" ? (
                     <div className="charge-card__actions">
@@ -388,7 +372,7 @@ export default async function ChargesPage({
         <section className="border-line bg-surface rounded-2xl border p-8 text-center">
           <h2 className="text-xl font-semibold">Nenhuma cobrança</h2>
           <p className="text-muted mt-2">
-            Aplique um serviço no card de um cliente para que as cobranças passem a nascer sozinhas.
+            Aplique um serviço no card de um cliente ou abra a ficha dele para criar uma cobrança.
           </p>
         </section>
       )}
