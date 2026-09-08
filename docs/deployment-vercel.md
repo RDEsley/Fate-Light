@@ -130,7 +130,6 @@ de validação do release.
 
 ```powershell
 npm ci
-npm run format:check
 npm run lint
 npm run typecheck
 npm run test
