@@ -20,6 +20,7 @@ import { archiveClient, deleteClient, restoreClient } from "../actions";
 import { ClientStatusMessage } from "../status-message";
 import { ChargeForm } from "./charge-form";
 import { ConsolidateClientPanel } from "./consolidate-client-panel";
+import { TransferClientPanel } from "./transfer-client-panel";
 import { ClientEntityCard } from "./entity-card";
 import { ClientEntityForm } from "./entity-form";
 import { ServiceApplicationForm } from "./service-application-form";
@@ -712,11 +713,18 @@ export default async function ClientDetailsPage({
             </span>
           </summary>
           <div className="mt-4 grid gap-4">
-            <ConsolidateClientPanel
+            <TransferClientPanel
               clients={consolidationClients}
-              targetClientId={client.id}
-              targetClientName={client.name}
+              sourceClientId={client.id}
+              sourceClientName={client.name}
             />
+            <div className="border-line border-t pt-4">
+              <ConsolidateClientPanel
+                clients={consolidationClients}
+                targetClientId={client.id}
+                targetClientName={client.name}
+              />
+            </div>
             <div className="border-line flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-muted max-w-2xl text-sm">
                 <strong className="text-foreground">Arquivar</strong> tira o cliente da operação

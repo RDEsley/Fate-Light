@@ -13,8 +13,13 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
 import { Icon } from "@/components/ui/icon";
+import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { addDays, formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
+import {
+  appendIdInFilter,
+  textSearchOrFilter,
+} from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { ExpenseForm } from "./expense-form";
@@ -59,6 +64,24 @@ export default async function ExpensesPage({
   const nextWeek = addDays(today, 7);
   const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
   const firstRow = (page - 1) * pageSize;
+
+  const [{ data: clients }, { data: entityRows }] = await Promise.all([
+    context.supabase
+      .from("clients")
+      .select("id, name, trade_name, commercial_status")
+      .eq("workspace_id", context.workspaceId)
+      .is("archived_at", null)
+      .order("name"),
+    context.supabase
+      .from("client_entities")
+      .select("id, client_id, display_name, entity_type")
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "active")
+      .is("archived_at", null)
+      .order("display_name")
+      .limit(2000),
+  ]);
+
   let expensesRequest = context.supabase
     .from("expenses")
     .select(
@@ -71,29 +94,37 @@ export default async function ExpensesPage({
   if (parameters.clientId) expensesRequest = expensesRequest.eq("client_id", parameters.clientId);
   if (parameters.entity)
     expensesRequest = expensesRequest.eq("client_entity_id", parameters.entity);
-  if (query) expensesRequest = expensesRequest.ilike("description", `%${query}%`);
+  if (query) {
+    const parts = textSearchOrFilter(["description", "category", "notes"], query).split(",");
+    appendIdInFilter(
+      parts,
+      "client_id",
+      (clients ?? [])
+        .filter((client) => {
+          const needle = query.toLocaleLowerCase("pt-BR");
+          return (
+            client.name.toLocaleLowerCase("pt-BR").includes(needle) ||
+            (client.trade_name ?? "").toLocaleLowerCase("pt-BR").includes(needle)
+          );
+        })
+        .map((client) => client.id),
+    );
+    appendIdInFilter(
+      parts,
+      "client_entity_id",
+      (entityRows ?? [])
+        .filter((entity) =>
+          entity.display_name.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")),
+        )
+        .map((entity) => entity.id),
+    );
+    expensesRequest = expensesRequest.or(parts.join(","));
+  }
   if (state !== "all") expensesRequest = expensesRequest.eq("status", state);
   if (dueWindow === "next7") {
     expensesRequest = expensesRequest.gte("due_date", today).lte("due_date", nextWeek);
   }
-  const [{ data: clients }, { data: entityRows }, { data: expenses, error, count }] =
-    await Promise.all([
-      context.supabase
-        .from("clients")
-        .select("id, name, trade_name, commercial_status")
-        .eq("workspace_id", context.workspaceId)
-        .is("archived_at", null)
-        .order("name"),
-      context.supabase
-        .from("client_entities")
-        .select("id, client_id, display_name, entity_type")
-        .eq("workspace_id", context.workspaceId)
-        .eq("status", "active")
-        .is("archived_at", null)
-        .order("display_name")
-        .limit(2000),
-      expensesRequest,
-    ]);
+  const { data: expenses, error, count } = await expensesRequest;
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
   const expenseHref = (targetPage: number) => {
     const next = new URLSearchParams();
@@ -119,12 +150,11 @@ export default async function ExpensesPage({
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             name="search"
           />
-          <input
+          <SearchClearField
+            aria-label="Buscar despesas"
             className="min-h-11 w-full rounded-xl pr-4 pl-9 text-sm"
             defaultValue={query}
-            name="q"
-            placeholder="Buscar por descrição..."
-            type="search"
+            placeholder="Descrição, cliente, empresa, categoria..."
           />
         </label>
         <label>

@@ -53,6 +53,9 @@ export const clientEntityStatusLabels: Record<string, string> = {
 /** Confirma a consolidação por digitação exata, como as exclusões irreversíveis do sistema. */
 export const consolidationPhrase = "CONSOLIDAR";
 
+/** Confirma a transferência de dados entre clientes sem converter origem em empresa/marca. */
+export const transferPhrase = "TRANSFERIR";
+
 const optionalText = (minimum: number, maximum: number) =>
   z.union([z.literal(""), z.string().trim().min(minimum).max(maximum)]);
 
@@ -160,6 +163,44 @@ export type ConsolidationPreview = {
 export type ConsolidationResult =
   ConsolidationPreview | { message?: string; ok: false; reason: string };
 
+/**
+ * Transferência move os dados deste cliente para outro cadastro do mesmo workspace.
+ * A frase TRANSFERIR é validada aqui e reenviada à RPC.
+ */
+export const transferClientSchema = z.object({
+  confirmation: z.literal(transferPhrase),
+  sourceClientId: z.string().uuid(),
+  targetClientId: z.string().uuid(),
+});
+
+/** Motivos devolvidos pelas RPCs de transferência, traduzidos para a interface. */
+export const transferReasonMessages: Record<string, string> = {
+  confirmation_required: "Digite TRANSFERIR para liberar a transferência.",
+  missing_ids: "Escolha o cliente de destino antes de transferir.",
+  same_client: "Origem e destino precisam ser clientes diferentes.",
+  source_not_found: "Cliente de origem não encontrado.",
+  target_not_found_or_cross_workspace: "Cliente de destino não encontrado neste workspace.",
+};
+
+export type TransferPreview = {
+  counts: {
+    charges: number;
+    contacts: number;
+    domains: number;
+    entities: number;
+    expenses: number;
+    services: number;
+  };
+  entityRenames: Array<{ from: string; id: string; to: string }>;
+  ok: true;
+  preserved: { activityEvents: boolean };
+  source: { id: string; name: string; status: string };
+  target: { id: string; name: string; status: string };
+  totals: { expenses_paid: number; media: number; own_received: number };
+};
+
+export type TransferResult = TransferPreview | { message?: string; ok: false; reason: string };
+
 function readNumber(value: unknown) {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -203,6 +244,65 @@ export function readConsolidationPayload(payload: unknown): ConsolidationResult 
     preserved: {
       activityEvents: preserved.activity_events === true,
       contacts: preserved.contacts === true,
+    },
+    source: {
+      id: String(source.id ?? ""),
+      name: String(source.name ?? ""),
+      status: String(source.status ?? "inactive"),
+    },
+    target: {
+      id: String(target.id ?? ""),
+      name: String(target.name ?? ""),
+      status: String(target.status ?? "inactive"),
+    },
+    totals: {
+      expenses_paid: readNumber(totals.expenses_paid),
+      media: readNumber(totals.media),
+      own_received: readNumber(totals.own_received),
+    },
+  };
+}
+
+/** Normaliza o JSON das RPCs de transferência para a prévia na ficha do cliente. */
+export function readTransferPayload(payload: unknown): TransferResult | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const record = payload as Record<string, unknown>;
+  if (record.ok !== true) {
+    return {
+      message: typeof record.message === "string" ? record.message : undefined,
+      ok: false,
+      reason: typeof record.reason === "string" ? record.reason : "unknown",
+    };
+  }
+  const counts = readGroup(record.counts);
+  const totals = readGroup(record.totals);
+  const source = readGroup(record.source);
+  const target = readGroup(record.target);
+  const preserved = readGroup(record.preserved);
+  const renames = Array.isArray(record.entity_renames) ? record.entity_renames : [];
+  return {
+    counts: {
+      charges: readNumber(counts.charges),
+      contacts: readNumber(counts.contacts),
+      domains: readNumber(counts.domains),
+      entities: readNumber(counts.entities),
+      expenses: readNumber(counts.expenses),
+      services: readNumber(counts.services),
+    },
+    entityRenames: renames.flatMap((entry) => {
+      if (typeof entry !== "object" || entry === null) return [];
+      const rename = entry as Record<string, unknown>;
+      return [
+        {
+          from: String(rename.from ?? ""),
+          id: String(rename.id ?? ""),
+          to: String(rename.to ?? ""),
+        },
+      ];
+    }),
+    ok: true,
+    preserved: {
+      activityEvents: preserved.activity_events === true,
     },
     source: {
       id: String(source.id ?? ""),

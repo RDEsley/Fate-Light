@@ -5,8 +5,14 @@ import { createDomain } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { Icon } from "@/components/ui/icon";
+import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { addDays, formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
+import {
+  appendIdInFilter,
+  idsMatchingText,
+  textSearchOrFilter,
+} from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { DomainCard } from "./domain-card";
@@ -44,31 +50,7 @@ export default async function DomainsPage({
   const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
   const firstRow = (page - 1) * pageSize;
 
-  let domainsRequest = context.supabase
-    .from("domains")
-    .select(
-      "id, client_id, client_entity_id, domain, registrar, expires_on, auto_renew, cost, payment_responsibility, status, notes, clients(name), client_entities(display_name)",
-      { count: "exact" },
-    )
-    .eq("workspace_id", context.workspaceId)
-    .order("expires_on")
-    .range(firstRow, firstRow + pageSize - 1);
-  if (parameters.clientId) domainsRequest = domainsRequest.eq("client_id", parameters.clientId);
-  if (parameters.entity) domainsRequest = domainsRequest.eq("client_entity_id", parameters.entity);
-  if (query) domainsRequest = domainsRequest.ilike("domain", `%${query}%`);
-  if (state === "active" || state === "cancelled") {
-    domainsRequest = domainsRequest.eq("status", state);
-  }
-  if (state === "expiring") {
-    domainsRequest = domainsRequest.eq("status", "active").lte("expires_on", nextMonth);
-  }
-
-  const [
-    { data: clients },
-    { data: entityRows },
-    { data: domains, error, count },
-    { data: summary, error: summaryError },
-  ] = await Promise.all([
+  const [{ data: clients }, { data: entityRows }, summaryResult] = await Promise.all([
     context.supabase
       .from("clients")
       .select("id, name, trade_name, email, website, commercial_status")
@@ -83,7 +65,6 @@ export default async function DomainsPage({
       .is("archived_at", null)
       .order("display_name")
       .limit(2000),
-    domainsRequest,
     context.supabase
       .rpc("domain_operational_summary", {
         p_next_week: addDays(today, 7),
@@ -92,6 +73,36 @@ export default async function DomainsPage({
       })
       .maybeSingle(),
   ]);
+  const { data: summary, error: summaryError } = summaryResult;
+
+  let domainsRequest = context.supabase
+    .from("domains")
+    .select(
+      "id, client_id, client_entity_id, domain, registrar, expires_on, auto_renew, cost, payment_responsibility, status, notes, clients(name), client_entities(display_name)",
+      { count: "exact" },
+    )
+    .eq("workspace_id", context.workspaceId)
+    .order("expires_on")
+    .range(firstRow, firstRow + pageSize - 1);
+  if (parameters.clientId) domainsRequest = domainsRequest.eq("client_id", parameters.clientId);
+  if (parameters.entity) domainsRequest = domainsRequest.eq("client_entity_id", parameters.entity);
+  if (query) {
+    const parts = textSearchOrFilter(
+      ["domain", "registrar", "payment_responsibility", "notes"],
+      query,
+    ).split(",");
+    appendIdInFilter(parts, "client_id", idsMatchingText(clients, query, ["name", "trade_name"]));
+    appendIdInFilter(parts, "client_entity_id", idsMatchingText(entityRows, query, ["display_name"]));
+    domainsRequest = domainsRequest.or(parts.join(","));
+  }
+  if (state === "active" || state === "cancelled") {
+    domainsRequest = domainsRequest.eq("status", state);
+  }
+  if (state === "expiring") {
+    domainsRequest = domainsRequest.eq("status", "active").lte("expires_on", nextMonth);
+  }
+
+  const { data: domains, error, count } = await domainsRequest;
 
   const clientOptions = (clients ?? []).map((client) => ({
     email: client.email,
@@ -151,12 +162,11 @@ export default async function DomainsPage({
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             name="search"
           />
-          <input
+          <SearchClearField
+            aria-label="Buscar domínios"
             className="min-h-11 w-full rounded-xl pr-4 pl-9 text-sm"
             defaultValue={query}
-            name="q"
-            placeholder="Buscar domínio..."
-            type="search"
+            placeholder="Domínio, cliente, empresa, registrador..."
           />
         </label>
         <button

@@ -14,10 +14,16 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
 import { Icon } from "@/components/ui/icon";
+import { SearchClearField } from "@/components/ui/search-clear-field";
 import { SelectField } from "@/components/ui/select-field";
 import { newestResolvedFirst } from "@/features/charges/resolution-order";
 import { formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
 import { cancellationReasons } from "@/features/mvp/schemas";
+import {
+  appendIdInFilter,
+  escapeIlikePattern,
+  textSearchOrFilter,
+} from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { CancelChargeForm } from "./cancel-charge-form";
@@ -66,6 +72,25 @@ export default async function ChargesPage({
   const chargeColumns =
     "id, client_id, client_entity_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)";
 
+  const relatedSearch =
+    query.length === 0
+      ? { clientIds: [] as string[], entityIds: [] as string[] }
+      : await Promise.all([
+          context.supabase
+            .from("clients")
+            .select("id")
+            .eq("workspace_id", context.workspaceId)
+            .or(textSearchOrFilter(["name", "trade_name"], query)),
+          context.supabase
+            .from("client_entities")
+            .select("id")
+            .eq("workspace_id", context.workspaceId)
+            .ilike("display_name", `%${escapeIlikePattern(query)}%`),
+        ]).then(([clients, entities]) => ({
+          clientIds: (clients.data ?? []).map((row) => row.id),
+          entityIds: (entities.data ?? []).map((row) => row.id),
+        }));
+
   // Em "Todos", duas consultas de propósito: pendentes sobem ordenadas pelo vencimento
   // mais próximo, resolvidas descem ordenadas pela mais recente. Um único `order` não
   // expressa isso, e ordenar só no cliente deixaria o corte de 100 registros descartar
@@ -88,7 +113,15 @@ export default async function ChargesPage({
     request = paginated
       ? request.range(firstRow, firstRow + pageSize - 1)
       : request.limit(status === "pending" ? 200 : 100);
-    if (query) request = request.ilike("description", `%${query}%`);
+    if (query) {
+      const parts = textSearchOrFilter(
+        ["description", "payment_method", "notes", "delay_reason", "cancel_reason"],
+        query,
+      ).split(",");
+      appendIdInFilter(parts, "client_id", relatedSearch.clientIds);
+      appendIdInFilter(parts, "client_entity_id", relatedSearch.entityIds);
+      request = request.or(parts.join(","));
+    }
     return request;
   };
 
@@ -145,12 +178,11 @@ export default async function ChargesPage({
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             name="search"
           />
-          <input
+          <SearchClearField
+            aria-label="Buscar cobranças"
             className="min-h-11 w-full rounded-xl pr-4 pl-9 text-sm"
             defaultValue={query}
-            name="q"
-            placeholder="Buscar por descrição..."
-            type="search"
+            placeholder="Descrição, cliente, empresa, pagamento..."
           />
         </label>
         {filteredClientId ? <input name="clientId" type="hidden" value={filteredClientId} /> : null}
