@@ -225,14 +225,15 @@ insert into public.expenses (
 );
 
 insert into public.domains (
-  id, workspace_id, client_id, domain, expires_on, status
+  id, workspace_id, client_id, domain, expires_on, status, payment_responsibility
 ) values (
   '91919191-00d1-4919-8919-919191919191',
   current_setting('test.workspace_a')::uuid,
   '91919191-0002-4919-8919-919191919191',
   'dx.example',
   date '2026-12-01',
-  'active'
+  'active',
+  'Empresa'
 );
 
 select set_config('request.jwt.claim.sub', '91919191-9191-4919-8919-919191919191', true);
