@@ -5,6 +5,23 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-09
+
+### Fixed
+
+- Consolidação preserva contatos e eventos históricos do cliente arquivado, mantendo valores,
+  quantidade de cobranças e vínculos com serviços.
+- Importação v3 cria empresas/marcas e relaciona serviços, cobranças, despesas e domínios dentro da
+  mesma transação PostgreSQL, com rollback integral em caso de erro.
+- Ficha do cliente abre o recorte completo da empresa/marca e alertas exibem o contexto
+  `Cliente · Empresa` de forma consistente.
+
+### Security
+
+- `client_entities` passa a usar triggers de timestamp/autoria, auditoria operacional e grants de
+  escrita por coluna; identificadores e campos de sistema não podem ser alterados pelo cliente.
+- Índices compostos passam a cobrir as FKs de empresa/marca nos registros operacionais.
+
 ## [0.8.0] - 2026-09-09
 
 ### Added
