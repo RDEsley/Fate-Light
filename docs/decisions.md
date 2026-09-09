@@ -190,6 +190,7 @@ Consolidada em 2026-09-08:
 | ADR-0017 | Edição e exclusão do lançamento de receita anterior ao sistema | Aceita | [ADR](adr/0017-editable-prior-revenue-entry.md) |
 | ADR-0018 | Natureza declarada do custo adicional: receita própria ou repasse | Aceita | [ADR](adr/0018-additional-fee-nature.md) |
 | ADR-0019 | Exclusão corretiva de cobrança/despesa paga pelo owner | Aceita | [ADR](adr/0019-corrective-deletion-of-confirmed-financial-records.md) |
+| ADR-0020 | Empresas e marcas dentro do cliente, com consolidação confirmada | Aceita | [ADR](adr/0020-client-entities-companies-brands.md) |
 
 ## Outras decisões consolidadas
 
@@ -209,6 +210,7 @@ Consolidada em 2026-09-08:
 - Arquivos de documentos serão privados; avatar está temporariamente adiado pelo risco conhecido de `sharp`.
 - Administração global básica entra no MVP, sem impersonation.
 - Importação é transacional, idempotente e orientada por cabeçalhos.
+- Empresa/marca é entidade filha opcional do cliente (ADR-0020); não cria natureza financeira nova.
 - Contabilidade formal, emissão fiscal, OFX, convites e monetização estão fora do MVP.
 
 ## Hipóteses de importação que exigem confirmação

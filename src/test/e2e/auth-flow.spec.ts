@@ -54,7 +54,7 @@ async function waitForCaptcha(page: Page) {
 }
 
 async function selectClient(panel: Locator, name: string) {
-  await panel.getByRole("combobox", { name: "Cliente", exact: true }).fill(name);
+  await panel.getByRole("combobox", { name: /^Cliente\b/ }).fill(name);
   await panel.getByRole("listbox").getByRole("option").filter({ hasText: name }).click();
 }
 
@@ -78,10 +78,25 @@ async function fillMoney(field: Locator, reais: string) {
   await field.fill(normalized);
 }
 
-async function addService(page: Page, values: { name: string; own: string; media: string }) {
+/** Cadastra uma empresa/marca do cliente aberto e confirma o card resultante. */
+async function addClientEntity(page: Page, name: string, type: string) {
+  const panel = page.locator("details").filter({ hasText: "Nova empresa/marca" });
+  await panel.locator(":scope > summary").click();
+  await panel.locator('input[name="displayName"]').fill(name);
+  await selectField(panel, "entityType", type);
+  await panel.getByRole("button", { name: "Criar empresa/marca" }).click();
+  await expect(page).toHaveURL(/status=entity-created|status=created|\/clientes\//);
+  await expect(page.getByRole("heading", { level: 3, name, exact: true })).toBeVisible();
+}
+
+async function addService(
+  page: Page,
+  values: { entity?: string; name: string; own: string; media: string },
+) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
   await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
+  if (values.entity) await selectField(panel, "clientEntityId", values.entity);
   await fillMoney(panel.getByRole("textbox", { name: "Valor cheio" }), values.own);
   const firstDueDate = panel.getByLabel("Primeiro vencimento", { exact: true });
   await fillDate(firstDueDate, dateOffset(7));
@@ -126,8 +141,18 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("button", { name: "Criar cliente" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Cliente MVP" })).toBeVisible();
 
-    await addService(page, { name: "Gestão de Google Ads", own: "500", media: "1000" });
-    await addService(page, { name: "Landing Page", own: "0", media: "0" });
+    // Empresas/marcas do mesmo cliente (ADR-0020): o vínculo é opcional em todo lançamento.
+    await addClientEntity(page, "Padaria do Bairro", "Empresa");
+    await addClientEntity(page, "Marca Doce", "Marca");
+    await expect(page.getByRole("heading", { name: "Empresas e marcas" })).toBeVisible();
+
+    await addService(page, {
+      entity: "Padaria do Bairro",
+      media: "1000",
+      name: "Gestão de Google Ads",
+      own: "500",
+    });
+    await addService(page, { media: "0", name: "Landing Page", own: "0" });
     const adsCard = page
       .locator("article")
       .filter({ hasText: "Gestão de Google Ads" })
@@ -150,12 +175,15 @@ test.describe("authenticated MVP journey", () => {
     await expect(chargePanel).toBeVisible();
     await expect(chargePanel.getByText(/não altera a agenda automática/i)).toBeVisible();
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
+    await selectField(chargePanel, "clientEntityId", "Padaria do Bairro");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
     await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "500");
     await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "1000");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
     await expect(page.getByText(/cobrança criada/i)).toBeVisible();
     const paidCharge = page.locator("article").filter({ hasText: "Mensalidade Ads" });
+    // A cobrança carrega o contexto da empresa/marca escolhida.
+    await expect(paidCharge.first()).toContainText("Padaria do Bairro");
     await selectField(paidCharge, "paymentMethod", "Pix");
     await paidCharge.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
@@ -230,6 +258,8 @@ test.describe("authenticated MVP journey", () => {
     const expensePanel = page.locator("details").filter({ hasText: "Nova despesa" });
     await expensePanel.locator("summary").click();
     await expensePanel.getByLabel("Descrição").fill("Ferramenta mensal");
+    await selectClient(expensePanel, "Cliente MVP");
+    await selectField(expensePanel, "clientEntityId", "Marca Doce");
     await fillMoney(expensePanel.getByRole("textbox", { name: "Valor" }), "200");
     await fillDate(expensePanel.getByLabel("Vencimento ou data", { exact: true }), dateOffset(0));
     await selectField(expensePanel, "expenseType", "Fixa");
@@ -258,8 +288,12 @@ test.describe("authenticated MVP journey", () => {
     await selectClient(domainPanel, "Cliente MVP");
     await domainPanel.getByLabel("Domínio").fill("cliente-mvp.example");
     await fillDate(domainPanel.getByLabel("Data de expiração", { exact: true }), dateOffset(7));
+    await selectField(domainPanel, "clientEntityId", "Padaria do Bairro");
     await domainPanel.getByRole("button", { name: "Criar domínio" }).click();
     await expect(page.getByText("Vence em até 7 dias")).toBeVisible();
+    await expect(
+      page.locator("article").filter({ hasText: "cliente-mvp.example" }).first(),
+    ).toContainText("Padaria do Bairro");
 
     await clickMainNav(page, "dashboard");
     await page.getByRole("link", { name: "Todo o período" }).click();
@@ -274,11 +308,17 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.getByRole("link", { name: /Resultado gerencial/ })).toContainText(
       /R\$\s*400,00/,
     );
-    await expect(page.getByRole("heading", { name: "Cobranças vencidas (0)" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Cobranças vencidas" })).toBeVisible();
     await expect(page.getByText("Nenhuma cobrança vencida.")).toBeVisible();
+    // Os dois recortes de 7 dias ficam explícitos desde v0.8.0.
     await expect(
-      page.getByRole("heading", { name: "Domínios nos próximos 30 dias (1)" }),
+      page.getByRole("heading", { name: "Cobranças nos próximos 7 dias" }),
     ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Despesas nos próximos 7 dias" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Domínios nos próximos 30 dias" }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: /Empresas\/marcas/ })).toContainText("2");
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.getByRole("link", { name: "Abrir central de alertas" }).click();

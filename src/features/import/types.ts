@@ -73,8 +73,20 @@ export type ImportPayload = {
   }>;
 };
 
+/**
+ * Empresa/marca declarada na planilha. Fica fora de `ImportPayload` de propósito: a RPC de
+ * importação é versionada e não conhece esse tipo de linha, então as entidades são gravadas
+ * pela action depois que a importação principal termina.
+ */
+export type ImportEntityRow = {
+  clientName: string;
+  displayName: string;
+  entityType: "brand" | "company" | "other" | "project";
+  notes: string;
+};
+
 export type ImportPreview = {
-  counts: Record<keyof ImportPayload, number>;
+  counts: Record<keyof ImportPayload, number> & { entities: number };
   digest: string;
   issues: ImportIssue[];
   legacy: boolean;

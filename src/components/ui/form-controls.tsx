@@ -6,6 +6,73 @@ import { formatDatePtBr, isoToday, parseDatePtBr } from "@/features/mvp/format";
 
 import { FieldError } from "./field-error";
 import { Icon } from "./icon";
+import { SelectField } from "./select-field";
+
+/** Empresa, marca ou projeto sob um cliente (ADR-0020). Sempre um vínculo opcional. */
+export type ClientEntityOption = {
+  clientId: string;
+  id: string;
+  name: string;
+  typeLabel: string;
+};
+
+/**
+ * Escolha da empresa/marca dentro do cliente já selecionado. O campo só aparece quando
+ * há algo a escolher: oferecer um seletor vazio em cliente sem empresa cadastrada só
+ * acrescenta ruído ao formulário.
+ */
+export function EntitySelect({
+  className,
+  clientId,
+  defaultValue = "",
+  entities,
+  error,
+  label = "Empresa ou marca",
+  name = "clientEntityId",
+}: {
+  className?: string;
+  clientId: string | null;
+  defaultValue?: string;
+  entities: ClientEntityOption[];
+  error?: string;
+  label?: string;
+  name?: string;
+}) {
+  const available = useMemo(
+    () => entities.filter((entity) => entity.clientId === clientId),
+    [clientId, entities],
+  );
+
+  if (!clientId || !available.length) return <input name={name} type="hidden" value="" />;
+
+  const selected = available.some((entity) => entity.id === defaultValue) ? defaultValue : "";
+  return (
+    <div className={className}>
+      {/* Remonta ao trocar de cliente: a lista muda e o valor anterior deixa de existir. */}
+      <SelectField
+        defaultValue={selected}
+        key={clientId}
+        label={label}
+        name={name}
+        optional
+        options={[
+          {
+            description: "Sem separar por empresa, marca ou projeto",
+            label: "Geral / sem empresa",
+            value: "",
+          },
+          ...available.map((entity) => ({
+            description: entity.typeLabel,
+            label: entity.name,
+            value: entity.id,
+          })),
+        ]}
+        placeholder="Geral / sem empresa"
+      />
+      <FieldError message={error} />
+    </div>
+  );
+}
 
 export type ClientOption = {
   email?: string | null;

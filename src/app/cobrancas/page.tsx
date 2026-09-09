@@ -44,6 +44,7 @@ export default async function ChargesPage({
 }: {
   searchParams: Promise<{
     clientId?: string;
+    entity?: string;
     focus?: string;
     page?: string;
     q?: string;
@@ -55,13 +56,15 @@ export default async function ChargesPage({
   const query = parameters.q?.trim().slice(0, 80) ?? "";
   const clientFilter = z.string().uuid().safeParse(parameters.clientId);
   const filteredClientId = clientFilter.success ? clientFilter.data : null;
+  const entityFilter = z.string().uuid().safeParse(parameters.entity);
+  const filteredEntityId = entityFilter.success ? entityFilter.data : null;
   const state = ["pending", "paid", "cancelled"].includes(parameters.state ?? "")
     ? parameters.state!
     : "all";
   const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
   const firstRow = (page - 1) * pageSize;
   const chargeColumns =
-    "id, client_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)";
+    "id, client_id, client_entity_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)";
 
   // Em "Todos", duas consultas de propósito: pendentes sobem ordenadas pelo vencimento
   // mais próximo, resolvidas descem ordenadas pela mais recente. Um único `order` não
@@ -81,6 +84,7 @@ export default async function ChargesPage({
         nullsFirst: false,
       });
     if (filteredClientId) request = request.eq("client_id", filteredClientId);
+    if (filteredEntityId) request = request.eq("client_entity_id", filteredEntityId);
     request = paginated
       ? request.range(firstRow, firstRow + pageSize - 1)
       : request.limit(status === "pending" ? 200 : 100);
@@ -120,6 +124,7 @@ export default async function ChargesPage({
     if (query) next.set("q", query);
     if (state !== "all") next.set("state", state);
     if (filteredClientId) next.set("clientId", filteredClientId);
+    if (filteredEntityId) next.set("entity", filteredEntityId);
     if (targetPage > 1) next.set("page", String(targetPage));
     const suffix = next.toString();
     return `/cobrancas${suffix ? `?${suffix}` : ""}` as never;
@@ -149,6 +154,7 @@ export default async function ChargesPage({
           />
         </label>
         {filteredClientId ? <input name="clientId" type="hidden" value={filteredClientId} /> : null}
+        {filteredEntityId ? <input name="entity" type="hidden" value={filteredEntityId} /> : null}
         <label>
           <span className="sr-only">Filtrar por status</span>
           <select
@@ -174,8 +180,15 @@ export default async function ChargesPage({
         <aside className="helper-note mb-4" role="status">
           <Icon className="size-4" name="info" />
           <span>
-            Mostrando cobranças deste cliente.{" "}
+            Mostrando cobranças deste cliente
+            {filteredEntityId ? " e desta empresa/marca" : ""}.{" "}
             <Link href="/cobrancas">Ver todas</Link> ·{" "}
+            {filteredEntityId ? (
+              <>
+                <Link href={`/cobrancas?clientId=${filteredClientId}`}>Ver o cliente inteiro</Link>{" "}
+                ·{" "}
+              </>
+            ) : null}
             <Link href={`/clientes/${filteredClientId}?action=new-charge#nova-cobranca`}>
               Nova cobrança na ficha
             </Link>
@@ -222,8 +235,12 @@ export default async function ChargesPage({
                     <div className="min-w-0">
                       <h2>{charge.description}</h2>
                       <p>
-                        {charge.clients?.name ?? "Cliente"} · vencimento{" "}
-                        {formatDatePtBr(charge.due_date)}
+                        {/* Com entidade, ela vem antes do prazo e o cliente fica como
+                            contexto: é o nome da empresa que a pessoa reconhece. */}
+                        {charge.client_entities?.display_name
+                          ? `${charge.clients?.name ?? "Cliente"} · ${charge.client_entities.display_name}`
+                          : (charge.clients?.name ?? "Cliente")}{" "}
+                        · vencimento {formatDatePtBr(charge.due_date)}
                       </p>
                     </div>
                     <span className={`charge-status charge-status--${effectiveStatus}`}>

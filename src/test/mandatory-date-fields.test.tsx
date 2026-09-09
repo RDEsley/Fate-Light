@@ -43,6 +43,7 @@ describe("mandatory dates on new records", () => {
         clients={[]}
         domain={{
           autoRenew: false,
+          clientEntityId: null,
           clientId: "client-id",
           cost: null,
           domain: "example.test",

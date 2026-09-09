@@ -53,11 +53,13 @@ export function ServiceCard({
   catalog,
   clientId,
   duration,
+  entityName,
   service,
 }: {
   catalog: CatalogServiceOption[];
   clientId: string;
   duration: string;
+  entityName?: string | null;
   service: ClientServiceValues & {
     nextAdjustmentDate: string | null;
     paidCharges: number;
@@ -112,7 +114,14 @@ export function ServiceCard({
   return (
     <article className="border-line rounded-xl border p-5">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-semibold">{service.name}</h3>
+        <div className="min-w-0">
+          <h3 className="font-semibold">{service.name}</h3>
+          {entityName ? (
+            <span className="entity-chip mt-1">
+              <Icon className="size-3.5" name="building" /> {entityName}
+            </span>
+          ) : null}
+        </div>
         <span className={badge.className}>
           <Icon className="size-3.5" name={badge.icon} /> {badge.label}
         </span>

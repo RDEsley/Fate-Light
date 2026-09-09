@@ -12,6 +12,7 @@ export type IconName =
   | "calendar"
   | "check"
   | "chevron-down"
+  | "chevron-right"
   | "chevron-up"
   | "dashboard"
   | "download"
@@ -68,6 +69,7 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     calendar: <path d="M6 2v3m12-3v3M3 9h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z" />,
     check: <path d="m5 12 4 4L19 6" />,
     "chevron-down": <path d="m7 10 5 5 5-5" />,
+    "chevron-right": <path d="m10 7 5 5-5 5" />,
     "chevron-up": <path d="m7 14 5-5 5 5" />,
     dashboard: <path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" />,
     download: <path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14" />,

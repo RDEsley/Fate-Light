@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { cancelDomain, deleteDomain, updateDomain } from "@/app/_actions/mvp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { ClientOption } from "@/components/ui/form-controls";
+import type { ClientEntityOption, ClientOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { expiryLabel, formatCurrency, formatDatePtBr, looksLikeHost } from "@/features/mvp/format";
 
@@ -23,12 +23,16 @@ export function DomainCard({
   clientName,
   clients,
   domain,
+  entities = [],
+  entityName,
   today,
 }: {
   cancelled: boolean;
   clientName: string;
   clients: (ClientOption & { website?: string | null })[];
   domain: DomainValues;
+  entities?: ClientEntityOption[];
+  entityName?: string | null;
   today: string;
 }) {
   const [editing, setEditing] = useState(false);
@@ -52,6 +56,7 @@ export function DomainCard({
           action={updateDomain}
           clients={clients}
           domain={domain}
+          entities={entities}
           onCancel={() => setEditing(false)}
         />
       </article>
@@ -79,6 +84,11 @@ export function DomainCard({
           >
             {clientName}
           </Link>
+          {entityName ? (
+            <span className="entity-chip mt-1 ml-2">
+              <Icon className="size-3.5" name="building" /> {entityName}
+            </span>
+          ) : null}
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${toneClasses[expiry.tone] ?? toneClasses.ok}`}

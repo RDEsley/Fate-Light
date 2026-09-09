@@ -15,6 +15,7 @@ const clients = [
 
 const savedDomain = {
   autoRenew: true,
+  clientEntityId: null,
   clientId: "a",
   cost: 40,
   domain: "exemplo.com.br",

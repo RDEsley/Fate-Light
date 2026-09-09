@@ -1,10 +1,11 @@
 import type { CellValue, Sheet } from "read-excel-file/node";
 
-import type { ImportIssue, ImportPayload } from "./types";
+import type { ImportEntityRow, ImportIssue, ImportPayload } from "./types";
 
 type SheetRow = Array<CellValue | null>;
 
 export type NormalizedWorkbook = {
+  entities: ImportEntityRow[];
   issues: ImportIssue[];
   legacy: boolean;
   payload: ImportPayload;
@@ -178,7 +179,25 @@ function validateText(
   return true;
 }
 
-function parseCanonicalSheet(sheet: Sheet, payload: ImportPayload, issues: ImportIssue[]) {
+/** Tipos de empresa/marca aceitos na planilha, em português e em inglês. */
+const entityTypeAliases: Record<string, ImportEntityRow["entityType"]> = {
+  brand: "brand",
+  company: "company",
+  empresa: "company",
+  marca: "brand",
+  other: "other",
+  outro: "other",
+  outros: "other",
+  project: "project",
+  projeto: "project",
+};
+
+function parseCanonicalSheet(
+  sheet: Sheet,
+  payload: ImportPayload,
+  entities: ImportEntityRow[],
+  issues: ImportIssue[],
+) {
   const headers = buildHeaders(sheet.data[0] ?? []);
   sheet.data.slice(1).forEach((row, index) => {
     if (row.every((cell) => cell === null || text(cell) === "")) return;
@@ -219,6 +238,26 @@ function parseCanonicalSheet(sheet: Sheet, payload: ImportPayload, issues: Impor
         phone: text(value(row, headers, ["Telefone", "Phone"])),
         status: statusValue(value(row, headers, ["Status"]), "client"),
         website,
+      });
+      return;
+    }
+
+    // Linha nova de v0.8.0. A coluna Empresa continua significando nome fantasia nas linhas
+    // de cliente; só aqui ela vira o nome da empresa/marca filha, então planilha antiga
+    // importa exatamente como antes.
+    if (["empresa marca", "entidade", "entity"].includes(type)) {
+      const displayName =
+        text(value(row, headers, ["Empresa/Marca", "Empresa", "Marca", "Nome", "Entity"])) ||
+        clientName;
+      if (!validateText(issues, sheet.sheet, sourceRow, "Empresa/Marca", displayName, 2, 160))
+        return;
+      entities.push({
+        clientName,
+        displayName,
+        entityType:
+          entityTypeAliases[key(value(row, headers, ["Tipo de empresa", "Entity Type"]))] ??
+          "company",
+        notes,
       });
       return;
     }
@@ -582,6 +621,7 @@ function checkDuplicates(payload: ImportPayload, issues: ImportIssue[]) {
 
 export function normalizeWorkbook(sheets: Sheet[]): NormalizedWorkbook {
   const payload = emptyPayload();
+  const entities: ImportEntityRow[] = [];
   const issues: ImportIssue[] = [];
   let legacy = false;
   let recognized = false;
@@ -590,7 +630,7 @@ export function normalizeWorkbook(sheets: Sheet[]): NormalizedWorkbook {
     const headers = buildHeaders(sheet.data[0] ?? []);
     if (headers.has("tipo") || headers.has("type")) {
       recognized = true;
-      parseCanonicalSheet(sheet, payload, issues);
+      parseCanonicalSheet(sheet, payload, entities, issues);
       continue;
     }
     if (headers.has("client") && headers.has("start date") && headers.has("service dev")) {
@@ -609,12 +649,13 @@ export function normalizeWorkbook(sheets: Sheet[]): NormalizedWorkbook {
     );
   }
   checkDuplicates(payload, issues);
-  const rowCount = Object.values(payload).reduce((total, rows) => total + rows.length, 0);
+  const rowCount =
+    Object.values(payload).reduce((total, rows) => total + rows.length, 0) + entities.length;
   if (rowCount > 1000)
     issue(issues, "Arquivo", 1, "O lote excede o limite de 1.000 registros. Divida a planilha.");
   if (rowCount === 0 && !issues.some(({ level }) => level === "error"))
     issue(issues, "Arquivo", 1, "Nenhum registro importável foi encontrado.");
-  return { issues, legacy, payload, rowCount };
+  return { entities, issues, legacy, payload, rowCount };
 }
 
 export function parseCsv(content: string): Sheet[] {

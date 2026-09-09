@@ -8,7 +8,7 @@
   </p>
   <p>
     <a href="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml"><img src="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-    <a href="package.json"><img src="https://img.shields.io/badge/version-0.6.2-2563EB.svg" alt="Versão 0.6.2" /></a>
+    <a href="package.json"><img src="https://img.shields.io/badge/version-0.8.0-2563EB.svg" alt="Versão 0.8.0" /></a>
     <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16.3.4-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3.4" /></a>
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=0B1F2A" alt="React 19.2.8" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0.3" /></a>
@@ -58,7 +58,7 @@ A aplicação acompanha o ciclo completo, do cadastro do cliente ao recebimento,
 e-mail e senha ou magic link, isolamento por workspace e políticas de segurança no banco. Interface
 em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 
-> **Status:** versão `0.6.2`, candidata ao release 1.0. Aplicação, banco, jornada autenticada,
+> **Status:** versão `0.8.0`, candidata ao release 1.0. Aplicação, banco, jornada autenticada,
 > CodeQL e preview da Vercel estão aprovados; a publicação da V1 ainda depende da configuração de
 > SMTP e Turnstile, aplicação controlada das migrations remotas e smoke test em produção.
 
@@ -66,15 +66,15 @@ em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 
 | Área              | Recursos disponíveis                                                                                                                       |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e alertas de vencimento                         |
-| 👥 **Clientes**   | Seis situações comerciais, site e até três links extras, observações em destaque, arquivamento, histórico anterior e ordenação por receita |
-| 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, edição do serviço aplicado, pausa reversível, encerramento, promoções e nove cadências             |
-| 💳 **Cobranças**  | Acompanhamento, filtros, baixa com recorrência, criação na ficha do cliente, exclusão corretiva de paga e NF privada |
-| 🧾 **Despesas**   | Avulsas ou mensais recorrentes, categorias, cliente opcional, baixa que agenda o próximo mês e NF privada           |
-| 🌐 **Domínios**   | Painel de vencimentos, edição, exclusão, registrador como link, múltiplos domínios por cliente e atalho para o cadastro dele               |
-| 🔔 **Alertas**    | Antecedência configurável no perfil, faixas de atrasado/hoje/esta semana e link direto para o item citado                                  |
-| 🕘 **Histórico**  | Linha do tempo dentro do perfil, pesquisável por cliente e tipo, preservando baixas, atrasos, encerramentos e reativações                  |
-| 📥 **Importação** | Prévia e confirmação transacional de planilhas Excel/CSV, modelo oficial, formato legado e proteção contra duplicidade                     |
+| 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e empresas/marcas ativas, alertas de cobranças e despesas nos próximos 7 dias |
+| 👥 **Clientes**   | Seis situações comerciais, empresas/marcas sob o mesmo cliente, consolidação confirmada, site e links extras, arquivamento e ordenação por receita |
+| 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, vínculo opcional a empresa/marca, edição do serviço aplicado, pausa, encerramento, promoções e nove cadências |
+| 💳 **Cobranças**  | Acompanhamento, filtros, baixa com recorrência, criação na ficha do cliente com empresa/marca opcional, exclusão corretiva de paga e NF privada |
+| 🧾 **Despesas**   | Avulsas ou mensais recorrentes, categorias, cliente e empresa/marca opcionais, baixa que agenda o próximo mês e NF privada |
+| 🌐 **Domínios**   | Painel de vencimentos, edição, exclusão, empresa/marca opcional, registrador como link e atalho para o cadastro do cliente |
+| 🔔 **Alertas**    | Antecedência configurável no perfil, faixas de atrasado/hoje/esta semana e link direto para o item citado |
+| 🕘 **Histórico**  | Linha do tempo dentro do perfil, pesquisável por cliente e tipo, preservando baixas, atrasos, encerramentos e reativações |
+| 📥 **Importação** | Prévia e confirmação transacional de planilhas Excel/CSV, linhas opcionais `empresa/marca`, formato legado e proteção contra duplicidade |
 | 🔐 **Conta**      | Login por e-mail e senha, opção de magic link, onboarding, perfil, acessibilidade, configurações e solicitações de privacidade             |
 
 ### Agenda e calendário
