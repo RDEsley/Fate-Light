@@ -54,7 +54,7 @@ async function waitForCaptcha(page: Page) {
 }
 
 async function selectClient(panel: Locator, name: string) {
-  await panel.getByRole("combobox", { name: "Cliente", exact: true }).fill(name);
+  await panel.getByRole("combobox", { name: /^Cliente\b/ }).fill(name);
   await panel.getByRole("listbox").getByRole("option").filter({ hasText: name }).click();
 }
 
