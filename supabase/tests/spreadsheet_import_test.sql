@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(17);
 
 create or replace function pg_temp.statement_fails(p_sql text)
 returns boolean language plpgsql as $$
@@ -50,6 +50,14 @@ select ok(
     'anon',
     'public.import_workspace_spreadsheet_v2(uuid,text,text,jsonb)',
     'EXECUTE'
+  ) and has_function_privilege(
+    'authenticated',
+    'public.import_workspace_spreadsheet_v3(uuid,text,text,jsonb)',
+    'EXECUTE'
+  ) and not has_function_privilege(
+    'anon',
+    'public.import_workspace_spreadsheet_v3(uuid,text,text,jsonb)',
+    'EXECUTE'
   ),
   'Somente authenticated pode executar a importação'
 );
@@ -93,7 +101,7 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 set local role authenticated;
 
 select lives_ok(
-  $$select public.import_workspace_spreadsheet_v2(
+  $$select public.import_workspace_spreadsheet_v3(
     current_setting('test.import_workspace_a')::uuid,
     repeat('a', 64),
     'csv',
@@ -172,6 +180,34 @@ select results_eq(
   $$select count(*) from public.import_jobs$$,
   array[0::bigint],
   'Owner B não lê os lotes do workspace A'
+);
+
+select set_config('request.jwt.claim.sub', '31313131-3131-4131-8131-313131313131', true);
+select lives_ok(
+  $$select public.import_workspace_spreadsheet_v3(
+    current_setting('test.import_workspace_a')::uuid, repeat('c',64), 'csv',
+    '{"clients":[{"companyName":"","email":"","name":"Client V3","notes":"","phone":"","status":"active","website":""}],"entities":[{"clientName":"Client V3","displayName":"Brand V3","entityType":"brand","notes":""}],"services":[{"additionalFee":"0","billingType":"monthly","clientName":"Client V3","clientEntityName":"Brand V3","companyRevenue":"100","description":"Service","mediaBudget":"0","name":"Service V3","nextDueDate":"2026-11-01","notes":"","startDate":"2026-10-01"}],"charges":[{"additionalFee":"0","clientName":"Client V3","clientEntityName":"Brand V3","companyRevenue":"100","description":"Charge V3","dueDate":"2026-11-01","mediaBudget":"0","notes":"","paidAt":"","paymentMethod":"","serviceName":"Service V3","status":"pending"}],"expenses":[{"amount":"20","category":"software","clientName":"Client V3","clientEntityName":"Brand V3","description":"Expense V3","dueDate":"2026-11-02","expenseType":"variable","notes":"","paidAt":"","status":"pending"}],"domains":[{"autoRenew":false,"clientName":"Client V3","clientEntityName":"Brand V3","cost":"10","domain":"v3.example","expiresOn":"2027-10-01","notes":"","paymentResponsibility":"Empresa","registrar":""}]}'::jsonb
+  )$$,
+  'Import v3 conclui entity e vínculos em uma transação'
+);
+select results_eq(
+  $$select
+    (select count(*) from public.client_entities where display_name='Brand V3'),
+    (select count(*) from public.client_services where name='Service V3' and client_entity_id is not null),
+    (select count(*) from public.charges where description='Charge V3' and client_entity_id is not null),
+    (select count(*) from public.expenses where description='Expense V3' and client_entity_id is not null),
+    (select count(*) from public.domains where domain='v3.example' and client_entity_id is not null)$$,
+  $$values (1::bigint,1::bigint,1::bigint,1::bigint,1::bigint)$$,
+  'Import v3 liga todos os registros à entity correta'
+);
+select ok(
+  pg_temp.statement_fails(format(
+    'select public.import_workspace_spreadsheet_v3(%L::uuid,%L,%L,%L::jsonb)',
+    current_setting('test.import_workspace_a'), repeat('d',64), 'csv',
+    '{"clients":[{"companyName":"","email":"","name":"Client Rollback","notes":"","phone":"","status":"active","website":""}],"entities":[{"clientName":"Client Rollback","displayName":"Invalid Entity","entityType":"invalid","notes":""}],"services":[],"charges":[],"expenses":[],"domains":[]}'
+  )) and not exists (select 1 from public.clients where name='Client Rollback')
+     and not exists (select 1 from public.import_jobs where source_checksum=repeat('d',64)),
+  'Falha de entity executa rollback total do import v3'
 );
 
 reset role;

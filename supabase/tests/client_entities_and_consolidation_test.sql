@@ -1,6 +1,6 @@
 ﻿begin;
 
-select plan(17);
+select plan(29);
 
 insert into auth.users (id, email)
 values
@@ -170,6 +170,47 @@ select throws_ok(
   'Display name ativo duplicado Ã© bloqueado'
 );
 
+select is(
+  has_table_privilege('authenticated', 'public.client_entities', 'INSERT'), false,
+  'Authenticated não recebe INSERT amplo na tabela de entities'
+);
+select is(
+  has_column_privilege('authenticated', 'public.client_entities', 'display_name', 'INSERT'), true,
+  'Authenticated pode inserir campos de negócio da entity'
+);
+select is(
+  has_column_privilege('authenticated', 'public.client_entities', 'id', 'INSERT'), false,
+  'Authenticated não define id da entity'
+);
+select is(
+  has_column_privilege('authenticated', 'public.client_entities', 'updated_by', 'UPDATE'), false,
+  'Authenticated não altera updated_by diretamente'
+);
+select results_eq(
+  $$select count(*)::int from information_schema.triggers
+    where event_object_schema='public' and event_object_table='client_entities'$$,
+  $$select 3$$,
+  'Entity possui triggers de timestamp, autoria e auditoria'
+);
+reset role;
+update public.client_entities set updated_at='2020-01-01 00:00:00+00',
+  updated_by='92929292-9292-4929-8929-929292929292'::uuid
+where id='91919191-00e1-4919-8919-919191919191'::uuid;
+set local role authenticated;
+update public.client_entities set notes='Atualização auditada'
+where id='91919191-00e1-4919-8919-919191919191'::uuid;
+select ok(
+  (select updated_at > '2020-01-01 00:00:00+00' from public.client_entities
+    where id='91919191-00e1-4919-8919-919191919191'::uuid),
+  'Trigger atualiza updated_at'
+);
+select results_eq(
+  $$select updated_by::text from public.client_entities
+    where id='91919191-00e1-4919-8919-919191919191'::uuid$$,
+  $$select '91919191-9191-4919-8919-919191919191'$$,
+  'Trigger controla updated_by pelo usuário autenticado'
+);
+
 -- settle herda entity na prÃ³xima cobranÃ§a.
 select results_eq(
   $$select public.settle_charge_and_schedule_next(
@@ -189,6 +230,25 @@ select results_eq(
 
 -- ConsolidaÃ§Ã£o: preparar origem com valores.
 reset role;
+update public.clients set
+  trade_name = 'DX Comercial', tax_id = '12345678901', notes = 'Contato histórico preservado'
+where id = '91919191-0002-4919-8919-919191919191'::uuid;
+
+insert into public.client_contacts (
+  id, workspace_id, client_id, name, email, is_primary
+) values (
+  '91919191-00f1-4919-8919-919191919191', current_setting('test.workspace_a')::uuid,
+  '91919191-0002-4919-8919-919191919191', 'Contato DX', 'dx@example.test', true
+);
+
+insert into public.activity_events (
+  id, workspace_id, client_id, entity_type, entity_id, action, summary
+) values (
+  '91919191-00f2-4919-8919-919191919191', current_setting('test.workspace_a')::uuid,
+  '91919191-0002-4919-8919-919191919191', 'client',
+  '91919191-0002-4919-8919-919191919191', 'client.updated', 'Evento anterior à consolidação'
+);
+
 insert into public.client_services (
   id, workspace_id, client_id, name, company_revenue, media_budget,
   billing_type, start_date, next_due_date, status
@@ -320,6 +380,38 @@ select results_eq(
     where id = '91919191-00c2-4919-8919-919191919191'::uuid$$,
   $$select true$$,
   'VÃ­nculo cobranÃ§aâ†”serviÃ§o preservado'
+);
+
+select results_eq(
+  $$select count(*)::int from public.client_contacts
+    where client_id='91919191-0002-4919-8919-919191919191'::uuid$$,
+  $$select 1$$,
+  'Consolidação preserva contatos na origem arquivada'
+);
+select results_eq(
+  $$select client_id::text from public.activity_events
+    where id='91919191-00f2-4919-8919-919191919191'::uuid$$,
+  $$select '91919191-0002-4919-8919-919191919191'$$,
+  'Consolidação não reescreve eventos históricos'
+);
+select results_eq(
+  $$select count(*)::int from public.activity_events
+    where action='client.consolidated'
+      and event_data->>'source_client_id'='91919191-0002-4919-8919-919191919191'$$,
+  $$select 1$$,
+  'Consolidação cria um novo evento imutável'
+);
+select results_eq(
+  $$select tax_id from public.client_entities
+    where display_name='DX Dedetizadora' and client_id='91919191-0001-4919-8919-919191919191'::uuid$$,
+  $$select '12345678901'$$,
+  'Metadata inequívoca da origem é copiada para a entity'
+);
+select results_eq(
+  $$select event_data #>> '{preserved,contacts}' from public.activity_events
+    where action='client.consolidated' order by occurred_at desc limit 1$$,
+  $$select '1'$$,
+  'Evento registra a quantidade de contatos preservados'
 );
 
 -- Outro workspace nÃ£o consolida clientes de A.
