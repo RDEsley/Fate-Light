@@ -2,8 +2,9 @@
 
 ## Estado atual
 
-- **Versão atual:** `0.8.0`.
-- **Próximo objetivo:** hardening e release candidate para **1.0 Production Ready**.
+- **Versão atual:** `0.8.2`.
+- **Próximo objetivo:** release candidate para **1.0 Production Ready**, via checklist de
+  [release-v1.md](release-v1.md).
 - **Produto existente:** autenticação, onboarding, workspace, clientes, serviços, cobranças,
   despesas, domínios, alertas, histórico, importação, documentos privados, perfil, configurações,
   RLS, testes e CI/CD já possuem base implementada.
@@ -11,6 +12,12 @@
   opcional em serviços, cobranças, despesas e domínios; consolidação de cliente legado com prévia e
   frase `CONSOLIDAR`; dashboard com despesas nos próximos 7 dias e contagem de empresas/marcas
   ativas. Naturezas financeiras e cobrança manual sem `client_service_id` permanecem intactas.
+- **Hardening `0.8.1` / hotfix `0.8.2`:** isolamento reforçado de contatos/histórico/totais;
+  importação v3 transacional isolada por `client_entity_id`; consolidação sem inventar `legal_name`
+  a partir do nome de origem.
+- **Operação já entregue após `0.8.0`:** transferência de dados entre clientes (RPC + UI);
+  polimento de UX do fluxo Cliente → Serviço → Cobrança; migrations aplicadas no projeto remoto;
+  CI e banco limpo validados na `main`.
 
 As fases abaixo registram o plano de entrega original. Não devem ser interpretadas como uma ordem de
 execução pendente: a próxima frente é fechar lacunas reais de confiabilidade, segurança, cobertura,
@@ -286,7 +293,7 @@ flowchart LR
 
 ## Próximo objetivo de execução
 
-Preparar o Fate Light `0.8.0` para o release candidate 1.0, seguindo o checklist de
+Preparar o Fate Light `0.8.2` para o release candidate 1.0, seguindo o checklist de
 [release-v1.md](release-v1.md). A prioridade é: corretude financeira, segurança, confiabilidade,
 testes E2E (incluindo empresas/marcas e consolidação), revisão de consultas/RLS/Storage,
 responsividade, acessibilidade e operação. Não criar novos módulos de negócio enquanto os gates
