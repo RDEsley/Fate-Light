@@ -82,9 +82,10 @@ async function fillMoney(field: Locator, reais: string) {
 async function addClientEntity(page: Page, name: string, type: string) {
   const panel = page.locator("details").filter({ hasText: "Nova empresa/marca" });
   await panel.locator(":scope > summary").click();
-  await panel.getByLabel("Nome da empresa ou marca").fill(name);
+  await panel.locator('input[name="displayName"]').fill(name);
   await selectField(panel, "entityType", type);
   await panel.getByRole("button", { name: "Criar empresa/marca" }).click();
+  await expect(page).toHaveURL(/status=entity-created|status=created|\/clientes\//);
   await expect(page.getByRole("heading", { level: 3, name, exact: true })).toBeVisible();
 }
 
