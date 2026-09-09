@@ -16,9 +16,9 @@ import { formatCurrency } from "@/features/mvp/format";
 
 import {
   consolidateClient,
-  initialConsolidationState,
   previewConsolidateClient,
 } from "./entity-actions";
+import { initialConsolidationState } from "./consolidation-state";
 
 /**
  * Consolidação de um cliente legado em empresa/marca deste cliente. O caminho é sempre
