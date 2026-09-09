@@ -146,6 +146,8 @@ export function ServiceApplicationForm({
   );
   const cycles = Number(promotionalCycles) || 0;
   const promoValue = centsToNumber(promotionalPriceCents);
+  const previewOwnRevenue =
+    promotion && promotionalPriceCents !== null && cycles > 0 ? promoValue : finalPrice;
   // Só o adicional declarado como receita entra no que você recebe (ADR-0018).
   const additionalRevenue =
     additionalNature === "passthrough" ? 0 : centsToNumber(additionalFeeCents);
@@ -245,14 +247,16 @@ export function ServiceApplicationForm({
           required
         />
         <div className="service-price-preview">
-          <span>{additionalRevenue > 0 ? "A receber por cobrança" : "Valor aplicado"}</span>
-          <strong>{formatCurrency(finalPrice + additionalRevenue)}</strong>
+          <span>{additionalRevenue > 0 ? "A receber por cobrança" : "Valor atual"}</span>
+          <strong>{formatCurrency(previewOwnRevenue + additionalRevenue)}</strong>
           <small>
-            {additionalRevenue > 0
-              ? `${formatCurrency(finalPrice)} do serviço + ${formatCurrency(additionalRevenue)} de adicional`
-              : editing
-                ? "Cobranças pendentes acompanham o novo valor"
-                : "Cobrança inicial criada automaticamente"}
+            {promotion && cycles > 0
+              ? `Promoção ativa · ${cycles} primeira${cycles === 1 ? "" : "s"} cobrança${cycles === 1 ? "" : "s"}`
+              : additionalRevenue > 0
+                ? `${formatCurrency(previewOwnRevenue)} do serviço + ${formatCurrency(additionalRevenue)} de adicional`
+                : editing
+                  ? "Cobranças pendentes acompanham o novo valor"
+                  : "Cobrança inicial criada automaticamente"}
           </small>
         </div>
       </div>
