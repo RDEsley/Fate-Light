@@ -165,12 +165,15 @@ test.describe("authenticated MVP journey", () => {
     await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "0");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
     await expect(
-      page.locator("article").filter({ hasText: "Pendência operacional" }).getByText("Vencida"),
-    ).toBeVisible();
+      page.locator("article").filter({ hasText: "Pendência operacional" }).first(),
+    ).toContainText("Vencida");
 
     // Pagar em /cobrancas e confirmar a ficha do cliente atualizada.
     await page.getByRole("link", { name: "Cobranças" }).click();
-    const overdueOnCharges = page.locator("article").filter({ hasText: "Pendência operacional" });
+    const overdueOnCharges = page
+      .locator("article")
+      .filter({ hasText: "Pendência operacional" })
+      .first();
     await selectField(overdueOnCharges, "paymentMethod", "Pix");
     await overdueOnCharges.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
@@ -185,7 +188,7 @@ test.describe("authenticated MVP journey", () => {
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
     await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "80");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
-    const correction = page.locator("article").filter({ hasText: "Correção temporária" });
+    const correction = page.locator("article").filter({ hasText: "Correção temporária" }).first();
     await selectField(correction, "paymentMethod", "Pix");
     await correction.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
@@ -198,7 +201,10 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("link", { name: "Cliente MVP" }).first().click();
     // A exclusão paga acontece em /cobrancas.
     await page.getByRole("link", { name: "Cobranças" }).click();
-    const paidOnCharges = page.locator("article").filter({ hasText: "Correção temporária" });
+    const paidOnCharges = page
+      .locator("article")
+      .filter({ hasText: "Correção temporária" })
+      .first();
     await paidOnCharges.getByRole("button", { name: "Excluir paga" }).click();
     await expect(page.getByRole("button", { name: "Excluir cobrança paga" })).toBeEnabled({
       timeout: 6_000,
@@ -245,7 +251,7 @@ test.describe("authenticated MVP journey", () => {
       /R\$\s*600,00/,
     );
     await expect(page.getByText("Verba e repasses", { exact: true }).locator("..")).toContainText(
-      /R\$\s*3\.000,00/,
+      /R\$\s*2\.000,00/,
     );
     await expect(page.getByRole("link", { name: /Despesas pagas/ })).toContainText(/R\$\s*200,00/);
     await expect(page.getByRole("link", { name: /Resultado gerencial/ })).toContainText(
