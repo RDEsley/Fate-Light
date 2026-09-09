@@ -7,6 +7,7 @@ import { formatDatePtBr, isoToday, parseDatePtBr } from "@/features/mvp/format";
 import { FieldError } from "./field-error";
 import { Icon } from "./icon";
 import { SelectField } from "./select-field";
+import { scrollPopoverIntoView } from "./disclosure-auto-scroll";
 
 /** Empresa, marca ou projeto sob um cliente (ADR-0020). Sempre um vínculo opcional. */
 export type ClientEntityOption = {
@@ -125,6 +126,13 @@ export function ClientCombobox({
     document.addEventListener("pointerdown", closeOnOutsideClick);
     return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    scrollPopoverIntoView(
+      rootRef.current?.querySelector<HTMLElement>(".client-combobox__popover") ?? null,
+    );
+  }, [open]);
 
   // A obrigatoriedade mora no campo visível, não no `hidden`: input oculto fica fora da
   // validação de restrições do HTML, então `required` ali não impedia nada e o envio sem
@@ -328,6 +336,13 @@ export function DateField({
       document.removeEventListener("keydown", closeWithEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    scrollPopoverIntoView(
+      rootRef.current?.querySelector<HTMLElement>(".date-calendar") ?? null,
+    );
+  }, [open]);
 
   const [year, month] = monthCursor.split("-").map(Number);
   const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();

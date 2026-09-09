@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { signOut } from "@/app/(auth)/actions";
 import { BrandMark } from "@/components/brand-mark";
+import { DisclosureAutoScroll } from "@/components/ui/disclosure-auto-scroll";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { AttentionItem } from "@/features/alerts/attention";
 import { getInitials } from "@/lib/profile/initials";
@@ -81,6 +82,7 @@ export function AppFrame({
 
   return (
     <main className="app-frame text-foreground min-h-screen">
+      <DisclosureAutoScroll />
       <a
         className="sr-only focus:not-sr-only focus:fixed focus:z-[90] focus:m-3 focus:rounded-lg focus:bg-white focus:p-3"
         href="#conteudo"

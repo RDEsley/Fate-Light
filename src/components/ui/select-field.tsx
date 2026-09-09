@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { Icon } from "./icon";
+import { scrollPopoverIntoView } from "./disclosure-auto-scroll";
 
 export type SelectOption = {
   description?: string;
@@ -94,6 +95,13 @@ export function SelectField({
       ?.querySelector<HTMLElement>('[data-active="true"]')
       ?.scrollIntoView({ block: "nearest" });
   }, [activeIndex, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    scrollPopoverIntoView(
+      rootRef.current?.querySelector<HTMLElement>(".select-field__popover") ?? null,
+    );
+  }, [open]);
 
   const commit = (next: string) => {
     if (controlledValue === undefined) setUncontrolledValue(next);

@@ -804,7 +804,14 @@ summary::-webkit-details-marker {
 }
 
 .client-combobox {
-  z-index: 12;
+  /* Só eleva quando aberto: z-index fixo em todos os comboboxes fazia o de baixo
+     (Cliente de origem) pintar por cima da lista do de cima (Cliente de destino). */
+  z-index: auto;
+}
+
+.client-combobox:has([aria-expanded="true"]) {
+  z-index: 45;
+  isolation: isolate;
 }
 
 .client-combobox__control {
@@ -845,6 +852,14 @@ summary::-webkit-details-marker {
   border-radius: 0.9rem;
   background: var(--surface-raised);
   box-shadow: 0 16px 36px -18px rgb(37 50 58 / 0.42);
+}
+
+.select-field:has([aria-expanded="true"]) {
+  z-index: 44;
+}
+
+.date-field-root:has([aria-expanded="true"]) {
+  z-index: 46;
 }
 
 .client-combobox__filters {
