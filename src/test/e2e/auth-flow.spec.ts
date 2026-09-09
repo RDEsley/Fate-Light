@@ -93,7 +93,7 @@ async function addService(
   page: Page,
   values: { entity?: string; name: string; own: string; media: string },
 ) {
-  const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
+  const panel = page.locator("#adicionar-servico");
   await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
   if (values.entity) await selectField(panel, "clientEntityId", values.entity);

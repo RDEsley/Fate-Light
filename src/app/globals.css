@@ -2610,12 +2610,14 @@ summary::-webkit-details-marker {
   transition:
     background-color 0.15s ease,
     color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .client-card-signal:hover {
   background: #e4eae2;
   color: var(--foreground);
+  transform: scale(1.06);
 }
 
 .client-card-signal:focus-visible {
@@ -2674,6 +2676,22 @@ summary::-webkit-details-marker {
   pointer-events: auto;
 }
 
+.client-summary-card__body > a,
+.client-summary-card .client-card-contact a,
+.client-summary-card .border-t a,
+.client-summary-card .border-t button {
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.client-summary-card__body > a:hover,
+.client-summary-card .client-card-contact a:hover,
+.client-summary-card .border-t a:hover,
+.client-summary-card .border-t button:hover {
+  transform: scale(1.05);
+}
+
 .client-card-status {
   position: relative;
   z-index: 2;
@@ -2682,11 +2700,15 @@ summary::-webkit-details-marker {
 .client-card-status__trigger {
   cursor: pointer;
   gap: 0.25rem;
+  transition:
+    filter 0.15s ease,
+    transform 0.15s ease;
 }
 
 .client-card-status__trigger:hover,
 .client-card-status__trigger:focus-visible {
   filter: brightness(0.97);
+  transform: scale(1.05);
 }
 
 .client-card-status__trigger:focus-visible {
