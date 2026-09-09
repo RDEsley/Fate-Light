@@ -137,6 +137,17 @@ describe("client actions", () => {
     );
   });
 
+  it("volta para a lista quando returnTo aponta para /clientes", async () => {
+    const formData = new FormData();
+    formData.set("clientId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+    formData.set("clientStatus", "budget");
+    formData.set("returnTo", "/clientes");
+
+    await expect(setClientStatus(formData)).rejects.toThrow(
+      "REDIRECT:/clientes?status=status-updated",
+    );
+  });
+
   it("arquiva preservando o histórico em vez de excluir", async () => {
     const formData = new FormData();
     formData.set("clientId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");

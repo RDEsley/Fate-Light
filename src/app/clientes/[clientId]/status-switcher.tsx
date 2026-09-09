@@ -7,7 +7,16 @@ import { SelectField } from "@/components/ui/select-field";
 import { clientStatusOptions } from "@/features/clients/status";
 
 /** Troca rápida da situação comercial, sem precisar abrir a tela de edição. */
-export function ClientStatusSwitcher({ clientId, status }: { clientId: string; status: string }) {
+export function ClientStatusSwitcher({
+  clientId,
+  returnTo,
+  status,
+}: {
+  clientId: string;
+  /** Quando informado (ex.: lista de clientes), permanece na tela de origem. */
+  returnTo?: string;
+  status: string;
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [value, setValue] = useState(status);
   const lastSubmitted = useRef(status);
@@ -25,6 +34,7 @@ export function ClientStatusSwitcher({ clientId, status }: { clientId: string; s
   return (
     <form action={setClientStatus} className="client-status-switcher" ref={formRef}>
       <input name="clientId" type="hidden" value={clientId} />
+      {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
       <SelectField
         label="Situação comercial"
         name="clientStatus"

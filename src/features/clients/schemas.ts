@@ -126,14 +126,17 @@ export function parseClientForm(formData: FormData) {
 export const priorRevenueSchema = z.object({
   priorRevenue: z.coerce.number().finite().min(0.01).max(9_999_999_999_999.99),
   priorRevenueDate: z.string().date(),
+  priorRevenueLabel: z.string().trim().max(200).optional(),
 });
 
 export function parsePriorRevenue(formData: FormData) {
   const raw = String(formData.get("priorRevenue") ?? "").trim();
   if (!raw || Number(raw) === 0) return { data: null, success: true as const };
+  const label = String(formData.get("priorRevenueLabel") ?? "").trim();
   const parsed = priorRevenueSchema.safeParse({
     priorRevenue: raw,
     priorRevenueDate: formData.get("priorRevenueDate"),
+    ...(label ? { priorRevenueLabel: label } : {}),
   });
   if (!parsed.success) return { error: parsed.error, success: false as const };
   return { data: parsed.data, success: true as const };

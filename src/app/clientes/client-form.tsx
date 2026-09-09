@@ -2,7 +2,7 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
@@ -13,6 +13,7 @@ import { MoneyField } from "@/components/ui/money-field";
 import { SelectField } from "@/components/ui/select-field";
 import type { ClientLink } from "@/features/clients/schemas";
 import { clientStatusOptions } from "@/features/clients/status";
+import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 import { SubmitButton } from "../_components/submit-button";
@@ -53,6 +54,10 @@ export function ClientForm({
   const [state, formAction] = useActionState(action, initialActionState);
   const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
+  const [priorCents, setPriorCents] = useState<number | null>(null);
+  const [priorDate, setPriorDate] = useState(sent.text("priorRevenueDate"));
+  const priorAmount = priorCents !== null && priorCents > 0 ? priorCents / 100 : 0;
+  const priorPreviewReady = priorAmount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(priorDate);
 
   return (
     <form action={formAction} className="grid gap-4">
@@ -132,7 +137,7 @@ export function ClientForm({
       <section className="panel-card">
         <div className="section-heading mb-4">
           <span className="section-heading__icon bg-violet-soft text-violet">
-            <Icon name="bell" />
+            <Icon name="mail" />
           </span>
           <div>
             <h2>Contato</h2>
@@ -191,7 +196,7 @@ export function ClientForm({
             <span className="bg-positive-soft text-positive grid size-8 place-items-center rounded-lg">
               <Icon className="size-4" name="history" />
             </span>
-            Já trabalhei com este cliente antes
+            Receita anterior ao Fate Light
           </span>
           <span className="text-muted flex items-center gap-1 text-xs">
             <span className="form-disclosure__closed-label">Abrir</span>
@@ -200,9 +205,9 @@ export function ClientForm({
           </span>
         </summary>
         <p className="helper-note mt-3">
-          Informe quanto este cliente já pagou antes de você usar o sistema. É registrado como uma
-          única cobrança quitada, então o total dele fica correto no painel e no histórico sem que
-          você precise lançar mês a mês.
+          Use somente se este cliente já pagava você antes de começar a usar o sistema. Não cria
+          serviço nem recorrência — apenas uma cobrança histórica quitada para o total recebido
+          ficar correto.
         </p>
         {clientId &&
         priorRevenueEntries?.length &&
@@ -215,12 +220,13 @@ export function ClientForm({
             updateAction={updatePriorRevenueAction}
           />
         ) : null}
-        <div className="form-grid mt-3 sm:grid-cols-2">
+        <div className="form-grid prior-revenue-fields mt-3 sm:grid-cols-2">
           <MoneyField
             defaultValue={sent.text("priorRevenue")}
             error={errors.priorRevenue}
             label="Total já recebido"
             name="priorRevenue"
+            onCentsChange={setPriorCents}
             optional
           />
           <DateField
@@ -228,12 +234,39 @@ export function ClientForm({
             error={errors.priorRevenueDate}
             label="Data de referência"
             name="priorRevenueDate"
+            onValueChange={setPriorDate}
             optional
           />
-          <p className="field__hint sm:col-span-2">
-            Deixe o total em branco se preferir lançar cada cobrança antiga separadamente na ficha do
-            cliente.
-          </p>
+          <label className="field sm:col-span-2">
+            <span className="field__label">
+              Descrição do histórico <span className="field__optional">opcional</span>
+            </span>
+            <input
+              defaultValue={sent.text("priorRevenueLabel")}
+              maxLength={200}
+              name="priorRevenueLabel"
+              placeholder="Ex.: Gestão de tráfego 2023–2025"
+            />
+            <span className="field__hint">
+              Identifica o lançamento nas cobranças. Sem texto, usamos “Histórico anterior ao
+              sistema”.
+            </span>
+          </label>
+          {priorPreviewReady ? (
+            <aside className="helper-note sm:col-span-2" role="status">
+              <Icon className="size-4" name="receipt" />
+              <span>
+                Será criada uma cobrança histórica quitada de{" "}
+                <strong>{formatCurrency(priorAmount)}</strong> em{" "}
+                <strong>{formatDatePtBr(priorDate)}</strong>.
+              </span>
+            </aside>
+          ) : (
+            <p className="field__hint sm:col-span-2">
+              Informe total e data para ver a prévia. Deixe em branco se preferir lançar cada
+              cobrança antiga separadamente na ficha.
+            </p>
+          )}
         </div>
         {editing ? (
           <p className="field__hint mt-2">

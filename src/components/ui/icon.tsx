@@ -27,9 +27,11 @@ export type IconName =
   | "info"
   | "link"
   | "logout"
+  | "mail"
   | "menu"
   | "pause"
   | "paperclip"
+  | "phone"
   | "play"
   | "plus"
   | "receipt"
@@ -100,10 +102,16 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
       <path d="M10 13.5a4 4 0 0 0 5.7 0l2.8-2.8a4 4 0 0 0-5.7-5.7l-1.4 1.4m-.4 4.6a4 4 0 0 0-5.7 0l-2.8 2.8a4 4 0 0 0 5.7 5.7l1.4-1.4" />
     ),
     logout: <path d="M10 17l5-5-5-5m5 5H3m10-9h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />,
+    mail: (
+      <path d="M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm0 0 8 7 8-7" />
+    ),
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
     pause: <path d="M9 5v14M15 5v14" />,
     paperclip: (
       <path d="m20.5 11.5-8.7 8.7a5.3 5.3 0 0 1-7.5-7.5l9.1-9.1a3.6 3.6 0 0 1 5.1 5.1l-9.1 9.1a1.9 1.9 0 0 1-2.7-2.7l8.4-8.4" />
+    ),
+    phone: (
+      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.2a2 2 0 0 1 2.1-.4c.8.3 1.7.6 2.6.7A2 2 0 0 1 22 16.9Z" />
     ),
     play: <path d="M7 4.5v15l12-7.5-12-7.5Z" />,
     plus: <path d="M12 5v14M5 12h14" />,

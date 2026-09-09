@@ -171,15 +171,16 @@ test.describe("authenticated MVP journey", () => {
     ).toBeVisible();
     const nextDueBeforeManual = await adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd").innerText();
     await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
-    let chargePanel = page.locator("#nova-cobranca details");
+    let chargePanel = page.locator("#cobranca-avulsa details");
     await expect(chargePanel).toBeVisible();
     await expect(chargePanel.getByText(/não altera a agenda automática/i)).toBeVisible();
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
     await selectField(chargePanel, "clientEntityId", "Padaria do Bairro");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
     await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "500");
+    await chargePanel.locator("summary").filter({ hasText: "Opções avançadas" }).click();
     await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "1000");
-    await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
+    await chargePanel.getByRole("button", { name: "Criar cobrança avulsa" }).click();
     await expect(page.getByText(/cobrança criada/i)).toBeVisible();
     const paidCharge = page.locator("article").filter({ hasText: "Mensalidade Ads" });
     // A cobrança carrega o contexto da empresa/marca escolhida.
@@ -192,13 +193,12 @@ test.describe("authenticated MVP journey", () => {
       adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd"),
     ).toHaveText(nextDueBeforeManual);
 
-    chargePanel = page.locator("#nova-cobranca details");
-    await chargePanel.locator("summary").click();
+    chargePanel = page.locator("#cobranca-avulsa details");
+    await chargePanel.locator("summary").filter({ hasText: "Nova cobrança avulsa" }).click();
     await chargePanel.getByLabel("Descrição").fill("Pendência operacional");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(-1));
     await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "100");
-    await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "0");
-    await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
+    await chargePanel.getByRole("button", { name: "Criar cobrança avulsa" }).click();
     await expect(
       page.locator("article").filter({ hasText: "Pendência operacional" }).first(),
     ).toContainText("Vencida");
@@ -219,12 +219,12 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.locator("article").filter({ hasText: "Pendência operacional" })).toHaveCount(0);
 
     // Criar, pagar e excluir cobrança paga — Dashboard deixa de somar.
-    chargePanel = page.locator("#nova-cobranca details");
-    await chargePanel.locator("summary").click();
+    chargePanel = page.locator("#cobranca-avulsa details");
+    await chargePanel.locator("summary").filter({ hasText: "Nova cobrança avulsa" }).click();
     await chargePanel.getByLabel("Descrição").fill("Correção temporária");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
     await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "80");
-    await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
+    await chargePanel.getByRole("button", { name: "Criar cobrança avulsa" }).click();
     const correction = page.locator("article").filter({ hasText: "Correção temporária" }).first();
     await selectField(correction, "paymentMethod", "Pix");
     await correction.getByRole("button", { name: "Marcar como paga" }).click();

@@ -287,6 +287,7 @@ export function DateField({
   error,
   label,
   name,
+  onValueChange,
   optional = false,
   required = false,
 }: {
@@ -294,6 +295,7 @@ export function DateField({
   error?: string;
   label: string;
   name: string;
+  onValueChange?: (isoDate: string) => void;
   optional?: boolean;
   required?: boolean;
 }) {
@@ -306,6 +308,11 @@ export function DateField({
   );
   const [open, setOpen] = useState(false);
   const [monthCursor, setMonthCursor] = useState(`${(initialValue || isoToday()).slice(0, 7)}-01`);
+
+  const commitDate = (iso: string) => {
+    setDateValue(iso);
+    onValueChange?.(iso);
+  };
 
   useEffect(() => {
     const close = (event: PointerEvent) => {
@@ -341,7 +348,7 @@ export function DateField({
 
   const selectDate = (day: number) => {
     const iso = `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
-    setDateValue(iso);
+    commitDate(iso);
     setDisplayValue(formatDatePtBr(iso));
     setOpen(false);
   };
@@ -369,7 +376,7 @@ export function DateField({
               .join("/");
             const parsed = parseDatePtBr(masked);
             setDisplayValue(masked);
-            setDateValue(parsed ?? "");
+            commitDate(parsed ?? "");
             event.currentTarget.setCustomValidity(
               masked && !parsed ? "Informe uma data válida no formato DD/MM/AAAA." : "",
             );

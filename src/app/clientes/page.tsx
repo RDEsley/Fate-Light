@@ -6,14 +6,11 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { Icon } from "@/components/ui/icon";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
-import { readClientLinks } from "@/features/clients/schemas";
-import { clientStatusInfo } from "@/features/clients/status";
-import { formatCurrency } from "@/features/mvp/format";
 import { textSearchOrFilter } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
-import { restoreClient } from "./actions";
 import { ClientStatusMessage } from "./status-message";
+import { ClientSummaryCard } from "./client-summary-card";
 
 export const metadata: Metadata = { title: "Clientes" };
 const pageSize = 20;
@@ -164,155 +161,28 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             // id e nome vêm de colunas NOT NULL da tabela base.
             const clientId = client.id ?? "";
             const clientName = client.name ?? "";
-            const status = clientStatusInfo(client.commercial_status ?? "inactive");
-            const activeServices = client.active_services ?? 0;
-            const overdueCharges = client.overdue_charges ?? 0;
-            const expiringDomains = client.expiring_domains ?? 0;
-            const earned = Number(client.lifetime_revenue ?? 0);
             const firstStart = client.first_service_start;
-            const entityCount = entityCounts.get(clientId) ?? 0;
             return (
-              <article
-                className="cartoon-card client-summary-card flex min-h-52 flex-col p-4 sm:p-5"
+              <ClientSummaryCard
+                activeServices={client.active_services ?? 0}
+                clientId={clientId}
+                earned={Number(client.lifetime_revenue ?? 0)}
+                email={client.email}
+                entityCount={entityCounts.get(clientId) ?? 0}
+                expiringDomains={client.expiring_domains ?? 0}
+                firstStart={firstStart}
                 key={clientId}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="bg-brand-soft text-brand-strong border-brand/20 grid size-11 place-items-center rounded-2xl border font-black">
-                    {clientName.slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className={status.className}>
-                    <Icon className="size-3.5" name={status.icon} />
-                    {status.label}
-                  </span>
-                </div>
-                <Link
-                  className="hover:text-brand-strong mt-4 text-lg font-black tracking-[-0.02em]"
-                  href={`/clientes/${clientId}`}
-                >
-                  {clientName}
-                </Link>
-                {client.trade_name ? (
-                  <p className="text-muted mt-1 text-sm">{client.trade_name}</p>
-                ) : null}
-                <div className="client-card-signals" aria-label="Resumo operacional">
-                  <span title={`${activeServices} serviço(s) ativo(s)`}>
-                    <Icon name="briefcase" /> {activeServices}
-                  </span>
-                  {entityCount ? (
-                    <span title="Empresas ou marcas cadastradas neste cliente">
-                      <Icon name="building" /> {entityCount}{" "}
-                      {entityCount === 1 ? "empresa/marca" : "empresas/marcas"}
-                    </span>
-                  ) : null}
-                  {overdueCharges ? (
-                    <span
-                      className="is-critical"
-                      title={`${overdueCharges} cobrança(s) vencida(s)`}
-                    >
-                      <Icon name="alert" /> {overdueCharges}
-                    </span>
-                  ) : null}
-                  {expiringDomains ? (
-                    <span
-                      className="is-warning"
-                      title={`${expiringDomains} domínio(s) vencendo em até 30 dias`}
-                    >
-                      <Icon name="globe" /> {expiringDomains}
-                    </span>
-                  ) : null}
-                  {firstStart ? (
-                    <span title="Tempo desde o primeiro serviço">
-                      <Icon name="history" /> {activeTimeLabel(firstStart)}
-                    </span>
-                  ) : null}
-                  {earned > 0 ? (
-                    <span className="is-positive" title="Total já recebido deste cliente">
-                      <Icon name="wallet" /> {formatCurrency(earned)}
-                    </span>
-                  ) : null}
-                </div>
-                {client.email ||
-                client.phone ||
-                client.website ||
-                client.notes ||
-                readClientLinks(client.links).length ? (
-                  <div className="client-card-contact">
-                    {client.email ? (
-                      <a href={`mailto:${client.email}`} title={client.email}>
-                        <Icon className="size-3.5" name="bell" />
-                        <span className="truncate">{client.email}</span>
-                      </a>
-                    ) : null}
-                    {client.phone ? (
-                      <a href={`tel:${client.phone.replace(/[^+\d]/g, "")}`}>
-                        <Icon className="size-3.5" name="user" />
-                        <span className="truncate">{client.phone}</span>
-                      </a>
-                    ) : null}
-                    {client.website ? (
-                      <a
-                        href={`https://${client.website}`}
-                        rel="noreferrer noopener"
-                        target="_blank"
-                        title={client.website}
-                      >
-                        <Icon className="size-3.5" name="link" />
-                        <span className="truncate">{client.website}</span>
-                      </a>
-                    ) : null}
-                    {readClientLinks(client.links).map((link) => (
-                      <a
-                        href={`https://${link.url}`}
-                        key={link.url}
-                        rel="noreferrer noopener"
-                        target="_blank"
-                        title={link.url}
-                      >
-                        <Icon className="size-3.5" name="link" />
-                        <span className="truncate">{link.label}</span>
-                      </a>
-                    ))}
-                    {client.notes ? (
-                      <Link
-                        className="client-card-contact__note"
-                        href={`/clientes/${clientId}#observacoes`}
-                      >
-                        <Icon className="size-3.5" name="info" />
-                        <span className="truncate">Tem observações</span>
-                      </Link>
-                    ) : null}
-                  </div>
-                ) : null}
-                <div className="border-line mt-auto flex items-center justify-between gap-3 border-t pt-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Link
-                      className="text-brand-strong text-sm font-black"
-                      href={`/clientes/${clientId}`}
-                    >
-                      Abrir cliente →
-                    </Link>
-                    {!showingArchived ? (
-                      <Link
-                        className="text-muted hover:text-foreground text-xs font-bold"
-                        href={`/clientes/${clientId}?action=new-charge#nova-cobranca`}
-                      >
-                        Cobrança
-                      </Link>
-                    ) : null}
-                  </div>
-                  {showingArchived ? (
-                    <form action={restoreClient}>
-                      <input name="clientId" type="hidden" value={clientId} />
-                      <button
-                        className="text-muted hover:text-foreground text-xs font-bold"
-                        type="submit"
-                      >
-                        Desarquivar
-                      </button>
-                    </form>
-                  ) : null}
-                </div>
-              </article>
+                links={client.links}
+                name={clientName}
+                notes={client.notes}
+                overdueCharges={client.overdue_charges ?? 0}
+                phone={client.phone}
+                showingArchived={showingArchived}
+                status={client.commercial_status ?? "inactive"}
+                tenureLabel={firstStart ? activeTimeLabel(firstStart) : null}
+                tradeName={client.trade_name}
+                website={client.website}
+              />
             );
           })}
         </div>
