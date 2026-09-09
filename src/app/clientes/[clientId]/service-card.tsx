@@ -204,7 +204,7 @@ export function ServiceCard({
         {service.status !== "ended" ? (
           <Link
             className="service-action"
-            href={`/clientes/${clientId}?action=new-charge&serviceId=${service.id}#nova-cobranca`}
+            href={`/clientes/${clientId}?action=new-charge&serviceId=${service.id}#cobranca-avulsa`}
           >
             <Icon className="size-4" name="plus" /> Cobrança
           </Link>

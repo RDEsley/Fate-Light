@@ -71,6 +71,7 @@ export default async function ClientDetailsPage({
   const defaultServiceId = z.string().uuid().safeParse(parameters.serviceId);
   const requestedEntityId = z.string().uuid().safeParse(parameters.entity);
   const openChargeForm = parameters.action === "new-charge" || defaultServiceId.success;
+  const openServiceForm = parameters.action === "new-service";
 
   const [
     { data: client, error },
@@ -271,16 +272,16 @@ export default async function ClientDetailsPage({
           ← Voltar
         </Link>
         <div className="flex flex-wrap gap-3">
-          {!archived ? (
+          {!archived && isBillableClientStatus(client.commercial_status) ? (
             <Link
-              className="border-line rounded-xl border px-4 py-2 font-semibold"
-              href={`/clientes/${client.id}?action=new-charge#nova-cobranca`}
+              className="bg-brand text-brand-contrast rounded-xl px-4 py-2 font-semibold"
+              href={`/clientes/${client.id}?action=new-service#servicos`}
             >
-              Nova cobrança
+              Novo serviço
             </Link>
           ) : null}
           <Link
-            className="bg-brand text-brand-contrast rounded-xl px-4 py-2 font-semibold"
+            className="border-line rounded-xl border px-4 py-2 font-semibold"
             href={`/clientes/${client.id}/editar`}
           >
             Editar cliente
@@ -489,15 +490,77 @@ export default async function ClientDetailsPage({
         </section>
       ) : null}
 
-      {!archived ? (
-        <section className="panel-card mt-4" id="nova-cobranca">
-          <details className="form-disclosure" open={openChargeForm}>
-            <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
+      <section className="panel-card mt-4" id="servicos">
+        <div className="section-heading mb-4">
+          <span className="section-heading__icon bg-violet-soft text-violet">
+            <Icon name="briefcase" />
+          </span>
+          <div>
+            <h2>Serviços</h2>
+            <p>
+              Fluxo principal: ao aplicar um serviço, a cobrança correspondente é criada
+              automaticamente.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {visibleServices.length ? (
+            visibleServices.map((service) => (
+              <ServiceCard
+                catalog={catalogOptions}
+                clientId={client.id}
+                duration={serviceDuration(service.start_date, service.ended_at)}
+                entityName={
+                  service.client_entity_id
+                    ? (entityNames.get(service.client_entity_id) ?? null)
+                    : null
+                }
+                key={service.id}
+                service={{
+                  additionalFee: Number(service.additional_fee),
+                  additionalFeeIsRevenue: service.additional_fee_is_revenue,
+                  adjustmentIntervalMonths: service.adjustment_interval_months,
+                  adjustmentRate:
+                    service.adjustment_rate === null ? null : Number(service.adjustment_rate),
+                  billingType: service.billing_type as BillingFrequency,
+                  description: service.description,
+                  discountType: service.discount_type as "fixed" | "none" | "percentage",
+                  discountValue: Number(service.discount_value),
+                  id: service.id,
+                  installmentCount: service.installment_count,
+                  listPrice: Number(service.list_price),
+                  mediaBudget: Number(service.media_budget),
+                  name: service.name,
+                  nextAdjustmentDate: service.next_adjustment_date,
+                  nextDueDate: service.next_due_date,
+                  notes: service.notes,
+                  ...(chargeTotals.get(service.id) ?? emptyTotals),
+                  promotionalCycles: service.promotional_cycles,
+                  promotionalCyclesUsed: service.promotional_cycles_used,
+                  promotionalPrice:
+                    service.promotional_price === null ? null : Number(service.promotional_price),
+                  startDate: service.start_date,
+                  status: service.status,
+                }}
+              />
+            ))
+          ) : (
+            <p className="text-muted text-sm">
+              {focusedEntityId
+                ? "Nenhum serviço nesta empresa/marca."
+                : "Nenhum serviço adicionado. Comece por aqui para gerar cobranças recorrentes."}
+            </p>
+          )}
+        </div>
+
+        {isBillableClientStatus(client.commercial_status) && !archived ? (
+          <details
+            className="form-disclosure border-line mt-6 border-t pt-5"
+            open={openServiceForm}
+          >
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
               <span className="flex items-center gap-2">
-                <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
-                  <Icon className="size-4" name="plus" />
-                </span>
-                Nova cobrança
+                <Icon className="size-4" name="plus" /> Adicionar serviço
               </span>
               <span className="text-muted flex items-center gap-1 text-xs">
                 <span className="form-disclosure__closed-label">Abrir formulário</span>
@@ -505,24 +568,27 @@ export default async function ClientDetailsPage({
                 <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
               </span>
             </summary>
-            <p className="helper-note mt-3">
-              <Icon className="size-4" name="info" /> Lançamento avulso ou fora da recorrência do
-              serviço. Cobranças automáticas continuam nascendo ao aplicar e receber serviços.
-            </p>
-            <ChargeForm
-              clientId={client.id}
-              defaultEntityId={focusedEntityId ?? undefined}
-              defaultServiceId={defaultServiceId.success ? defaultServiceId.data : undefined}
-              entities={entityOptions}
-              returnTo={clientReturnTo}
-              services={chargeServices}
-            />
+            <div className="mt-4">
+              <ServiceApplicationForm
+                catalog={catalogOptions}
+                clientId={client.id}
+                defaultEntityId={focusedEntityId ?? undefined}
+                entities={entityOptions}
+              />
+            </div>
           </details>
-        </section>
-      ) : null}
+        ) : (
+          <p className="helper-note mt-5">
+            <Icon className="size-4" name="info" />
+            {archived
+              ? "Desarquive o cliente para voltar a aplicar serviços."
+              : `Clientes em “${statusInfo.label}” não recebem novos serviços. Mude a situação comercial para continuar.`}
+          </p>
+        )}
+      </section>
 
       {visiblePendingCharges.length ? (
-        <section className="panel-card mt-4">
+        <section className="panel-card mt-4" id="cobrancas-pendentes">
           <div className="section-heading mb-4">
             <span className="section-heading__icon bg-warning-soft text-warning">
               <Icon name="wallet" />
@@ -609,71 +675,15 @@ export default async function ClientDetailsPage({
         </section>
       ) : null}
 
-      <section className="panel-card mt-4">
-        <div className="section-heading mb-4">
-          <span className="section-heading__icon bg-violet-soft text-violet">
-            <Icon name="briefcase" />
-          </span>
-          <div>
-            <h2>Serviços</h2>
-            <p>Receita própria e verba de mídia permanecem separadas.</p>
-          </div>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {visibleServices.length ? (
-            visibleServices.map((service) => (
-              <ServiceCard
-                catalog={catalogOptions}
-                clientId={client.id}
-                duration={serviceDuration(service.start_date, service.ended_at)}
-                entityName={
-                  service.client_entity_id
-                    ? (entityNames.get(service.client_entity_id) ?? null)
-                    : null
-                }
-                key={service.id}
-                service={{
-                  additionalFee: Number(service.additional_fee),
-                  additionalFeeIsRevenue: service.additional_fee_is_revenue,
-                  adjustmentIntervalMonths: service.adjustment_interval_months,
-                  adjustmentRate:
-                    service.adjustment_rate === null ? null : Number(service.adjustment_rate),
-                  billingType: service.billing_type as BillingFrequency,
-                  description: service.description,
-                  discountType: service.discount_type as "fixed" | "none" | "percentage",
-                  discountValue: Number(service.discount_value),
-                  id: service.id,
-                  installmentCount: service.installment_count,
-                  listPrice: Number(service.list_price),
-                  mediaBudget: Number(service.media_budget),
-                  name: service.name,
-                  nextAdjustmentDate: service.next_adjustment_date,
-                  nextDueDate: service.next_due_date,
-                  notes: service.notes,
-                  ...(chargeTotals.get(service.id) ?? emptyTotals),
-                  promotionalCycles: service.promotional_cycles,
-                  promotionalCyclesUsed: service.promotional_cycles_used,
-                  promotionalPrice:
-                    service.promotional_price === null ? null : Number(service.promotional_price),
-                  startDate: service.start_date,
-                  status: service.status,
-                }}
-              />
-            ))
-          ) : (
-            <p className="text-muted text-sm">
-              {focusedEntityId
-                ? "Nenhum serviço nesta empresa/marca."
-                : "Nenhum serviço adicionado."}
-            </p>
-          )}
-        </div>
-
-        {isBillableClientStatus(client.commercial_status) && !archived ? (
-          <details className="form-disclosure border-line mt-6 border-t pt-5">
-            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+      {!archived ? (
+        <section className="panel-card mt-4" id="cobranca-avulsa">
+          <details className="form-disclosure" open={openChargeForm}>
+            <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
               <span className="flex items-center gap-2">
-                <Icon className="size-4" name="plus" /> Adicionar serviço
+                <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
+                  <Icon className="size-4" name="plus" />
+                </span>
+                Nova cobrança avulsa
               </span>
               <span className="text-muted flex items-center gap-1 text-xs">
                 <span className="form-disclosure__closed-label">Abrir formulário</span>
@@ -681,24 +691,32 @@ export default async function ClientDetailsPage({
                 <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
               </span>
             </summary>
-            <div className="mt-4">
-              <ServiceApplicationForm
-                catalog={catalogOptions}
-                clientId={client.id}
-                defaultEntityId={focusedEntityId ?? undefined}
-                entities={entityOptions}
-              />
-            </div>
+            <p className="helper-note mt-3">
+              <Icon className="size-4" name="info" /> Use para cobranças fora de um serviço. Para
+              mensalidades, projetos parcelados ou serviços recorrentes, prefira adicionar um
+              serviço.
+            </p>
+            {isBillableClientStatus(client.commercial_status) ? (
+              <p className="mt-2 text-sm">
+                <Link
+                  className="text-brand-strong font-semibold hover:underline"
+                  href={`/clientes/${client.id}?action=new-service#servicos`}
+                >
+                  Adicionar serviço em vez disso →
+                </Link>
+              </p>
+            ) : null}
+            <ChargeForm
+              clientId={client.id}
+              defaultEntityId={focusedEntityId ?? undefined}
+              defaultServiceId={defaultServiceId.success ? defaultServiceId.data : undefined}
+              entities={entityOptions}
+              returnTo={clientReturnTo}
+              services={chargeServices}
+            />
           </details>
-        ) : (
-          <p className="helper-note mt-5">
-            <Icon className="size-4" name="info" />
-            {archived
-              ? "Desarquive o cliente para voltar a aplicar serviços."
-              : `Clientes em “${statusInfo.label}” não recebem novos serviços. Mude a situação comercial para continuar.`}
-          </p>
-        )}
-      </section>
+        </section>
+      ) : null}
 
       {!archived ? (
         <details className="danger-zone form-disclosure mt-8">

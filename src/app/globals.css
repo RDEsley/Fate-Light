@@ -2594,7 +2594,8 @@ summary::-webkit-details-marker {
   margin-top: 0.65rem;
 }
 
-.client-card-signals span {
+.client-card-signals span,
+.client-card-signal {
   display: inline-flex;
   min-height: 1.7rem;
   align-items: center;
@@ -2605,21 +2606,140 @@ summary::-webkit-details-marker {
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 850;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.client-card-signals svg {
+.client-card-signal:hover {
+  background: #e4eae2;
+  color: var(--foreground);
+}
+
+.client-card-signal:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.client-card-signals svg,
+.client-card-signal svg {
   width: 0.8rem;
   height: 0.8rem;
 }
 
-.client-card-signals .is-critical {
+.client-card-signals .is-critical,
+.client-card-signal.is-critical {
   background: var(--negative-soft);
   color: var(--negative);
 }
 
-.client-card-signals .is-warning {
+.client-card-signals .is-warning,
+.client-card-signal.is-warning {
   background: var(--warning-soft);
   color: var(--warning);
+}
+
+.client-card-signal.is-positive {
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+
+.client-summary-card {
+  position: relative;
+}
+
+.client-summary-card__stretch {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.client-summary-card__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100%;
+  flex: 1;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.client-summary-card__body a,
+.client-summary-card__body button,
+.client-summary-card__body form,
+.client-summary-card__body .client-card-status {
+  pointer-events: auto;
+}
+
+.client-card-status {
+  position: relative;
+  z-index: 2;
+}
+
+.client-card-status__trigger {
+  cursor: pointer;
+  gap: 0.25rem;
+}
+
+.client-card-status__trigger:hover,
+.client-card-status__trigger:focus-visible {
+  filter: brightness(0.97);
+}
+
+.client-card-status__trigger:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.client-card-status__menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  min-width: 10.5rem;
+  gap: 0.15rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 0.35rem;
+  box-shadow: var(--shadow-panel);
+}
+
+.client-card-status__menu button {
+  display: block;
+  width: 100%;
+  border-radius: 0.6rem;
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.client-card-status__menu button:hover:not(:disabled),
+.client-card-status__menu button:focus-visible:not(:disabled) {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.client-card-status__menu button.is-current,
+.client-card-status__menu button:disabled {
+  background: #f0f3ef;
+  color: var(--muted);
+  cursor: default;
+}
+
+.prior-revenue-fields > .field,
+.prior-revenue-fields > .date-field-root {
+  align-content: start;
+}
+
+.prior-revenue-fields .field__label,
+.prior-revenue-fields .date-field-root > .field__label {
+  min-height: 1.35rem;
 }
 
 /* Painéis de alerta do dashboard: borda suave, cabeçalho calmo e itens navegáveis. */

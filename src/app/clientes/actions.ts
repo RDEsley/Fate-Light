@@ -34,13 +34,17 @@ async function recordPriorRevenue(
   supabase: Awaited<ReturnType<typeof requireWorkspaceContext>>["supabase"],
   workspaceId: string,
   clientId: string,
-  prior: { priorRevenue: number; priorRevenueDate: string } | null,
+  prior: {
+    priorRevenue: number;
+    priorRevenueDate: string;
+    priorRevenueLabel?: string;
+  } | null,
 ): Promise<"failed" | "recorded" | "skipped"> {
   if (!prior) return "skipped";
   const { error } = await supabase.from("charges").insert({
     client_id: clientId,
     company_revenue: prior.priorRevenue,
-    description: "Histórico anterior ao sistema",
+    description: prior.priorRevenueLabel ?? "Histórico anterior ao sistema",
     due_date: prior.priorRevenueDate,
     notes: "Valor consolidado informado no cadastro do cliente.",
     paid_at: new Date(`${prior.priorRevenueDate}T12:00:00.000Z`).toISOString(),
@@ -180,10 +184,19 @@ export async function deletePriorRevenueEntry(formData: FormData) {
   statusRedirect(path, "prior-revenue-deleted");
 }
 
+function resolveClientStatusReturnTo(raw: FormDataEntryValue | null, clientId: string): string {
+  const value = String(raw ?? "").trim();
+  // Só a lista de clientes (com query string opcional) ou a própria ficha.
+  if (value === "/clientes" || value.startsWith("/clientes?")) return value;
+  if (value === `/clientes/${clientId}`) return value;
+  return `/clientes/${clientId}`;
+}
+
 export async function setClientStatus(formData: FormData) {
   const clientId = identifierSchema.safeParse(formData.get("clientId"));
   const status = clientStatusSchema.safeParse(formData.get("clientStatus"));
   if (!clientId.success || !status.success) statusRedirect("/clientes", "error");
+  const returnTo = resolveClientStatusReturnTo(formData.get("returnTo"), clientId.data);
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("clients")
@@ -193,11 +206,11 @@ export async function setClientStatus(formData: FormData) {
     .is("archived_at", null)
     .select("id")
     .single();
-  if (error || !data) statusRedirect("/clientes", "error");
+  if (error || !data) statusRedirect(returnTo.startsWith("/clientes?") ? "/clientes" : returnTo, "error");
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${clientId.data}`);
   revalidatePath("/dashboard");
-  statusRedirect(`/clientes/${clientId.data}`, "status-updated");
+  statusRedirect(returnTo, "status-updated");
 }
 
 /**

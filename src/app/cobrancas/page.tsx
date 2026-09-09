@@ -221,8 +221,8 @@ export default async function ChargesPage({
                 ·{" "}
               </>
             ) : null}
-            <Link href={`/clientes/${filteredClientId}?action=new-charge#nova-cobranca`}>
-              Nova cobrança na ficha
+            <Link href={`/clientes/${filteredClientId}?action=new-charge#cobranca-avulsa`}>
+              Nova cobrança avulsa na ficha
             </Link>
           </span>
         </aside>

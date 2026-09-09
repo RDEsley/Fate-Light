@@ -180,12 +180,12 @@ export function ServiceApplicationForm({
         </div>
       ) : null}
 
-      <div className="form-grid sm:grid-cols-2 lg:grid-cols-4">
+      <div className="form-grid sm:grid-cols-2 lg:grid-cols-3">
         {/* A edição não mexe na entidade: `update_client_service` não reassocia o vínculo,
             e trocá-lo aqui deixaria as cobranças já geradas apontando para outro lugar. */}
         {editing ? null : (
           <EntitySelect
-            className="sm:col-span-2"
+            className="sm:col-span-2 lg:col-span-3"
             clientId={clientId}
             defaultValue={defaultEntityId}
             entities={entities}
@@ -246,7 +246,7 @@ export function ServiceApplicationForm({
           name="nextDueDate"
           required
         />
-        <div className="service-price-preview">
+        <div className="service-price-preview sm:col-span-2 lg:col-span-3">
           <span>{additionalRevenue > 0 ? "A receber por cobrança" : "Valor atual"}</span>
           <strong>{formatCurrency(previewOwnRevenue + additionalRevenue)}</strong>
           <small>
@@ -277,7 +277,7 @@ export function ServiceApplicationForm({
           </span>
           <span className="text-muted text-xs">Desconto, parcelas, promoção e reajuste</span>
         </summary>
-        <div className="form-grid mt-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="form-grid mt-3 sm:grid-cols-2 lg:grid-cols-3">
           <SelectField
             label="Tipo de desconto"
             name="discountType"
