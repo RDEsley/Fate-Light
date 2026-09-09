@@ -121,12 +121,22 @@ test.describe("authenticated MVP journey", () => {
 
     await addService(page, { name: "Gestão de Google Ads", own: "500", media: "1000" });
     await addService(page, { name: "Landing Page", own: "0", media: "0" });
+    const adsCard = page
+      .locator("article")
+      .filter({ hasText: "Gestão de Google Ads" })
+      .filter({ hasText: "Próximo vencimento" })
+      .first();
+    const landingCard = page
+      .locator("article")
+      .filter({ hasText: "Landing Page" })
+      .filter({ hasText: "Próximo vencimento" })
+      .first();
     await expect(
-      page.getByRole("heading", { level: 3, name: "Gestão de Google Ads" }),
+      adsCard.getByRole("heading", { level: 3, name: "Gestão de Google Ads", exact: true }),
     ).toBeVisible();
-    await expect(page.getByRole("heading", { level: 3, name: "Landing Page" })).toBeVisible();
-
-    const adsCard = page.locator("article").filter({ hasText: "Gestão de Google Ads" });
+    await expect(
+      landingCard.getByRole("heading", { level: 3, name: "Landing Page", exact: true }),
+    ).toBeVisible();
     const nextDueBeforeManual = await adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd").innerText();
     await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
     let chargePanel = page.locator("#nova-cobranca details");
