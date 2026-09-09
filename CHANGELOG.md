@@ -5,6 +5,15 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-09-09
+
+### Fixed
+
+- Importação v3 isola serviços, cobranças e despesas por `client_entity_id`, permitindo o mesmo
+  nome/data/valor em duas empresas do mesmo cliente sem colisão.
+- Consolidação deixa `legal_name` nulo quando não há razão social confiável, em vez de copiar o
+  nome do cliente de origem.
+
 ## [0.8.1] - 2026-09-09
 
 ### Fixed

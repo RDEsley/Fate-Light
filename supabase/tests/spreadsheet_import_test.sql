@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(19);
 
 create or replace function pg_temp.statement_fails(p_sql text)
 returns boolean language plpgsql as $$
@@ -208,6 +208,40 @@ select ok(
   )) and not exists (select 1 from public.clients where name='Client Rollback')
      and not exists (select 1 from public.import_jobs where source_checksum=repeat('d',64)),
   'Falha de entity executa rollback total do import v3'
+);
+
+select lives_ok(
+  $$select public.import_workspace_spreadsheet_v3(
+    current_setting('test.import_workspace_a')::uuid, repeat('e',64), 'csv',
+    '{"clients":[{"companyName":"","email":"","name":"Richard Dual","notes":"","phone":"","status":"active","website":""}],"entities":[{"clientName":"Richard Dual","displayName":"DX Dedetizadora","entityType":"company","notes":""},{"clientName":"Richard Dual","displayName":"Fate Eight Tech","entityType":"company","notes":""}],"services":[{"additionalFee":"0","billingType":"monthly","clientName":"Richard Dual","clientEntityName":"DX Dedetizadora","companyRevenue":"200","description":"Ads","mediaBudget":"0","name":"Gestao Ads","nextDueDate":"2026-11-01","notes":"","startDate":"2026-10-01"},{"additionalFee":"0","billingType":"monthly","clientName":"Richard Dual","clientEntityName":"Fate Eight Tech","companyRevenue":"300","description":"Ads","mediaBudget":"0","name":"Gestao Ads","nextDueDate":"2026-11-01","notes":"","startDate":"2026-10-01"}],"charges":[{"additionalFee":"0","clientName":"Richard Dual","clientEntityName":"DX Dedetizadora","companyRevenue":"200","description":"Mensalidade Ads","dueDate":"2026-11-01","mediaBudget":"0","notes":"","paidAt":"","paymentMethod":"","serviceName":"Gestao Ads","status":"pending"},{"additionalFee":"0","clientName":"Richard Dual","clientEntityName":"Fate Eight Tech","companyRevenue":"300","description":"Mensalidade Ads","dueDate":"2026-11-01","mediaBudget":"0","notes":"","paidAt":"","paymentMethod":"","serviceName":"Gestao Ads","status":"pending"}],"expenses":[{"amount":"50","category":"software","clientName":"Richard Dual","clientEntityName":"DX Dedetizadora","description":"Ferramenta","dueDate":"2026-11-02","expenseType":"variable","notes":"","paidAt":"","status":"pending"},{"amount":"50","category":"software","clientName":"Richard Dual","clientEntityName":"Fate Eight Tech","description":"Ferramenta","dueDate":"2026-11-02","expenseType":"variable","notes":"","paidAt":"","status":"pending"}],"domains":[]}'::jsonb
+  )$$,
+  'Import v3 aceita o mesmo serviço/cobrança/despesa em duas empresas do mesmo cliente'
+);
+
+select results_eq(
+  $$select
+    (select count(*) from public.client_services cs
+      join public.client_entities ce on ce.id = cs.client_entity_id
+      where cs.name='Gestao Ads' and ce.display_name='DX Dedetizadora'),
+    (select count(*) from public.client_services cs
+      join public.client_entities ce on ce.id = cs.client_entity_id
+      where cs.name='Gestao Ads' and ce.display_name='Fate Eight Tech'),
+    (select count(*) from public.charges c
+      join public.client_entities ce on ce.id = c.client_entity_id
+      where c.description='Mensalidade Ads' and ce.display_name='DX Dedetizadora'
+        and c.company_revenue=200),
+    (select count(*) from public.charges c
+      join public.client_entities ce on ce.id = c.client_entity_id
+      where c.description='Mensalidade Ads' and ce.display_name='Fate Eight Tech'
+        and c.company_revenue=300),
+    (select count(*) from public.expenses e
+      join public.client_entities ce on ce.id = e.client_entity_id
+      where e.description='Ferramenta' and ce.display_name='DX Dedetizadora'),
+    (select count(*) from public.expenses e
+      join public.client_entities ce on ce.id = e.client_entity_id
+      where e.description='Ferramenta' and ce.display_name='Fate Eight Tech')$$,
+  $$values (1::bigint,1::bigint,1::bigint,1::bigint,1::bigint,1::bigint)$$,
+  'Cada registro idêntico fica na entity correta sem colisão'
 );
 
 reset role;

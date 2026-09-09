@@ -51,6 +51,51 @@ describe("spreadsheet import normalization", () => {
     expect(result.rowCount).toBe(3);
   });
 
+  it("preserva Empresa/Marca em serviços, cobranças e despesas idênticos de duas empresas", () => {
+    const csv = [
+      '"Tipo","Cliente","Empresa/Marca","Status","Serviço","Descrição","Receita própria","Verba de mídia","Adicional","Tipo de cobrança","Data inicial","Próximo vencimento","Vencimento","Categoria","Valor","Tipo de despesa"',
+      '"cliente","Richard","","ativo","","","","","","","","","","","",""',
+      '"empresa/marca","Richard","DX Dedetizadora","","","","","","","","","","","","",""',
+      '"empresa/marca","Richard","Fate Eight Tech","","","","","","","","","","","","",""',
+      '"serviço","Richard","DX Dedetizadora","","Gestão Ads","Mensal","200,00","0,00","0,00","mensal","01/10/2026","01/11/2026","","","",""',
+      '"serviço","Richard","Fate Eight Tech","","Gestão Ads","Mensal","300,00","0,00","0,00","mensal","01/10/2026","01/11/2026","","","",""',
+      '"cobrança","Richard","DX Dedetizadora","pendente","Gestão Ads","Mensalidade Ads","200,00","0,00","0,00","","","","01/11/2026","","",""',
+      '"cobrança","Richard","Fate Eight Tech","pendente","Gestão Ads","Mensalidade Ads","300,00","0,00","0,00","","","","01/11/2026","","",""',
+      '"despesa","Richard","DX Dedetizadora","pendente","","Ferramenta","","","","","","","02/11/2026","software","50,00","variavel"',
+      '"despesa","Richard","Fate Eight Tech","pendente","","Ferramenta","","","","","","","02/11/2026","software","50,00","variavel"',
+    ].join("\r\n");
+
+    const result = normalizeWorkbook(parseCsv(csv));
+
+    expect(result.issues.filter(({ level }) => level === "error")).toEqual([]);
+    expect(result.payload.services).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          clientEntityName: "DX Dedetizadora",
+          clientName: "Richard",
+          name: "Gestão Ads",
+          startDate: "2026-10-01",
+        }),
+        expect.objectContaining({
+          clientEntityName: "Fate Eight Tech",
+          clientName: "Richard",
+          name: "Gestão Ads",
+          startDate: "2026-10-01",
+        }),
+      ]),
+    );
+    expect(result.payload.charges).toHaveLength(2);
+    expect(result.payload.charges.map((charge) => charge.clientEntityName).sort()).toEqual([
+      "DX Dedetizadora",
+      "Fate Eight Tech",
+    ]);
+    expect(result.payload.expenses).toHaveLength(2);
+    expect(result.payload.expenses.every((expense) => expense.description === "Ferramenta")).toBe(
+      true,
+    );
+    expect(result.payload.services.every((service) => service.clientEntityName === "")).toBe(false);
+  });
+
   it("reconhece e sinaliza a planilha legada antes de importar", () => {
     const csv = [
       '"Client","Start Date","Service DEV","Service Value","Payment type","Next pay/ mens/","Expenses","DOMAIN EXPIRATION"',

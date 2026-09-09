@@ -43,20 +43,29 @@ async function validateRelations(
   issues: ImportIssue[],
 ) {
   const { supabase, workspaceId } = await requireWorkspaceContext();
-  const [{ data: clients, error: clientsError }, { data: services, error: servicesError }] =
-    await Promise.all([
-      supabase
-        .from("clients")
-        .select("id,name")
-        .eq("workspace_id", workspaceId)
-        .is("archived_at", null),
-      supabase
-        .from("client_services")
-        .select("client_id,name")
-        .eq("workspace_id", workspaceId)
-        .eq("status", "active"),
-    ]);
-  if (clientsError || servicesError) throw new Error("lookup-failed");
+  const [
+    { data: clients, error: clientsError },
+    { data: services, error: servicesError },
+    { data: entities, error: entitiesError },
+  ] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("id,name")
+      .eq("workspace_id", workspaceId)
+      .is("archived_at", null),
+    supabase
+      .from("client_services")
+      .select("client_id,name,client_entity_id")
+      .eq("workspace_id", workspaceId)
+      .eq("status", "active"),
+    supabase
+      .from("client_entities")
+      .select("id,display_name")
+      .eq("workspace_id", workspaceId)
+      .is("archived_at", null)
+      .neq("status", "archived"),
+  ]);
+  if (clientsError || servicesError || entitiesError) throw new Error("lookup-failed");
 
   const clientNames = new Map<string, string[]>();
   clients.forEach((client) => {
@@ -96,19 +105,27 @@ async function validateRelations(
   });
 
   const clientNameById = new Map(clients.map((client) => [client.id, client.name]));
+  const entityNameById = new Map(entities.map((entity) => [entity.id, entity.display_name]));
+  const serviceKey = (clientName: string, entityName: string, serviceName: string) =>
+    `${identity(clientName)}|${identity(entityName)}|${identity(serviceName)}`;
   const serviceKeys = new Set(
-    services.map(
-      (service) =>
-        `${identity(clientNameById.get(service.client_id) ?? "")}|${identity(service.name)}`,
+    services.map((service) =>
+      serviceKey(
+        clientNameById.get(service.client_id) ?? "",
+        entityNameById.get(service.client_entity_id ?? "") ?? "",
+        service.name,
+      ),
     ),
   );
   normalized.payload.services.forEach((service) =>
-    serviceKeys.add(`${identity(service.clientName)}|${identity(service.name)}`),
+    serviceKeys.add(serviceKey(service.clientName, service.clientEntityName, service.name)),
   );
   normalized.payload.charges.forEach((charge, index) => {
     if (
       charge.serviceName &&
-      !serviceKeys.has(`${identity(charge.clientName)}|${identity(charge.serviceName)}`)
+      !serviceKeys.has(
+        serviceKey(charge.clientName, charge.clientEntityName, charge.serviceName),
+      )
     ) {
       issues.push({
         field: "Serviço",
