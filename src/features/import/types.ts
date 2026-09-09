@@ -10,6 +10,7 @@ export type ImportPayload = {
   charges: Array<{
     additionalFee: string;
     clientName: string;
+    clientEntityName: string;
     companyRevenue: string;
     description: string;
     dueDate: string;
@@ -32,6 +33,7 @@ export type ImportPayload = {
   domains: Array<{
     autoRenew: boolean;
     clientName: string;
+    clientEntityName: string;
     cost: string;
     domain: string;
     expiresOn: string;
@@ -52,6 +54,7 @@ export type ImportPayload = {
       | "staff_contractors"
       | "tools";
     clientName: string;
+    clientEntityName: string;
     description: string;
     dueDate: string;
     expenseType: "fixed" | "variable";
@@ -63,6 +66,7 @@ export type ImportPayload = {
     additionalFee: string;
     billingType: "monthly" | "single";
     clientName: string;
+    clientEntityName: string;
     companyRevenue: string;
     description: string;
     mediaBudget: string;
@@ -71,6 +75,7 @@ export type ImportPayload = {
     notes: string;
     startDate: string;
   }>;
+  entities: ImportEntityRow[];
 };
 
 /**
@@ -86,7 +91,7 @@ export type ImportEntityRow = {
 };
 
 export type ImportPreview = {
-  counts: Record<keyof ImportPayload, number> & { entities: number };
+  counts: Record<keyof ImportPayload, number>;
   digest: string;
   issues: ImportIssue[];
   legacy: boolean;
