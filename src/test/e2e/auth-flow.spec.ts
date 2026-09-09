@@ -274,7 +274,8 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.getByRole("link", { name: /Resultado gerencial/ })).toContainText(
       /R\$\s*400,00/,
     );
-    await expect(page.getByRole("heading", { name: /Cobranças vencidas/ })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Cobranças vencidas (0)" })).toBeVisible();
+    await expect(page.getByText("Nenhuma cobrança vencida.")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Domínios nos próximos 30 dias (1)" }),
     ).toBeVisible();
