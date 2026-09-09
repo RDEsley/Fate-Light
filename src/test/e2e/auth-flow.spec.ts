@@ -237,14 +237,21 @@ test.describe("authenticated MVP journey", () => {
     await selectField(expensePanel, "status", "Paga");
     await expensePanel.getByRole("button", { name: "Criar despesa" }).click();
     await expect(page).toHaveURL(/\/despesas/);
-    const monthlyExpense = page
+    const paidMonthly = page
       .locator("article")
       .filter({ hasText: "Ferramenta mensal" })
-      .filter({ hasText: "Mensal" });
-    await expect(monthlyExpense.first()).toBeVisible();
+      .filter({ hasText: "Mensal" })
+      .filter({ hasText: "Paga" });
+    const pendingMonthly = page
+      .locator("article")
+      .filter({ hasText: "Ferramenta mensal" })
+      .filter({ hasText: "Mensal" })
+      .filter({ hasText: "Pendente" });
+    await expect(paidMonthly).toBeVisible();
     // Próxima ocorrência pendente nasce automaticamente.
-    await expect(monthlyExpense.getByRole("button", { name: "Marcar como paga" })).toBeVisible();
-    await monthlyExpense.getByRole("button", { name: "Parar mensal" }).click();
+    await expect(pendingMonthly).toBeVisible();
+    await expect(pendingMonthly.getByRole("button", { name: "Marcar como paga" })).toBeVisible();
+    await pendingMonthly.locator("button", { hasText: "Parar mensal" }).click();
     await page.getByRole("button", { name: "Parar recorrência" }).click();
     await expect(page.getByText(/recorrência mensal encerrada/i)).toBeVisible();
 
