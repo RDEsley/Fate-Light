@@ -16,13 +16,13 @@ test("abre o acesso seguro sem violações automáticas de acessibilidade", asyn
 });
 
 for (const route of ["/login", "/cadastro"] as const) {
-  test(`${route} oferece senha e escolha de magic link com acessibilidade`, async ({ page }) => {
+  test(`${route} oferece autenticação por senha com acessibilidade`, async ({ page }) => {
     await page.goto(route);
 
     await expect(page.getByLabel("E-mail")).toBeVisible();
     await expect(page.getByLabel(/^Senha/)).toBeVisible();
     await expect(page.getByRole("button", { name: /entrar|criar conta/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /magic link/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /magic link/i })).toHaveCount(0);
 
     const accessibilityResults = await new AxeBuilder({ page }).analyze();
     expect(accessibilityResults.violations).toEqual([]);

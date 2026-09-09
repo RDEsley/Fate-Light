@@ -686,7 +686,7 @@ export default async function ClientDetailsPage({
 
       {!archived ? (
         <section className="panel-card mt-4" id="cobranca-avulsa">
-          <details className="form-disclosure" open={openChargeForm}>
+          <details className="form-disclosure" id="nova-cobranca-avulsa" open={openChargeForm}>
             <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
               <span className="flex items-center gap-2">
                 <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
