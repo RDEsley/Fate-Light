@@ -219,7 +219,6 @@ export function ClientForm({
           <MoneyField
             defaultValue={sent.text("priorRevenue")}
             error={errors.priorRevenue}
-            hint="Deixe em branco se preferir lançar cada cobrança antiga separadamente na ficha do cliente."
             label="Total já recebido"
             name="priorRevenue"
             optional
@@ -229,7 +228,12 @@ export function ClientForm({
             error={errors.priorRevenueDate}
             label="Data de referência"
             name="priorRevenueDate"
+            optional
           />
+          <p className="field__hint sm:col-span-2">
+            Deixe o total em branco se preferir lançar cada cobrança antiga separadamente na ficha do
+            cliente.
+          </p>
         </div>
         {editing ? (
           <p className="field__hint mt-2">

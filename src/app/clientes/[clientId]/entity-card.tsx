@@ -32,7 +32,7 @@ export function ClientEntityCard({
 
   if (editing) {
     return (
-      <article className="border-brand/40 rounded-xl border-2 p-4">
+      <article className="border-brand/40 entity-card--editing rounded-xl border-2 p-4">
         <h3 className="font-black">Editar {entity.displayName}</h3>
         <ClientEntityForm clientId={clientId} entity={entity} onCancel={() => setEditing(false)} />
       </article>

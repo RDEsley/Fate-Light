@@ -1735,6 +1735,10 @@ export type Database = {
         Args: { p_source_client_id: string; p_target_client_id: string }
         Returns: Json
       }
+      preview_transfer_client_data: {
+        Args: { p_source_client_id: string; p_target_client_id: string }
+        Returns: Json
+      }
       request_current_account_lifecycle: {
         Args: { p_request_type: string }
         Returns: {
@@ -1766,6 +1770,14 @@ export type Database = {
         Returns: Json
       }
       stop_expense_recurrence: { Args: { p_expense_id: string }; Returns: Json }
+      transfer_client_data: {
+        Args: {
+          p_confirmation?: string
+          p_source_client_id: string
+          p_target_client_id: string
+        }
+        Returns: Json
+      }
       update_client_service: {
         Args: {
           p_additional_fee: number

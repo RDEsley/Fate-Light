@@ -4,6 +4,8 @@ const messages: Record<string, string> = {
   archived: "Cliente arquivado. O histórico continua guardado.",
   "client-consolidated":
     "Cliente consolidado. Serviços, cobranças, despesas e domínios agora vivem sob a nova empresa/marca.",
+  "client-data-transferred":
+    "Dados transferidos. Serviços, cobranças, despesas, domínios, contatos e empresas/marcas agora estão no cliente de destino.",
   created: "Cliente criado com segurança.",
   "entity-archived": "Empresa/marca arquivada. O histórico dela continua vinculado.",
   "entity-created": "Empresa/marca criada neste cliente.",

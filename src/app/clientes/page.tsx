@@ -4,10 +4,12 @@ import Link from "next/link";
 
 import { AccountShell } from "@/app/_components/account-shell";
 import { Icon } from "@/components/ui/icon";
+import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
 import { readClientLinks } from "@/features/clients/schemas";
 import { clientStatusInfo } from "@/features/clients/status";
 import { formatCurrency } from "@/features/mvp/format";
+import { textSearchOrFilter } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { restoreClient } from "./actions";
@@ -74,7 +76,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   if (query.state !== "all" && !showingArchived) {
     request = request.eq("commercial_status", query.state);
   }
-  if (query.q) request = request.ilike("name", `%${query.q}%`);
+  if (query.q) {
+    request = request.or(textSearchOrFilter(["name", "trade_name", "email", "phone", "notes"], query.q));
+  }
   if (showingEntities) request = request.in("id", [...entityCounts.keys()]);
   const { data: clients, error, count } = await request;
   const total = count ?? 0;
@@ -108,13 +112,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             name="search"
           />
-          <input
+          <SearchClearField
+            aria-label="Buscar cliente"
             className="min-h-11 w-full rounded-xl pr-4 pl-9"
             defaultValue={query.q}
-            maxLength={80}
-            name="q"
-            placeholder="Buscar cliente..."
-            type="search"
+            placeholder="Nome, empresa, e-mail, telefone..."
           />
         </label>
         <button

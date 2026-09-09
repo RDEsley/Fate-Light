@@ -5,8 +5,13 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { SettingsTabs } from "@/app/_components/settings-tabs";
 import { ClientCombobox } from "@/components/ui/form-controls";
 import { Icon, type IconName } from "@/components/ui/icon";
+import { SearchClearField } from "@/components/ui/search-clear-field";
 import { SelectField } from "@/components/ui/select-field";
 import { formatDateTimePtBr } from "@/features/mvp/format";
+import {
+  appendIdInFilter,
+  textSearchOrFilter,
+} from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export const metadata: Metadata = { title: "Histórico" };
@@ -50,6 +55,14 @@ export default async function HistoryPage({
     : "all";
   const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
   const firstRow = (page - 1) * pageSize;
+
+  const { data: clients } = await context.supabase
+    .from("clients")
+    .select("id, name, trade_name, email, commercial_status")
+    .eq("workspace_id", context.workspaceId)
+    .is("archived_at", null)
+    .order("name");
+
   let eventsRequest = context.supabase
     .from("activity_events")
     .select("id, client_id, entity_type, action, summary, occurred_at, clients(name)", {
@@ -58,19 +71,27 @@ export default async function HistoryPage({
     .eq("workspace_id", context.workspaceId)
     .order("occurred_at", { ascending: false })
     .range(firstRow, firstRow + pageSize - 1);
-  if (query) eventsRequest = eventsRequest.ilike("summary", `%${query}%`);
+  if (query) {
+    const parts = textSearchOrFilter(["summary", "action"], query).split(",");
+    appendIdInFilter(
+      parts,
+      "client_id",
+      (clients ?? [])
+        .filter((client) => {
+          const needle = query.toLocaleLowerCase("pt-BR");
+          return (
+            client.name.toLocaleLowerCase("pt-BR").includes(needle) ||
+            (client.trade_name ?? "").toLocaleLowerCase("pt-BR").includes(needle)
+          );
+        })
+        .map((client) => client.id),
+    );
+    eventsRequest = eventsRequest.or(parts.join(","));
+  }
   if (entityType !== "all") eventsRequest = eventsRequest.eq("entity_type", entityType);
   if (parameters.clientId) eventsRequest = eventsRequest.eq("client_id", parameters.clientId);
 
-  const [{ data: events, error, count }, { data: clients }] = await Promise.all([
-    eventsRequest,
-    context.supabase
-      .from("clients")
-      .select("id, name, trade_name, email, commercial_status")
-      .eq("workspace_id", context.workspaceId)
-      .is("archived_at", null)
-      .order("name"),
-  ]);
+  const { data: events, error, count } = await eventsRequest;
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
   const historyHref = (targetPage: number) => {
     const next = new URLSearchParams();
@@ -100,13 +121,11 @@ export default async function HistoryPage({
                   className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
                   name="search"
                 />
-                <input
+                <SearchClearField
+                  aria-label="Buscar no histórico"
                   className="w-full pl-9!"
                   defaultValue={query}
-                  maxLength={80}
-                  name="q"
-                  placeholder="Pagamento, serviço, domínio..."
-                  type="search"
+                  placeholder="Resumo, cliente, ação..."
                 />
               </span>
             </label>

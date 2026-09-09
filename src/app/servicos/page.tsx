@@ -4,8 +4,10 @@ import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon } from "@/components/ui/icon";
+import { SearchClearField } from "@/components/ui/search-clear-field";
 import { formatCurrency } from "@/features/mvp/format";
 import { billingFrequencyLabel } from "@/features/mvp/recurrence";
+import { textSearchOrFilter } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import {
@@ -35,7 +37,7 @@ export default async function ServicesPage({
     .eq("workspace_id", context.workspaceId)
     .is("archived_at", null)
     .order("name");
-  if (query) request = request.ilike("name", `%${query}%`);
+  if (query) request = request.or(textSearchOrFilter(["name", "description"], query));
   if (state !== "all") request = request.eq("active", state === "active");
   const [{ data: services, error }, { data: linkedServices }] = await Promise.all([
     request,
@@ -66,12 +68,11 @@ export default async function ServicesPage({
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             name="search"
           />
-          <input
+          <SearchClearField
+            aria-label="Buscar serviços"
             className="min-h-10 w-full rounded-lg pr-3 pl-9 text-sm"
             defaultValue={query}
-            name="q"
-            placeholder="Buscar serviço..."
-            type="search"
+            placeholder="Nome ou descrição..."
           />
         </label>
         <select className="min-h-10 rounded-lg px-3 text-sm" defaultValue={state} name="state">
