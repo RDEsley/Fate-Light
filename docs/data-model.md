@@ -208,6 +208,20 @@ Uma linha possui exatamente uma natureza. Não existe linha “mista”.
 | Workspace/RLS | Owner do mesmo workspace. |
 | Derivado/não armazenar | Não copiar contato para contrato; cobranças podem guardar snapshot de destinatário apenas se necessário. |
 
+### `client_entities` (ADR-0020)
+
+| Aspecto | Definição |
+|---|---|
+| Finalidade | Empresa, marca, projeto ou outro recorte sob um cliente comercial, sem duplicar o cadastro. |
+| Campos | comuns + `client_id`, `entity_type`, `display_name`, `legal_name null`, `tax_id null`, `website null`, `email null`, `phone null`, `notes null`, `status`. |
+| FKs/constraints | FK composta cliente/workspace; `entity_type` em `company/brand/project/other`; `status` em `active/inactive/archived`; nome ativo único por cliente (`lower(btrim(display_name))`); `unique(workspace_id,client_id,id)` para FKs compostas dos lançamentos. |
+| Índices | `(workspace_id,client_id,status)`, `(workspace_id,status) where archived_at is null`, único parcial do nome ativo. |
+| Arquivamento/histórico | Arquivar (`status=archived` + `archived_at`); histórico de serviços, cobranças, despesas e domínios permanece apontando para a entidade. |
+| Workspace/RLS | Owner do mesmo workspace; policies exigem membership ativa, não só `authenticated`. |
+| Derivado/não armazenar | Contagens de serviços/domínios e totais financeiros são consultas; consolidação de cliente legado usa RPCs `preview_consolidate_client_into_entity` e `consolidate_client_into_entity` (frase `CONSOLIDAR`). |
+
+Vínculo opcional: `client_entity_id` em `client_services`, `charges`, `expenses` e `domains`, com FK composta `(workspace_id, client_id, client_entity_id)`. Ausência significa “geral / sem empresa”. Despesa sem `client_id` não pode ter entidade.
+
 ### `services`
 
 | Aspecto | Definição |
@@ -325,8 +339,8 @@ Uma linha possui exatamente uma natureza. Não existe linha “mista”.
 | Aspecto | Definição |
 |---|---|
 | Finalidade | Documento gerencial de valor a receber. |
-| Campos | comuns + `client_id`, `contract_id null`, `billing_schedule_id null`, `period_start null`, `period_end null`, `generation_key null`, `issued_on`, `due_on`, `competence_on`, `status`, `invoice_issued`, `cancelled_at null`, `cancel_reason null`, `notes null`. |
-| FKs/constraints | FKs no mesmo workspace; período coerente; `unique(billing_schedule_id,period_start)` quando recorrente; generation key única; cancelamento exige motivo. |
+| Campos | comuns + `client_id`, `client_entity_id null`, `contract_id null`, `billing_schedule_id null`, `period_start null`, `period_end null`, `generation_key null`, `issued_on`, `due_on`, `competence_on`, `status`, `invoice_issued`, `cancelled_at null`, `cancel_reason null`, `notes null`. |
+| FKs/constraints | FKs no mesmo workspace; entidade opcional no mesmo cliente; período coerente; `unique(billing_schedule_id,period_start)` quando recorrente; generation key única; cancelamento exige motivo. |
 | Índices | `(workspace_id,due_on,status)`, `(workspace_id,client_id,status)`, parcial para cobranças abertas. |
 | Arquivamento/histórico | Draft pode ser removido antes de uso; emitida é preservada e cancelável. Alterações críticas auditadas. |
 | Workspace/RLS | Owner do mesmo workspace. |
@@ -377,8 +391,8 @@ As invariantes de soma são validadas na mesma transação por função/trigger 
 | Aspecto | Definição |
 |---|---|
 | Finalidade | Obrigação ou saída operacional com natureza explícita. |
-| Campos | comuns + `expense_schedule_id null`, `period_start null`, `generation_key null`, `vendor_id null`, `category_id`, `expense_nature`, `description`, `amount`, `currency`, `competence_on`, `due_on`, `client_id null`, `contract_id null`, `contract_item_id null`, `cost_center null`, `status`, `notes null`, `cancelled_at null`. |
-| FKs/constraints | Todas FKs no workspace; valor > 0; moeda do workspace; `unique(expense_schedule_id,period_start)` quando recorrente; generation key única; gasto de mídia requer vínculo justificável; cancelamento exige motivo. |
+| Campos | comuns + `expense_schedule_id null`, `period_start null`, `generation_key null`, `vendor_id null`, `category_id`, `expense_nature`, `description`, `amount`, `currency`, `competence_on`, `due_on`, `client_id null`, `client_entity_id null`, `contract_id null`, `contract_item_id null`, `cost_center null`, `status`, `notes null`, `cancelled_at null`. |
+| FKs/constraints | Todas FKs no workspace; entidade só com `client_id`; valor > 0; moeda do workspace; `unique(expense_schedule_id,period_start)` quando recorrente; generation key única; gasto de mídia requer vínculo justificável; cancelamento exige motivo. |
 | Índices | `(workspace_id,due_on,status)`, `(workspace_id,competence_on,expense_nature)`, `(workspace_id,client_id)`, `(workspace_id,contract_id)`, parcial para abertas. |
 | Arquivamento/histórico | Draft pode ser arquivado; confirmada é cancelável, não apagável. Alteração de natureza/valor é auditada. |
 | Workspace/RLS | Owner do mesmo workspace. |
@@ -403,8 +417,8 @@ As invariantes de soma são validadas na mesma transação por função/trigger 
 | Aspecto | Definição |
 |---|---|
 | Finalidade | Controlar domínio e renovação sem guardar credenciais. |
-| Campos | comuns + `client_id null`, `contract_id null`, `contract_item_id null`, `domain_name`, `registrar`, `legal_owner null`, `registrar_email null`, `registered_on null`, `expires_on`, `auto_renew`, `renewal_cost null`, `payment_responsible null`, `status`, `admin_url null`, `notes null`. |
-| FKs/constraints | FKs no workspace; domínio normalizado e único entre ativos; URL HTTPS quando presente; custo >= 0. |
+| Campos | comuns + `client_id null`, `client_entity_id null`, `contract_id null`, `contract_item_id null`, `domain_name`, `registrar`, `legal_owner null`, `registrar_email null`, `registered_on null`, `expires_on`, `auto_renew`, `renewal_cost null`, `payment_responsible null`, `status`, `admin_url null`, `notes null`. |
+| FKs/constraints | FKs no workspace; entidade opcional no mesmo cliente quando houver; domínio normalizado e único entre ativos; URL HTTPS quando presente; custo >= 0. |
 | Índices | `(workspace_id,expires_on) where archived_at is null`, `(workspace_id,status)`. |
 | Arquivamento/histórico | `archived_at`; alterações de expiração/renovação auditadas. |
 | Workspace/RLS | Owner do mesmo workspace. |

@@ -2,7 +2,14 @@ import { ToastNotification } from "@/components/ui/toast-notification";
 
 const messages: Record<string, string> = {
   archived: "Cliente arquivado. O histórico continua guardado.",
+  "client-consolidated":
+    "Cliente consolidado. Serviços, cobranças, despesas e domínios agora vivem sob a nova empresa/marca.",
   created: "Cliente criado com segurança.",
+  "entity-archived": "Empresa/marca arquivada. O histórico dela continua vinculado.",
+  "entity-created": "Empresa/marca criada neste cliente.",
+  "entity-error": "Não foi possível salvar a empresa/marca.",
+  "entity-restored": "Empresa/marca reativada.",
+  "entity-updated": "Empresa/marca atualizada.",
   deleted: "Registro excluído. Os demais dados permaneceram intactos.",
   "delete-blocked":
     "Este cliente possui histórico vinculado. Arquive-o para preservar os registros.",

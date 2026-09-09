@@ -5,6 +5,7 @@ import { createDomain } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { Icon } from "@/components/ui/icon";
+import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { addDays, formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
@@ -39,7 +40,7 @@ export default async function DomainsPage({
   let domainsRequest = context.supabase
     .from("domains")
     .select(
-      "id, client_id, domain, registrar, expires_on, auto_renew, cost, payment_responsibility, status, notes, clients(name)",
+      "id, client_id, client_entity_id, domain, registrar, expires_on, auto_renew, cost, payment_responsibility, status, notes, clients(name), client_entities(display_name)",
       { count: "exact" },
     )
     .eq("workspace_id", context.workspaceId)
@@ -55,6 +56,7 @@ export default async function DomainsPage({
 
   const [
     { data: clients },
+    { data: entityRows },
     { data: domains, error, count },
     { data: summary, error: summaryError },
   ] = await Promise.all([
@@ -64,6 +66,14 @@ export default async function DomainsPage({
       .eq("workspace_id", context.workspaceId)
       .is("archived_at", null)
       .order("name"),
+    context.supabase
+      .from("client_entities")
+      .select("id, client_id, display_name, entity_type")
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "active")
+      .is("archived_at", null)
+      .order("display_name")
+      .limit(2000),
     domainsRequest,
     context.supabase
       .rpc("domain_operational_summary", {
@@ -81,6 +91,12 @@ export default async function DomainsPage({
     status: client.commercial_status,
     tradeName: client.trade_name,
     website: client.website,
+  }));
+  const entityOptions = (entityRows ?? []).map((entity) => ({
+    clientId: entity.client_id,
+    id: entity.id,
+    name: entity.display_name,
+    typeLabel: clientEntityTypeLabel(entity.entity_type),
   }));
 
   const rows = domains ?? [];
@@ -169,7 +185,7 @@ export default async function DomainsPage({
             <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
           </span>
         </summary>
-        <DomainForm action={createDomain} clients={clientOptions} />
+        <DomainForm action={createDomain} clients={clientOptions} entities={entityOptions} />
       </details>
 
       {error ? (
@@ -183,10 +199,13 @@ export default async function DomainsPage({
               cancelled={domain.status === "cancelled"}
               clientName={domain.clients?.name ?? "Cliente"}
               clients={clientOptions}
+              entities={entityOptions}
+              entityName={domain.client_entities?.display_name ?? null}
               key={domain.id}
               today={today}
               domain={{
                 autoRenew: domain.auto_renew,
+                clientEntityId: domain.client_entity_id,
                 clientId: domain.client_id,
                 cost: domain.cost === null ? null : Number(domain.cost),
                 domain: domain.domain,

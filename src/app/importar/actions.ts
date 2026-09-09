@@ -6,7 +6,12 @@ import readWorkbook from "read-excel-file/node";
 import { revalidatePath } from "next/cache";
 
 import { normalizeWorkbook, parseCsv } from "@/features/import/spreadsheet";
-import type { ImportActionState, ImportIssue, ImportPreview } from "@/features/import/types";
+import type {
+  ImportActionState,
+  ImportEntityRow,
+  ImportIssue,
+  ImportPreview,
+} from "@/features/import/types";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 // Keeps the complete multipart request below Vercel Functions' 4.5 MB limit.
@@ -72,6 +77,7 @@ async function validateRelations(
     ...normalized.payload.charges,
     ...normalized.payload.expenses.filter(({ clientName }) => clientName),
     ...normalized.payload.domains,
+    ...normalized.entities,
   ];
   referencedClients.forEach((record, index) => {
     const matches = clientNames.get(identity(record.clientName)) ?? [];
@@ -121,6 +127,58 @@ async function validateRelations(
   return { supabase, workspaceId };
 }
 
+/**
+ * Grava as empresas/marcas depois da RPC principal, quando os clientes da planilha já
+ * existem. Nomes repetidos são ignorados em vez de virarem erro: reimportar a mesma lista
+ * de empresas não deve derrubar uma importação que já gravou o resto.
+ */
+async function createImportedEntities(
+  supabase: Awaited<ReturnType<typeof requireWorkspaceContext>>["supabase"],
+  workspaceId: string,
+  rows: ImportEntityRow[],
+) {
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id,name")
+    .eq("workspace_id", workspaceId)
+    .is("archived_at", null);
+  const clientByName = new Map((clients ?? []).map((client) => [identity(client.name), client.id]));
+  const { data: existing } = await supabase
+    .from("client_entities")
+    .select("client_id,display_name")
+    .eq("workspace_id", workspaceId)
+    .is("archived_at", null);
+  const taken = new Set(
+    (existing ?? []).map((entity) => `${entity.client_id}|${identity(entity.display_name)}`),
+  );
+
+  const inserts: Array<{
+    client_id: string;
+    display_name: string;
+    entity_type: string;
+    notes: string | null;
+    workspace_id: string;
+  }> = [];
+  for (const row of rows) {
+    const clientId = clientByName.get(identity(row.clientName));
+    if (!clientId) continue;
+    const fingerprint = `${clientId}|${identity(row.displayName)}`;
+    if (taken.has(fingerprint)) continue;
+    taken.add(fingerprint);
+    inserts.push({
+      client_id: clientId,
+      display_name: row.displayName,
+      entity_type: row.entityType,
+      notes: row.notes || null,
+      workspace_id: workspaceId,
+    });
+  }
+  if (!inserts.length) return 0;
+  const { data, error } = await supabase.from("client_entities").insert(inserts).select("id");
+  if (error) return 0;
+  return data?.length ?? 0;
+}
+
 function errorState(error: unknown): ImportActionState {
   const messages: Record<string, string> = {
     "file-required": "Selecione uma planilha antes de continuar.",
@@ -145,6 +203,7 @@ export async function previewSpreadsheet(formData: FormData): Promise<ImportActi
       charges: parsed.normalized.payload.charges.length,
       clients: parsed.normalized.payload.clients.length,
       domains: parsed.normalized.payload.domains.length,
+      entities: parsed.normalized.entities.length,
       expenses: parsed.normalized.payload.expenses.length,
       services: parsed.normalized.payload.services.length,
     };
@@ -202,6 +261,14 @@ export async function confirmSpreadsheet(formData: FormData): Promise<ImportActi
     }
     const result = data as { counts?: Record<string, number>; status?: string };
     const duplicate = result.status === "duplicate";
+    const counts = { ...(result.counts ?? {}) };
+    if (!duplicate && parsed.normalized.entities.length) {
+      counts.entities = await createImportedEntities(
+        supabase,
+        workspaceId,
+        parsed.normalized.entities,
+      );
+    }
     revalidatePath("/dashboard");
     revalidatePath("/clientes");
     revalidatePath("/cobrancas");
@@ -212,7 +279,7 @@ export async function confirmSpreadsheet(formData: FormData): Promise<ImportActi
       message: duplicate
         ? "Este mesmo arquivo já foi importado. Nenhum registro foi duplicado."
         : "Importação concluída com sucesso.",
-      result: { counts: result.counts ?? {}, duplicate },
+      result: { counts, duplicate },
       status: "success",
     };
   } catch (error) {

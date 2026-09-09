@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import { applyServiceToClient, editClientService } from "@/app/_actions/client-services";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
-import { DateField } from "@/components/ui/form-controls";
+import { DateField, EntitySelect, type ClientEntityOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { IntegerField } from "@/components/ui/integer-field";
 import { MoneyField } from "@/components/ui/money-field";
@@ -78,11 +78,15 @@ function centsToNumber(cents: number | null): number {
 export function ServiceApplicationForm({
   catalog,
   clientId,
+  defaultEntityId,
+  entities = [],
   onCancel,
   service,
 }: {
   catalog: CatalogServiceOption[];
   clientId: string;
+  defaultEntityId?: string;
+  entities?: ClientEntityOption[];
   onCancel?: () => void;
   service?: ClientServiceValues;
 }) {
@@ -175,6 +179,16 @@ export function ServiceApplicationForm({
       ) : null}
 
       <div className="form-grid sm:grid-cols-2 lg:grid-cols-4">
+        {/* A edição não mexe na entidade: `update_client_service` não reassocia o vínculo,
+            e trocá-lo aqui deixaria as cobranças já geradas apontando para outro lugar. */}
+        {editing ? null : (
+          <EntitySelect
+            className="sm:col-span-2"
+            clientId={clientId}
+            defaultValue={defaultEntityId}
+            entities={entities}
+          />
+        )}
         {editing ? (
           <input name="serviceId" type="hidden" value="" />
         ) : (

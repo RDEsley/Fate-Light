@@ -131,6 +131,7 @@ export type Database = {
           cancel_reason: string | null
           cancel_reason_code: string | null
           cancelled_at: string | null
+          client_entity_id: string | null
           client_id: string
           client_service_id: string | null
           company_revenue: number
@@ -158,6 +159,7 @@ export type Database = {
           cancel_reason?: string | null
           cancel_reason_code?: string | null
           cancelled_at?: string | null
+          client_entity_id?: string | null
           client_id: string
           client_service_id?: string | null
           company_revenue?: number
@@ -185,6 +187,7 @@ export type Database = {
           cancel_reason?: string | null
           cancel_reason_code?: string | null
           cancelled_at?: string | null
+          client_entity_id?: string | null
           client_id?: string
           client_service_id?: string | null
           company_revenue?: number
@@ -220,6 +223,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "charges_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
             foreignKeyName: "charges_service_fk"
@@ -307,6 +317,88 @@ export type Database = {
           },
         ]
       }
+      client_entities: {
+        Row: {
+          archived_at: string | null
+          client_id: string
+          created_at: string
+          created_by: string
+          display_name: string
+          email: string | null
+          entity_type: string
+          id: string
+          legal_name: string | null
+          notes: string | null
+          phone: string | null
+          status: string
+          tax_id: string | null
+          updated_at: string
+          updated_by: string
+          website: string | null
+          workspace_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string
+          display_name: string
+          email?: string | null
+          entity_type?: string
+          id?: string
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string
+          website?: string | null
+          workspace_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          display_name?: string
+          email?: string | null
+          entity_type?: string
+          id?: string
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string
+          website?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_entities_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_entities_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_entities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_services: {
         Row: {
           additional_fee: number
@@ -314,6 +406,7 @@ export type Database = {
           adjustment_interval_months: number | null
           adjustment_rate: number | null
           billing_type: string
+          client_entity_id: string | null
           client_id: string
           company_revenue: number
           created_at: string
@@ -346,6 +439,7 @@ export type Database = {
           adjustment_interval_months?: number | null
           adjustment_rate?: number | null
           billing_type?: string
+          client_entity_id?: string | null
           client_id: string
           company_revenue?: number
           created_at?: string
@@ -378,6 +472,7 @@ export type Database = {
           adjustment_interval_months?: number | null
           adjustment_rate?: number | null
           billing_type?: string
+          client_entity_id?: string | null
           client_id?: string
           company_revenue?: number
           created_at?: string
@@ -418,6 +513,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_directory"
             referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_services_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
             foreignKeyName: "client_services_client_fk"
@@ -515,6 +617,7 @@ export type Database = {
       domains: {
         Row: {
           auto_renew: boolean
+          client_entity_id: string | null
           client_id: string
           cost: number | null
           created_at: string
@@ -532,6 +635,7 @@ export type Database = {
         }
         Insert: {
           auto_renew?: boolean
+          client_entity_id?: string | null
           client_id: string
           cost?: number | null
           created_at?: string
@@ -549,6 +653,7 @@ export type Database = {
         }
         Update: {
           auto_renew?: boolean
+          client_entity_id?: string | null
           client_id?: string
           cost?: number | null
           created_at?: string
@@ -571,6 +676,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_directory"
             referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "domains_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
             foreignKeyName: "domains_client_fk"
@@ -642,6 +754,7 @@ export type Database = {
         Row: {
           amount: number
           category: string
+          client_entity_id: string | null
           client_id: string | null
           created_at: string
           created_by: string
@@ -663,6 +776,7 @@ export type Database = {
         Insert: {
           amount: number
           category: string
+          client_entity_id?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string
@@ -684,6 +798,7 @@ export type Database = {
         Update: {
           amount?: number
           category?: string
+          client_entity_id?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string
@@ -709,6 +824,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_directory"
             referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
             foreignKeyName: "expenses_client_fk"
@@ -1442,6 +1564,7 @@ export type Database = {
           p_adjustment_interval_months: number
           p_adjustment_rate: number
           p_billing_type: string
+          p_client_entity_id?: string
           p_client_id: string
           p_description: string
           p_discount_type: string
@@ -1482,10 +1605,21 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      consolidate_client_into_entity: {
+        Args: {
+          p_confirmation?: string
+          p_entity_display_name: string
+          p_entity_type?: string
+          p_source_client_id: string
+          p_target_client_id: string
+        }
+        Returns: Json
+      }
       create_expense_with_recurrence: {
         Args: {
           p_amount: number
           p_category: string
+          p_client_entity_id?: string
           p_client_id?: string
           p_description: string
           p_due_date: string
@@ -1507,8 +1641,10 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: {
+          active_client_entities: number
           active_clients: number
           due_soon_charges: number
+          due_soon_expenses: number
           expenses_paid: number
           expired_domains: number
           media_period: number
@@ -1584,6 +1720,10 @@ export type Database = {
           p_source_type: string
           p_workspace_id: string
         }
+        Returns: Json
+      }
+      preview_consolidate_client_into_entity: {
+        Args: { p_source_client_id: string; p_target_client_id: string }
         Returns: Json
       }
       request_current_account_lifecycle: {

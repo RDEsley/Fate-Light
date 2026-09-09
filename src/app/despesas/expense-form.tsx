@@ -7,7 +7,13 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
-import { ClientCombobox, DateField, type ClientOption } from "@/components/ui/form-controls";
+import {
+  ClientCombobox,
+  DateField,
+  EntitySelect,
+  type ClientEntityOption,
+  type ClientOption,
+} from "@/components/ui/form-controls";
 import { MoneyField } from "@/components/ui/money-field";
 import { SelectField } from "@/components/ui/select-field";
 import { initialActionState, submittedValues } from "@/lib/forms/action-state";
@@ -33,14 +39,18 @@ const statusOptions = [
 export function ExpenseForm({
   categoryOptions,
   clients,
+  entities = [],
 }: {
   categoryOptions: { label: string; value: string }[];
   clients: ClientOption[];
+  entities?: ClientEntityOption[];
 }) {
   const [state, formAction] = useActionState(createExpense, initialActionState);
   const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
   const [expenseType, setExpenseType] = useState(sent.text("expenseType", "fixed"));
+  // A empresa/marca depende do cliente escolhido, então o id vive aqui e não no combobox.
+  const [clientId, setClientId] = useState(sent.text("clientId"));
 
   return (
     <form action={formAction} className="form-grid mt-4 sm:grid-cols-2">
@@ -111,7 +121,20 @@ export function ExpenseForm({
         name="status"
         options={statusOptions}
       />
-      <ClientCombobox clients={clients} defaultFilter="all" label="Cliente" optional />
+      <ClientCombobox
+        clients={clients}
+        defaultFilter="all"
+        defaultValue={clientId}
+        label="Cliente"
+        onSelect={(client) => setClientId(client?.id ?? "")}
+        optional
+      />
+      <EntitySelect
+        clientId={clientId || null}
+        defaultValue={sent.text("clientEntityId")}
+        entities={entities}
+        error={errors.clientEntityId}
+      />
       {expenseType === "fixed" ? (
         <div className="option-card sm:col-span-2">
           <label className="option-card__toggle">

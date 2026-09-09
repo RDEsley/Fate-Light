@@ -18,6 +18,12 @@ export type AttentionItem = {
   title: string;
 };
 
+/** "Cliente · Empresa" quando há entidade; só o cliente quando o lançamento é geral. */
+function ownerLabel(clientName: string | undefined, entityName: string | undefined) {
+  const client = clientName ?? "Cliente";
+  return entityName ? `${client} · ${entityName}` : client;
+}
+
 function dueLabel(date: string, today: string) {
   if (date < today) return "vencido";
   if (date === today) return "vence hoje";
@@ -52,7 +58,9 @@ export const getAttentionItems = cache(async function getAttentionItems(
   ] = await Promise.all([
     context.supabase
       .from("charges")
-      .select("id, description, due_date, clients(name)", { count: "exact" })
+      .select("id, description, due_date, clients(name), client_entities(display_name)", {
+        count: "exact",
+      })
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .lte("due_date", limit)
@@ -60,7 +68,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
       .limit(50),
     context.supabase
       .from("expenses")
-      .select("id, description, due_date", { count: "exact" })
+      .select("id, description, due_date, client_entities(display_name)", { count: "exact" })
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .lte("due_date", limit)
@@ -68,7 +76,9 @@ export const getAttentionItems = cache(async function getAttentionItems(
       .limit(50),
     context.supabase
       .from("domains")
-      .select("id, domain, expires_on, clients(name)", { count: "exact" })
+      .select("id, domain, expires_on, clients(name), client_entities(display_name)", {
+        count: "exact",
+      })
       .eq("workspace_id", context.workspaceId)
       .eq("status", "active")
       .lte("expires_on", limit)
@@ -108,7 +118,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
       date: charge.due_date,
       href: `/cobrancas?focus=${charge.id}` as Route,
       id: `charge-${charge.id}`,
-      meta: `${charge.clients?.name ?? "Cliente"} · ${formatDatePtBr(charge.due_date)}`,
+      meta: `${ownerLabel(charge.clients?.name, charge.client_entities?.display_name)} · ${formatDatePtBr(charge.due_date)}`,
       severity: charge.due_date <= today ? ("danger" as const) : ("warning" as const),
       source: "charge" as const,
       title:
@@ -122,7 +132,9 @@ export const getAttentionItems = cache(async function getAttentionItems(
       date: expense.due_date,
       href: `/despesas?focus=${expense.id}` as Route,
       id: `expense-${expense.id}`,
-      meta: `Vencimento ${formatDatePtBr(expense.due_date)}`,
+      meta: expense.client_entities?.display_name
+        ? `${expense.client_entities.display_name} · vencimento ${formatDatePtBr(expense.due_date)}`
+        : `Vencimento ${formatDatePtBr(expense.due_date)}`,
       severity: expense.due_date <= today ? ("danger" as const) : ("warning" as const),
       source: "expense" as const,
       title:
@@ -136,7 +148,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
       date: domain.expires_on,
       href: `/dominios?focus=${domain.id}` as Route,
       id: `domain-${domain.id}`,
-      meta: `${domain.clients?.name ?? "Cliente"} · ${formatDatePtBr(domain.expires_on)}`,
+      meta: `${ownerLabel(domain.clients?.name, domain.client_entities?.display_name)} · ${formatDatePtBr(domain.expires_on)}`,
       severity: domain.expires_on <= today ? ("danger" as const) : ("warning" as const),
       source: "domain" as const,
       title:

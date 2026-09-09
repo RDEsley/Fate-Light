@@ -14,6 +14,7 @@ const labels = {
   charges: "Cobranças",
   clients: "Clientes",
   domains: "Domínios",
+  entities: "Empresas/marcas",
   expenses: "Despesas",
   services: "Serviços",
 };
@@ -138,7 +139,7 @@ export function ImportWorkbook() {
 
       {state.preview ? (
         <section className="space-y-5" aria-label="Prévia da importação">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {Object.entries(state.preview.counts).map(([name, count]) => (
               <article className="cartoon-card p-4" key={name}>
                 <p className="text-muted text-xs font-bold">

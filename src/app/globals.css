@@ -3,6 +3,7 @@
 .financial-privacy--hidden [data-financial-value] {
   color: transparent !important;
   position: relative;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -934,6 +935,7 @@ summary::-webkit-details-marker {
   inset: 0;
   animation: modal-backdrop-enter 160ms ease-out both;
   background: rgb(15 26 32 / 0.42);
+  -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   place-items: center;
 }
@@ -1368,6 +1370,119 @@ summary::-webkit-details-marker {
   font-size: 0.875rem;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+/* Empresas, marcas e projetos sob um cliente (ADR-0020). */
+.entity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--violet) 22%, transparent);
+  border-radius: 999px;
+  background: var(--violet-soft);
+  padding: 0.15rem 0.55rem;
+  color: var(--violet);
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.entity-chip--muted {
+  border-color: var(--line);
+  background: #f0f3ef;
+  color: var(--muted);
+}
+
+.entity-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+
+.entity-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  padding: 0.9rem;
+  gap: 0.55rem;
+}
+
+.entity-card[data-archived="true"] {
+  background: var(--canvas);
+  opacity: 0.85;
+}
+
+.entity-card__signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.entity-card__signals span {
+  display: inline-flex;
+  min-height: 1.6rem;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  background: #f0f3ef;
+  padding-inline: 0.5rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.entity-card__signals svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.entity-card__signals .is-positive {
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+
+.entity-card__signals .is-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.entity-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.45rem;
+  gap: 0.6rem;
+}
+
+.consolidation-preview {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--warning-soft) 60%, transparent);
+  padding: 0.85rem;
+  font-size: 0.8rem;
+}
+
+.consolidation-preview dl {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+}
+
+.consolidation-preview dt {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.consolidation-preview dd {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
 .service-actions {
@@ -1923,6 +2038,7 @@ summary::-webkit-details-marker {
   background: rgb(255 255 255 / 0.97);
   padding: 0.8rem 0.75rem 0.9rem;
   box-shadow: 0 18px 44px -22px rgb(37 50 58 / 0.55);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   animation: status-toast-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -2494,6 +2610,163 @@ summary::-webkit-details-marker {
 .client-card-signals .is-warning {
   background: var(--warning-soft);
   color: var(--warning);
+}
+
+/* Painéis de alerta do dashboard: borda suave, cabeçalho calmo e itens navegáveis. */
+.alert-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.alert-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding: 0.85rem 1.1rem;
+  gap: 0.75rem;
+}
+
+.alert-panel__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.alert-panel__title h2 {
+  font-size: 0.92rem;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.alert-panel__icon {
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex: none;
+  place-items: center;
+  border-radius: 0.6rem;
+}
+
+.alert-panel__badge {
+  display: inline-grid;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #f0f3ef;
+  padding-inline: 0.4rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.alert-panel[data-tone="danger"] .alert-panel__badge {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+
+.alert-panel[data-tone="warning"] .alert-panel__badge {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.alert-panel__all {
+  flex: none;
+  color: var(--brand-strong);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.alert-panel__all:hover {
+  text-decoration: underline;
+}
+
+.alert-panel__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.alert-panel__item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-top: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+  padding: 0.7rem 1.1rem;
+  gap: 0.75rem;
+  color: inherit;
+  font-size: 0.82rem;
+  transition: background-color 140ms ease;
+}
+
+.alert-panel__list > :first-child {
+  border-top: 0;
+}
+
+.alert-panel__item:hover,
+.alert-panel__item:focus-visible {
+  background: #f4f6f2;
+}
+
+.alert-panel__item strong {
+  overflow: hidden;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alert-panel__item small {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.alert-panel__empty {
+  display: flex;
+  align-items: center;
+  padding: 1.1rem;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Contadores das ações rápidas: clientes e empresas/marcas com o mesmo peso visual. */
+.mini-count {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.75rem;
+  background: #f1f3ef;
+  padding: 0.85rem;
+  gap: 0.2rem;
+  color: inherit;
+  transition: background-color 140ms ease;
+}
+
+.mini-count:hover,
+.mini-count:focus-visible {
+  background: #e9ece5;
+}
+
+.mini-count__label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mini-count__value {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1.1;
 }
 
 .history-filters {

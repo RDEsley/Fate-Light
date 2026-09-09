@@ -137,8 +137,12 @@ describe("client domain boundaries", () => {
 
   it("limita e preserva filtros válidos na paginação", () => {
     const query = parseClientQuery({ page: "2", q: "  exemplo ", state: "active" });
-    expect(query).toEqual({ page: 2, q: "exemplo", state: "active" });
+    expect(query).toEqual({ page: 2, q: "exemplo", state: "active", view: "all" });
     expect(clientListHref(query, 3)).toBe("/clientes?q=exemplo&state=active&page=3");
+    // O recorte de empresas/marcas viaja junto para não sumir ao paginar.
+    expect(clientListHref(parseClientQuery({ view: "entities" }), 2)).toBe(
+      "/clientes?view=entities&page=2",
+    );
     expect(parseClientQuery({ page: "inválida", state: "forjado" })).toMatchObject({
       page: 1,
       state: "all",

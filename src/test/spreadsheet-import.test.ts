@@ -26,6 +26,31 @@ describe("spreadsheet import normalization", () => {
     expect(result.payload.domains[0].domain).toBe("acme.example");
   });
 
+  it("lê linhas Empresa/Marca sem mudar o significado da coluna Empresa no cliente", () => {
+    const csv = [
+      '"Tipo","Cliente","Empresa","Status","Tipo de empresa","Observações"',
+      '"cliente","Acme","Acme Ltda","ativo","",""',
+      '"empresa/marca","Acme","Padaria do Bairro","","marca","Loja da rua 2"',
+      '"entidade","Acme","Oficina Central","","projeto",""',
+    ].join("\r\n");
+
+    const result = normalizeWorkbook(parseCsv(csv));
+
+    expect(result.issues.filter(({ level }) => level === "error")).toEqual([]);
+    // A coluna Empresa continua sendo nome fantasia na linha de cliente.
+    expect(result.payload.clients[0].companyName).toBe("Acme Ltda");
+    expect(result.entities).toEqual([
+      {
+        clientName: "Acme",
+        displayName: "Padaria do Bairro",
+        entityType: "brand",
+        notes: "Loja da rua 2",
+      },
+      { clientName: "Acme", displayName: "Oficina Central", entityType: "project", notes: "" },
+    ]);
+    expect(result.rowCount).toBe(3);
+  });
+
   it("reconhece e sinaliza a planilha legada antes de importar", () => {
     const csv = [
       '"Client","Start Date","Service DEV","Service Value","Payment type","Next pay/ mens/","Expenses","DOMAIN EXPIRATION"',
