@@ -51,9 +51,37 @@ function parsePaidDeleteResult(data: unknown): {
 const chargeLabels = { description: "Descrição da cobrança" };
 const expenseLabels = { description: "Descrição da despesa" };
 
+/**
+ * Confirma que a empresa/marca escolhida pertence ao cliente e ao workspace da sessão.
+ * A FK composta já barraria a gravação, mas o erro cru do banco não diz nada a quem
+ * está preenchendo o formulário — e um id vindo de outra conta merece recusa explícita.
+ */
+async function resolveClientEntity(
+  supabase: Awaited<ReturnType<typeof requireWorkspaceContext>>["supabase"],
+  workspaceId: string,
+  clientId: string | null,
+  clientEntityId: string,
+): Promise<{ id: string | null } | { id?: undefined }> {
+  if (!clientEntityId) return { id: null };
+  if (!clientId) return {};
+  const { data } = await supabase
+    .from("client_entities")
+    .select("id")
+    .eq("id", clientEntityId)
+    .eq("client_id", clientId)
+    .eq("workspace_id", workspaceId)
+    .is("archived_at", null)
+    .maybeSingle();
+  return data ? { id: data.id } : {};
+}
+
+const foreignEntityMessage =
+  "A empresa/marca escolhida não pertence a este cliente. Recarregue a página.";
+
 function readDomainForm(formData: FormData) {
   return domainSchema.safeParse({
     autoRenew: formData.get("autoRenew") === "on",
+    clientEntityId: formData.get("clientEntityId"),
     clientId: formData.get("clientId"),
     cost: formData.get("cost"),
     domain: formData.get("domain"),
@@ -236,6 +264,7 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
     additionalFee: formData.get("additionalFee"),
     additionalFeeIsRevenue: formData.get("additionalFeeNature") ?? "",
     alreadyPaid: formData.get("alreadyPaid") === "on",
+    clientEntityId: formData.get("clientEntityId"),
     clientId: formData.get("clientId"),
     clientServiceId: formData.get("clientServiceId"),
     companyRevenue: formData.get("companyRevenue"),
@@ -254,6 +283,17 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
     `/clientes/${values.data.clientId}`,
   );
   const { supabase, workspaceId } = await requireWorkspaceContext();
+  const entity = await resolveClientEntity(
+    supabase,
+    workspaceId,
+    values.data.clientId,
+    values.data.clientEntityId,
+  );
+  if (entity.id === undefined) {
+    return rejectSubmission(formData, foreignEntityMessage, {
+      clientEntityId: foreignEntityMessage,
+    });
+  }
   // Registrar uma cobrança passada já quitada evita ter que inventar histórico depois.
   const settled = values.data.alreadyPaid;
   // Cobrança manual nunca vincula serviço: client_service_id nulo evita que
@@ -263,6 +303,7 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
     .insert({
       additional_fee: values.data.additionalFee,
       additional_fee_is_revenue: values.data.additionalFeeIsRevenue,
+      client_entity_id: entity.id,
       client_id: values.data.clientId,
       client_service_id: null,
       company_revenue: values.data.companyRevenue,
@@ -363,6 +404,7 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
   const values = expenseSchema.safeParse({
     amount: formData.get("amount"),
     category: formData.get("category"),
+    clientEntityId: formData.get("clientEntityId"),
     clientId: formData.get("clientId"),
     description: formData.get("description"),
     dueDate: formData.get("dueDate"),
@@ -377,11 +419,23 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
   }
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const clientId = values.data.clientId || null;
+  const entity = await resolveClientEntity(
+    supabase,
+    workspaceId,
+    clientId,
+    values.data.clientEntityId,
+  );
+  if (entity.id === undefined) {
+    return rejectSubmission(formData, foreignEntityMessage, {
+      clientEntityId: foreignEntityMessage,
+    });
+  }
 
   if (values.data.enableRecurrence && values.data.expenseType === "fixed") {
     const { error } = await supabase.rpc("create_expense_with_recurrence", {
       p_amount: values.data.amount,
       p_category: values.data.category,
+      p_client_entity_id: entity.id ?? undefined,
       p_client_id: clientId ?? undefined,
       p_description: values.data.description,
       p_due_date: values.data.dueDate,
@@ -395,6 +449,7 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
     const { error } = await supabase.from("expenses").insert({
       amount: values.data.amount,
       category: values.data.category,
+      client_entity_id: entity.id,
       client_id: clientId,
       description: values.data.description,
       due_date: values.data.dueDate,
@@ -465,8 +520,20 @@ export async function createDomain(_state: ActionState, formData: FormData): Pro
     return rejectSubmission(formData, message, fieldErrors);
   }
   const { supabase, workspaceId } = await requireWorkspaceContext();
+  const entity = await resolveClientEntity(
+    supabase,
+    workspaceId,
+    values.data.clientId,
+    values.data.clientEntityId,
+  );
+  if (entity.id === undefined) {
+    return rejectSubmission(formData, foreignEntityMessage, {
+      clientEntityId: foreignEntityMessage,
+    });
+  }
   const { error } = await supabase.from("domains").insert({
     auto_renew: values.data.autoRenew,
+    client_entity_id: entity.id,
     client_id: values.data.clientId,
     cost: values.data.cost === "" ? null : values.data.cost,
     domain: values.data.domain,
@@ -492,10 +559,22 @@ export async function updateDomain(_state: ActionState, formData: FormData): Pro
     return rejectSubmission(formData, message, fieldErrors);
   }
   const { supabase, workspaceId } = await requireWorkspaceContext();
+  const entity = await resolveClientEntity(
+    supabase,
+    workspaceId,
+    values.data.clientId,
+    values.data.clientEntityId,
+  );
+  if (entity.id === undefined) {
+    return rejectSubmission(formData, foreignEntityMessage, {
+      clientEntityId: foreignEntityMessage,
+    });
+  }
   const { data, error } = await supabase
     .from("domains")
     .update({
       auto_renew: values.data.autoRenew,
+      client_entity_id: entity.id,
       client_id: values.data.clientId,
       cost: values.data.cost === "" ? null : values.data.cost,
       domain: values.data.domain,

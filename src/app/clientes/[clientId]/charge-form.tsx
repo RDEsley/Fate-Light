@@ -6,7 +6,7 @@ import { createCharge } from "@/app/_actions/mvp";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
-import { DateField } from "@/components/ui/form-controls";
+import { DateField, EntitySelect, type ClientEntityOption } from "@/components/ui/form-controls";
 import { MoneyField } from "@/components/ui/money-field";
 import { SelectField } from "@/components/ui/select-field";
 import { initialActionState, submittedValues } from "@/lib/forms/action-state";
@@ -31,12 +31,16 @@ const additionalNatureOptions = [
  */
 export function ChargeForm({
   clientId,
+  defaultEntityId,
   defaultServiceId,
+  entities = [],
   returnTo,
   services,
 }: {
   clientId: string;
+  defaultEntityId?: string;
   defaultServiceId?: string;
+  entities?: ClientEntityOption[];
   returnTo?: string;
   services: { id: string; name: string }[];
 }) {
@@ -77,6 +81,13 @@ export function ChargeForm({
         />
         <FieldError message={errors.description} />
       </label>
+      <EntitySelect
+        className="sm:col-span-2"
+        clientId={clientId}
+        defaultValue={sent.text("clientEntityId", defaultEntityId ?? "")}
+        entities={entities}
+        error={errors.clientEntityId}
+      />
       <MoneyField
         defaultValue={sent.text("companyRevenue")}
         error={errors.companyRevenue}

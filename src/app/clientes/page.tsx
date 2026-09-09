@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Route } from "next";
 import Link from "next/link";
 
 import { AccountShell } from "@/app/_components/account-shell";
@@ -26,7 +27,13 @@ const stateFilters = [
 ] as const;
 
 type ClientsPageProps = {
-  searchParams: Promise<{ page?: string; q?: string; state?: string; status?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    state?: string;
+    status?: string;
+    view?: string;
+  }>;
 };
 
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
@@ -35,6 +42,20 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const firstRow = (query.page - 1) * pageSize;
   const showingArchived = query.state === "archived";
+  // Uma consulta só para as empresas/marcas ativas do workspace: ela serve tanto ao
+  // recorte `view=entities` quanto à contagem exibida em cada card, sem N+1.
+  const { data: entityRows } = await supabase
+    .from("client_entities")
+    .select("client_id")
+    .eq("workspace_id", workspaceId)
+    .eq("status", "active")
+    .is("archived_at", null)
+    .limit(2000);
+  const entityCounts = new Map<string, number>();
+  for (const row of entityRows ?? []) {
+    entityCounts.set(row.client_id, (entityCounts.get(row.client_id) ?? 0) + 1);
+  }
+  const showingEntities = query.view === "entities";
   // A ordenação combina situação e dinheiro: ativos primeiro, e dentro de cada situação
   // quem mais rendeu na frente, com o cliente mais antigo desempatando. Ordenar e paginar
   // sobre a view garante que isso valha para a lista inteira, não só para a página aberta.
@@ -54,6 +75,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     request = request.eq("commercial_status", query.state);
   }
   if (query.q) request = request.ilike("name", `%${query.q}%`);
+  if (showingEntities) request = request.in("id", [...entityCounts.keys()]);
   const { data: clients, error, count } = await request;
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -101,26 +123,34 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         >
           Filtrar
         </button>
+        {showingEntities ? <input name="view" type="hidden" value="entities" /> : null}
         <div className="client-filter-pills sm:col-span-2">
           {stateFilters.map(([value, label]) => (
             <Link
               aria-current={query.state === value ? "page" : undefined}
-              href={
-                value === "all"
-                  ? ((query.q
-                      ? `/clientes?q=${encodeURIComponent(query.q)}`
-                      : "/clientes") as never)
-                  : ((query.q
-                      ? `/clientes?q=${encodeURIComponent(query.q)}&state=${value}`
-                      : `/clientes?state=${value}`) as never)
-              }
+              href={filterHref(query.q, value, query.view)}
               key={value}
             >
               {label}
             </Link>
           ))}
+          <Link
+            aria-current={showingEntities ? "page" : undefined}
+            href={filterHref(query.q, query.state, showingEntities ? "all" : "entities")}
+          >
+            Com empresas/marcas
+          </Link>
         </div>
       </form>
+      {showingEntities ? (
+        <aside className="helper-note mb-4" role="status">
+          <Icon className="size-4" name="building" />
+          <span>
+            Mostrando apenas clientes que já têm empresa ou marca cadastrada.{" "}
+            <Link href={filterHref(query.q, query.state, "all")}>Ver todos os clientes</Link>
+          </span>
+        </aside>
+      ) : null}
       {error ? (
         <p className="border-line bg-surface rounded-2xl border p-6" role="alert">
           Não foi possível carregar os clientes.
@@ -138,6 +168,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             const expiringDomains = client.expiring_domains ?? 0;
             const earned = Number(client.lifetime_revenue ?? 0);
             const firstStart = client.first_service_start;
+            const entityCount = entityCounts.get(clientId) ?? 0;
             return (
               <article
                 className="cartoon-card client-summary-card flex min-h-52 flex-col p-4 sm:p-5"
@@ -165,6 +196,12 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                   <span title={`${activeServices} serviço(s) ativo(s)`}>
                     <Icon name="briefcase" /> {activeServices}
                   </span>
+                  {entityCount ? (
+                    <span title="Empresas ou marcas cadastradas neste cliente">
+                      <Icon name="building" /> {entityCount}{" "}
+                      {entityCount === 1 ? "empresa/marca" : "empresas/marcas"}
+                    </span>
+                  ) : null}
                   {overdueCharges ? (
                     <span
                       className="is-critical"
@@ -306,6 +343,16 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ) : null}
     </AccountShell>
   );
+}
+
+/** Monta o link de um filtro preservando busca, situação e o recorte de empresas/marcas. */
+function filterHref(search: string, state: string, view: string) {
+  const parameters = new URLSearchParams();
+  if (search) parameters.set("q", search);
+  if (state !== "all") parameters.set("state", state);
+  if (view !== "all") parameters.set("view", view);
+  const suffix = parameters.toString();
+  return (suffix ? `/clientes?${suffix}` : "/clientes") as Route;
 }
 
 function activeTimeLabel(startDate: string) {

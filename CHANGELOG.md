@@ -5,34 +5,59 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-09
+
 ### Added
 
-- Checklist operacional e de release para preparar o candidato à versão 1.0.
-- Recuperação segura de senha, páginas legais públicas, alertas avulsos e links de evento para o
-  Google Agenda.
-- Botão para ocultar valores financeiros no dashboard.
-- Smoke autenticado de acessibilidade, responsividade e importação no fluxo Playwright.
+- Empresas e marcas dentro do cliente (ADR-0020): um cliente comercial passa a comportar várias
+  frentes — empresa, marca, projeto ou outro — sem duplicar cadastro. O vínculo é sempre opcional
+  e o que não tem empresa continua valendo como geral.
+- Seleção opcional de empresa/marca em serviços, cobranças, despesas e domínios, filtrada pelo
+  cliente escolhido e oculta quando o cliente ainda não tem nenhuma.
+- Consolidação de um cliente legado em empresa/marca de outro, com prévia de contagens e totais e
+  confirmação pela frase CONSOLIDAR. Nenhum valor é recalculado e a origem fica arquivada.
+- Card "Despesas nos próximos 7 dias" no dashboard e filtro real `due=next7` em `/despesas`.
+- Contadores simétricos de clientes ativos e empresas/marcas ativas nas ações rápidas, com recorte
+  `?view=entities` na lista de clientes.
+- Coluna opcional na importação: linhas `empresa/marca` (ou `entidade`) criam empresas sob o cliente
+  informado. A coluna `Empresa` continua significando nome fantasia nas linhas de cliente e
+  planilhas antigas importam sem nenhuma mudança.
 
 ### Changed
 
-- Documentação do produto alinhada ao uso por freelancers de sites, gestão de campanhas, divulgação
-  e domínios.
-- Dashboard e resumo de domínios usam agregações completas no PostgreSQL; cobranças, despesas,
-  domínios e histórico possuem paginação ou limites explicitamente sinalizados.
-- Datas operacionais passam a respeitar o fuso configurado no workspace.
+- Painéis de alerta do dashboard redesenhados: borda suave, contagem como selo discreto, itens
+  navegáveis com âncora para o registro e vazio compacto.
+- "Próximos 7 dias" passa a se chamar "Cobranças nos próximos 7 dias", agora que existe o par de
+  despesas.
+- Cobranças, despesas, domínios e alertas exibem o contexto "Cliente · Empresa" quando o lançamento
+  está vinculado a uma empresa/marca.
+
+## [0.7.0] - 2026-09-09
+
+### Added
+
+- Máscara monetária bancária (`MoneyField`), percentual e inteiro com validação explícita.
+- Cobrança criada na ficha do cliente; exclusão corretiva de registros já pagos (ADR-0019).
+- Despesas mensais com recorrência idempotente e encerramento explícito da série.
+- ADR-0019 e endurecimento de sync/revalidate nas superfícies financeiras.
+
+### Changed
+
+- Login autenticado leva ao Dashboard; Prettier removido do tooling/CI.
+- Cobrança manual não vincula `client_service_id` e não avança a agenda automática.
+- SoftSubmit removido; envio usa o estado real da Server Action.
+- Dependências de produção alinhadas (inclui Next 16.3.4).
 
 ### Fixed
 
-- Cobranças pagas e canceladas agora aparecem pela data de resolução mais recente.
-- Site do cliente importado passa a ser gravado na mesma transação do restante da planilha.
-- Contador da central de alertas não depende mais da quantidade limitada de cards carregados.
+- Ficha dinâmica do cliente revalidada após baixa; falha de Storage após exclusão paga sinalizada.
+- Percentual sem clamp silencioso; `aria-describedby` nos erros de campo.
+- Jornada E2E autenticada estabilizada para a semântica da cobrança manual.
 
 ### Security
 
-- Requisitos manuais de produção para confirmação de e-mail, Turnstile, recuperação de senha e
-  headers de segurança documentados.
-- Turnstile obrigatório em builds de produção e headers HTTP de proteção aplicados pelo proxy.
-- Consultas agregadas e novas RPCs mantêm SECURITY INVOKER, owner ativo e testes cross-workspace.
+- Gates de qualidade, isolamento de banco e fluxo autenticado verdes na publicação.
+
 
 ## [0.6.1] - 2026-08-24
 

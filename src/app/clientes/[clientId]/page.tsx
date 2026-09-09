@@ -9,6 +9,7 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
+import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
 import { formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
@@ -18,6 +19,9 @@ import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { archiveClient, deleteClient, restoreClient } from "../actions";
 import { ClientStatusMessage } from "../status-message";
 import { ChargeForm } from "./charge-form";
+import { ConsolidateClientPanel } from "./consolidate-client-panel";
+import { ClientEntityCard } from "./entity-card";
+import { ClientEntityForm } from "./entity-form";
 import { ServiceApplicationForm } from "./service-application-form";
 import { ServiceCard } from "./service-card";
 import { ClientStatusSwitcher } from "./status-switcher";
@@ -46,7 +50,12 @@ export default async function ClientDetailsPage({
   searchParams,
 }: {
   params: Promise<{ clientId: string }>;
-  searchParams: Promise<{ action?: string; serviceId?: string; status?: string }>;
+  searchParams: Promise<{
+    action?: string;
+    entity?: string;
+    serviceId?: string;
+    status?: string;
+  }>;
 }) {
   const [{ clientId: rawClientId }, parameters, context] = await Promise.all([
     params,
@@ -56,6 +65,7 @@ export default async function ClientDetailsPage({
   const clientId = z.string().uuid().safeParse(rawClientId);
   if (!clientId.success) notFound();
   const defaultServiceId = z.string().uuid().safeParse(parameters.serviceId);
+  const requestedEntityId = z.string().uuid().safeParse(parameters.entity);
   const openChargeForm =
     parameters.action === "new-charge" || defaultServiceId.success;
 
@@ -65,6 +75,9 @@ export default async function ClientDetailsPage({
     { data: catalog, error: catalogError },
     { data: charges },
     { data: pendingCharges },
+    { data: entityRows },
+    { data: domainRows },
+    { data: otherClients },
   ] = await Promise.all([
     context.supabase
       .from("clients")
@@ -75,7 +88,7 @@ export default async function ClientDetailsPage({
     context.supabase
       .from("client_services")
       .select(
-        "id, name, description, list_price, discount_type, discount_value, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, billing_type, installment_count, promotional_price, promotional_cycles, promotional_cycles_used, start_date, next_due_date, adjustment_interval_months, adjustment_rate, next_adjustment_date, ended_at, status, notes",
+        "id, name, description, list_price, discount_type, discount_value, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, billing_type, installment_count, promotional_price, promotional_cycles, promotional_cycles_used, start_date, next_due_date, adjustment_interval_months, adjustment_rate, next_adjustment_date, ended_at, status, notes, client_entity_id",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
@@ -92,20 +105,41 @@ export default async function ClientDetailsPage({
     context.supabase
       .from("charges")
       .select(
-        "client_service_id, company_revenue, additional_fee, additional_fee_is_revenue, status, due_date",
+        "client_service_id, client_entity_id, company_revenue, additional_fee, additional_fee_is_revenue, status, due_date",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
     context.supabase
       .from("charges")
       .select(
-        "id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status",
+        "id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, client_entity_id",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .order("due_date", { ascending: true })
       .limit(50),
+    context.supabase
+      .from("client_entities")
+      .select(
+        "id, display_name, entity_type, legal_name, tax_id, website, email, phone, notes, status, archived_at",
+      )
+      .eq("client_id", clientId.data)
+      .eq("workspace_id", context.workspaceId)
+      .order("display_name"),
+    context.supabase
+      .from("domains")
+      .select("id, client_entity_id, status")
+      .eq("client_id", clientId.data)
+      .eq("workspace_id", context.workspaceId),
+    context.supabase
+      .from("clients")
+      .select("id, name, trade_name, commercial_status")
+      .eq("workspace_id", context.workspaceId)
+      .neq("id", clientId.data)
+      .is("archived_at", null)
+      .order("name")
+      .limit(200),
   ]);
   if (error || servicesError || catalogError || !client) notFound();
 
@@ -156,6 +190,62 @@ export default async function ClientDetailsPage({
   const chargeServices = (services ?? [])
     .filter((service) => service.status !== "ended")
     .map((service) => ({ id: service.id, name: service.name }));
+
+  // Empresas/marcas do cliente (ADR-0020). Os totais de cada card são derivados das
+  // mesmas listas já carregadas acima; nada aqui pede uma consulta por entidade.
+  const entities = (entityRows ?? []).map((entity) => {
+    const archived = Boolean(entity.archived_at) || entity.status === "archived";
+    const entityCharges = (charges ?? []).filter(
+      (charge) => charge.client_entity_id === entity.id,
+    );
+    return {
+      activeDomains: (domainRows ?? []).filter(
+        (domain) => domain.client_entity_id === entity.id && domain.status === "active",
+      ).length,
+      activeServices: (services ?? []).filter(
+        (service) => service.client_entity_id === entity.id && service.status === "active",
+      ).length,
+      archived,
+      displayName: entity.display_name,
+      email: entity.email,
+      entityType: entity.entity_type,
+      id: entity.id,
+      legalName: entity.legal_name,
+      notes: entity.notes,
+      paidRevenue: entityCharges
+        .filter((charge) => charge.status === "paid")
+        .reduce((total, charge) => total + ownRevenue(charge), 0),
+      pendingCharges: entityCharges.filter((charge) => charge.status === "pending").length,
+      phone: entity.phone,
+      taxId: entity.tax_id,
+      website: entity.website,
+    };
+  });
+  const activeEntities = entities.filter((entity) => !entity.archived);
+  const entityNames = new Map(entities.map((entity) => [entity.id, entity.displayName]));
+  const entityOptions = activeEntities.map((entity) => ({
+    clientId: client.id,
+    id: entity.id,
+    name: entity.displayName,
+    typeLabel: clientEntityTypeLabel(entity.entityType),
+  }));
+  // `?entity=` recorta a ficha sem esconder os totais consolidados do topo.
+  const focusedEntityId =
+    requestedEntityId.success && entityNames.has(requestedEntityId.data)
+      ? requestedEntityId.data
+      : null;
+  const visibleServices = focusedEntityId
+    ? (services ?? []).filter((service) => service.client_entity_id === focusedEntityId)
+    : (services ?? []);
+  const visiblePendingCharges = focusedEntityId
+    ? (pendingCharges ?? []).filter((charge) => charge.client_entity_id === focusedEntityId)
+    : (pendingCharges ?? []);
+  const consolidationClients = (otherClients ?? []).map((entry) => ({
+    id: entry.id,
+    name: entry.name,
+    status: entry.commercial_status,
+    tradeName: entry.trade_name,
+  }));
 
   return (
     <AccountShell
@@ -277,6 +367,76 @@ export default async function ClientDetailsPage({
         </dl>
       </section>
 
+      <section className="panel-card mt-4" id="empresas">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="section-heading">
+            <span className="section-heading__icon bg-violet-soft text-violet">
+              <Icon name="building" />
+            </span>
+            <div>
+              <h2>Empresas e marcas</h2>
+              <p>
+                Separe as frentes deste cliente sem duplicar o cadastro. O vínculo é opcional:
+                o que não tem empresa continua valendo como geral.
+              </p>
+            </div>
+          </div>
+          {activeEntities.length ? (
+            <span className="entity-chip">
+              {activeEntities.length}{" "}
+              {activeEntities.length === 1 ? "ativa" : "ativas"}
+            </span>
+          ) : null}
+        </div>
+
+        {focusedEntityId ? (
+          <aside className="helper-note mt-4" role="status">
+            <Icon className="size-4" name="filter" />
+            <span>
+              Mostrando serviços e cobranças de{" "}
+              <strong>{entityNames.get(focusedEntityId)}</strong>.{" "}
+              <Link className="font-semibold hover:underline" href={`/clientes/${client.id}`}>
+                Ver o cliente inteiro
+              </Link>
+            </span>
+          </aside>
+        ) : null}
+
+        {entities.length ? (
+          <div className="entity-grid mt-4">
+            {entities.map((entity) => (
+              <ClientEntityCard
+                clientId={client.id}
+                entity={entity}
+                key={entity.id}
+                readOnly={archived}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted mt-4 text-sm">
+            Nenhuma empresa ou marca cadastrada. Crie uma quando o cliente tiver mais de um
+            negócio sob o mesmo contrato.
+          </p>
+        )}
+
+        {!archived ? (
+          <details className="form-disclosure border-line mt-5 border-t pt-5">
+            <summary className="flex cursor-pointer items-center justify-between font-semibold">
+              <span className="flex items-center gap-2">
+                <Icon className="size-4" name="plus" /> Nova empresa/marca
+              </span>
+              <span className="text-muted flex items-center gap-1 text-xs">
+                <span className="form-disclosure__closed-label">Abrir formulário</span>
+                <span className="form-disclosure__open-label">Fechar formulário</span>
+                <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
+              </span>
+            </summary>
+            <ClientEntityForm clientId={client.id} />
+          </details>
+        ) : null}
+      </section>
+
       {client.notes ? (
         <section className="panel-card mt-4" id="observacoes">
           <div className="section-heading mb-3">
@@ -314,7 +474,9 @@ export default async function ClientDetailsPage({
             </p>
             <ChargeForm
               clientId={client.id}
+              defaultEntityId={focusedEntityId ?? undefined}
               defaultServiceId={defaultServiceId.success ? defaultServiceId.data : undefined}
+              entities={entityOptions}
               returnTo={clientReturnTo}
               services={chargeServices}
             />
@@ -322,7 +484,7 @@ export default async function ClientDetailsPage({
         </section>
       ) : null}
 
-      {pendingCharges?.length ? (
+      {visiblePendingCharges.length ? (
         <section className="panel-card mt-4">
           <div className="section-heading mb-4">
             <span className="section-heading__icon bg-warning-soft text-warning">
@@ -334,8 +496,11 @@ export default async function ClientDetailsPage({
             </div>
           </div>
           <div className="charge-list">
-            {pendingCharges.map((charge) => {
+            {visiblePendingCharges.map((charge) => {
               const overdue = charge.due_date < today;
+              const chargeEntity = charge.client_entity_id
+                ? entityNames.get(charge.client_entity_id)
+                : null;
               return (
                 <article
                   className={`charge-card ${overdue ? "critical-card" : ""}`}
@@ -345,6 +510,7 @@ export default async function ClientDetailsPage({
                     <div className="min-w-0">
                       <h3 className="font-semibold">{charge.description}</h3>
                       <p className="text-muted text-sm">
+                        {chargeEntity ? `${chargeEntity} · ` : ""}
                         Vencimento {formatDatePtBr(charge.due_date)}
                         {overdue ? " · vencida" : ""}
                       </p>
@@ -412,12 +578,17 @@ export default async function ClientDetailsPage({
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          {services?.length ? (
-            services.map((service) => (
+          {visibleServices.length ? (
+            visibleServices.map((service) => (
               <ServiceCard
                 catalog={catalogOptions}
                 clientId={client.id}
                 duration={serviceDuration(service.start_date, service.ended_at)}
+                entityName={
+                  service.client_entity_id
+                    ? (entityNames.get(service.client_entity_id) ?? null)
+                    : null
+                }
                 key={service.id}
                 service={{
                   additionalFee: Number(service.additional_fee),
@@ -448,7 +619,11 @@ export default async function ClientDetailsPage({
               />
             ))
           ) : (
-            <p className="text-muted text-sm">Nenhum serviço adicionado.</p>
+            <p className="text-muted text-sm">
+              {focusedEntityId
+                ? "Nenhum serviço nesta empresa/marca."
+                : "Nenhum serviço adicionado."}
+            </p>
           )}
         </div>
 
@@ -465,7 +640,12 @@ export default async function ClientDetailsPage({
               </span>
             </summary>
             <div className="mt-4">
-              <ServiceApplicationForm catalog={catalogOptions} clientId={client.id} />
+              <ServiceApplicationForm
+                catalog={catalogOptions}
+                clientId={client.id}
+                defaultEntityId={focusedEntityId ?? undefined}
+                entities={entityOptions}
+              />
             </div>
           </details>
         ) : (
@@ -491,7 +671,12 @@ export default async function ClientDetailsPage({
             </span>
           </summary>
           <div className="mt-4 grid gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <ConsolidateClientPanel
+              clients={consolidationClients}
+              targetClientId={client.id}
+              targetClientName={client.name}
+            />
+            <div className="border-line flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-muted max-w-2xl text-sm">
                 <strong className="text-foreground">Arquivar</strong> tira o cliente da operação
                 diária e preserva tudo: serviços, cobranças e histórico. É a saída recomendada
