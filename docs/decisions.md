@@ -7,7 +7,7 @@ Decisões consolidadas e revisadas em 2026-08-24:
 - Runtime fixado em Node.js `24.18.1` LTS e npm `11.16.0`. A versão foi confirmada no índice e nos
   arquivos de distribuição oficiais, além do manifesto consumido pelo `actions/setup-node`.
 - Os tipos do runtime usam `@types/node` `24.13.3`, na mesma linha principal do Node executado.
-- Aplicação fixada em Next.js `16.3.2` e React/React DOM `19.2.8`, releases estáveis atuais, sem
+- Aplicação fixada em Next.js `16.3.4` e React/React DOM `19.2.8`, releases estáveis atuais, sem
   preview ou canary.
 - TypeScript `6.0.3`, modo `strict`, App Router, diretório `src/` e Server Components por padrão.
   A linha 7 foi adiada até que o ecossistema de lint do Next usado pelo projeto seja compatível.
@@ -157,6 +157,16 @@ Consolidada em 2026-08-06:
   histórica muda de valor com a migration.
 - Detalhes no [ADR 0018](adr/0018-additional-fee-nature.md).
 
+## Exclusão corretiva de movimentos financeiros confirmados
+
+Consolidada em 2026-09-08:
+
+- A proibição absoluta da ADR-0013 é supersedida no caso do owner corrigir um lançamento
+  pago registrado por engano: exclusão + recriação, com confirmação forte e limpeza de NF.
+- Cobranças manuais nascem na ficha do cliente; `/cobrancas` acompanha. Despesas fixas
+  podem repetir mensalmente de forma explícita e idempotente.
+- Detalhes no [ADR 0019](adr/0019-corrective-deletion-of-confirmed-financial-records.md).
+
 ## Decisões aceitas
 
 | ID | Decisão | Estado | Registro |
@@ -173,12 +183,13 @@ Consolidada em 2026-08-06:
 | ADR-0010 | Cadastros operacionais arquiváveis e auditoria mínima | Aceita | [ADR](adr/0010-operational-records-and-audit.md) |
 | ADR-0011 | Importação de planilha em memória, idempotente e transacional | Aceita | [ADR](adr/0011-transactional-spreadsheet-import.md) |
 | ADR-0012 | Contrato de versões do runtime na Vercel | Aceita | [ADR](adr/0012-vercel-runtime-version-contract.md) |
-| ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
+| ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita; supersedida parcialmente pela 0019 | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
 | ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha | Superada para produção; ativação manual pendente | [ADR](adr/0014-temporary-email-confirmation-waiver.md) |
 | ADR-0015 | Estados do cliente, pausa de serviço e ciclos promocionais gratuitos | Aceita | [ADR](adr/0015-client-states-and-service-lifecycle-experience.md) |
 | ADR-0016 | Exclusão forçada pelo dono, links do cliente e liquidação em lote | Aceita | [ADR](adr/0016-owner-forced-deletion-and-client-links.md) |
 | ADR-0017 | Edição e exclusão do lançamento de receita anterior ao sistema | Aceita | [ADR](adr/0017-editable-prior-revenue-entry.md) |
 | ADR-0018 | Natureza declarada do custo adicional: receita própria ou repasse | Aceita | [ADR](adr/0018-additional-fee-nature.md) |
+| ADR-0019 | Exclusão corretiva de cobrança/despesa paga pelo owner | Aceita | [ADR](adr/0019-corrective-deletion-of-confirmed-financial-records.md) |
 
 ## Outras decisões consolidadas
 
@@ -186,7 +197,8 @@ Consolidada em 2026-08-06:
 - Uma moeda por workspace no MVP; sem conversão cambial.
 - Somente `owner` é papel funcional do workspace.
 - Status comercial do cliente é armazenado; situação financeira é derivada.
-- Cobranças emitidas e pagamentos confirmados não são apagados.
+- Cobranças e despesas pagas não são editadas in-place; o owner pode excluí-las de forma
+  corretiva (ADR-0019) e recriar o lançamento.
 - Adicionais criam itens/versões com vigência, sem efeito retroativo.
 - Linha de cobrança é a unidade de natureza financeira.
 - Pagamentos são neutros até serem alocados às linhas.

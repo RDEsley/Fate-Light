@@ -9,12 +9,13 @@ import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
 import { DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
+import { MoneyField } from "@/components/ui/money-field";
 import { SelectField } from "@/components/ui/select-field";
-import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
 import type { ClientLink } from "@/features/clients/schemas";
 import { clientStatusOptions } from "@/features/clients/status";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
+import { SubmitButton } from "../_components/submit-button";
 import { ClientLinksField } from "./client-links-field";
 import { PriorRevenueEntries, type PriorRevenueEntry } from "./prior-revenue-entries";
 
@@ -215,25 +216,14 @@ export function ClientForm({
           />
         ) : null}
         <div className="form-grid mt-3 sm:grid-cols-2">
-          <label className="field">
-            <span className="field__label">
-              Total já recebido <span className="field__optional">opcional</span>
-              <FieldHint>
-                Deixe em branco se preferir lançar cada cobrança antiga separadamente na página de
-                cobranças.
-              </FieldHint>
-            </span>
-            <input
-              aria-invalid={Boolean(errors.priorRevenue)}
-              defaultValue={sent.text("priorRevenue")}
-              min="0"
-              name="priorRevenue"
-              placeholder="Ex.: 24000,00"
-              step="0.01"
-              type="number"
-            />
-            <FieldError message={errors.priorRevenue} />
-          </label>
+          <MoneyField
+            defaultValue={sent.text("priorRevenue")}
+            error={errors.priorRevenue}
+            hint="Deixe em branco se preferir lançar cada cobrança antiga separadamente na ficha do cliente."
+            label="Total já recebido"
+            name="priorRevenue"
+            optional
+          />
           <DateField
             defaultValue={sent.text("priorRevenueDate")}
             error={errors.priorRevenueDate}
@@ -253,16 +243,7 @@ export function ClientForm({
         <Link className="modal-cancel inline-flex items-center justify-center" href={cancelHref}>
           Cancelar
         </Link>
-        <SoftSubmitButton
-          idleLabel={submitLabel}
-          requirements={[
-            { message: "Informe o nome do cliente.", name: "name" },
-            {
-              message: "Sem e-mail nem telefone você não terá como falar com este cliente.",
-              name: ["email", "phone"],
-            },
-          ]}
-        />
+        <SubmitButton idleLabel={submitLabel} />
       </div>
     </form>
   );

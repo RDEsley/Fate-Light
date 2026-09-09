@@ -58,32 +58,38 @@ async function selectClient(panel: Locator, name: string) {
   await panel.getByRole("listbox").getByRole("option").filter({ hasText: name }).click();
 }
 
+async function clickMainNav(page: Page, slug: string) {
+  await page.locator(`nav[aria-label="Navegação principal"] [data-tour="nav-${slug}"]`).click();
+}
+
 async function selectField(panel: Locator, name: string, option: string) {
   const field = panel.locator(`input[name="${name}"]`).locator("..");
   await field.getByRole("combobox").click();
-  await field.getByRole("option", { name: new RegExp(`^${option}\\b`) }).click();
+  await field
+    .getByRole("listbox")
+    .getByRole("option", { name: new RegExp(`^${option}\\b`) })
+    .click();
+}
+
+async function fillMoney(field: Locator, reais: string) {
+  // MoneyField interpreta colagem com vírgula decimal (ex.: "500,00" → R$ 500,00).
+  const normalized = reais.includes(",") ? reais : `${reais},00`;
+  await field.click();
+  await field.fill(normalized);
 }
 
 async function addService(page: Page, values: { name: string; own: string; media: string }) {
   const panel = page.locator("details").filter({ hasText: "Adicionar serviço" });
   await panel.locator(":scope > summary").click();
   await panel.getByLabel("Nome exibido no cliente").fill(values.name);
-  // O rótulo contém uma ajuda contextual acessível. O nome do campo é o contrato
-  // estável do formulário e evita acoplar o fluxo E2E ao texto dessa explicação.
-  await panel.locator('input[name="listPrice"]').fill(values.own);
+  await fillMoney(panel.getByRole("textbox", { name: "Valor cheio" }), values.own);
   const firstDueDate = panel.getByLabel("Primeiro vencimento", { exact: true });
   await fillDate(firstDueDate, dateOffset(7));
-  const mediaBudget = panel.locator('input[name="mediaBudget"]');
   await panel.getByText("Personalizar preço e agenda", { exact: true }).click();
-  await expect(mediaBudget).toBeVisible();
+  await expect(panel.getByRole("textbox", { name: "Verba de mídia" })).toBeVisible();
   await fillDate(panel.getByLabel("Início do serviço", { exact: true }), dateOffset(0));
-  await mediaBudget.fill(values.media);
-  const submit = panel.getByRole("button", { name: "Aplicar serviço e criar cobrança" });
-  await submit.click();
-  if (Number(values.own) === 0) {
-    await expect(panel.getByText("Vale conferir antes de continuar")).toBeVisible();
-    await submit.click();
-  }
+  await fillMoney(panel.getByRole("textbox", { name: "Verba de mídia" }), values.media);
+  await panel.getByRole("button", { name: "Aplicar serviço" }).click();
   await expect(page.getByText("Serviço aplicado e cobrança criada.")).toBeVisible();
 }
 
@@ -122,47 +128,131 @@ test.describe("authenticated MVP journey", () => {
 
     await addService(page, { name: "Gestão de Google Ads", own: "500", media: "1000" });
     await addService(page, { name: "Landing Page", own: "0", media: "0" });
+    const adsCard = page
+      .locator("article")
+      .filter({ hasText: "Gestão de Google Ads" })
+      .filter({ hasText: "Próximo vencimento" })
+      .first();
+    const landingCard = page
+      .locator("article")
+      .filter({ hasText: "Landing Page" })
+      .filter({ hasText: "Próximo vencimento" })
+      .first();
     await expect(
-      page.getByRole("heading", { level: 3, name: "Gestão de Google Ads" }),
+      adsCard.getByRole("heading", { level: 3, name: "Gestão de Google Ads", exact: true }),
     ).toBeVisible();
-    await expect(page.getByRole("heading", { level: 3, name: "Landing Page" })).toBeVisible();
-
-    const adsCard = page.locator("article").filter({ hasText: "Gestão de Google Ads" });
+    await expect(
+      landingCard.getByRole("heading", { level: 3, name: "Landing Page", exact: true }),
+    ).toBeVisible();
+    const nextDueBeforeManual = await adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd").innerText();
     await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
-    let chargePanel = page.locator("details").filter({ hasText: "Cobrança avulsa" });
+    let chargePanel = page.locator("#nova-cobranca details");
+    await expect(chargePanel).toBeVisible();
+    await expect(chargePanel.getByText(/não altera a agenda automática/i)).toBeVisible();
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
-    await chargePanel.locator('input[name="companyRevenue"]').fill("500");
-    await chargePanel.locator('input[name="mediaBudget"]').fill("1000");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "500");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "1000");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
+    await expect(page.getByText(/cobrança criada/i)).toBeVisible();
     const paidCharge = page.locator("article").filter({ hasText: "Mensalidade Ads" });
     await selectField(paidCharge, "paymentMethod", "Pix");
     await paidCharge.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
+    // Cobrança manual não avança a agenda do serviço.
+    await expect(
+      adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd"),
+    ).toHaveText(nextDueBeforeManual);
 
-    chargePanel = page.locator("details").filter({ hasText: "Cobrança avulsa" });
+    chargePanel = page.locator("#nova-cobranca details");
     await chargePanel.locator("summary").click();
-    await selectClient(chargePanel, "Cliente MVP");
     await chargePanel.getByLabel("Descrição").fill("Pendência operacional");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(-1));
-    await chargePanel.locator('input[name="companyRevenue"]').fill("100");
-    await chargePanel.locator('input[name="mediaBudget"]').fill("0");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "100");
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Verba de mídia" }), "0");
     await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
     await expect(
-      page.locator("article").filter({ hasText: "Pendência operacional" }).getByText("Vencida"),
-    ).toBeVisible();
+      page.locator("article").filter({ hasText: "Pendência operacional" }).first(),
+    ).toContainText("Vencida");
 
-    await page.getByRole("link", { name: "Despesas" }).click();
+    // Pagar em /cobrancas e confirmar a ficha do cliente atualizada.
+    await clickMainNav(page, "cobrancas");
+    await expect(page).toHaveURL(/\/cobrancas/);
+    const overdueOnCharges = page
+      .locator("article")
+      .filter({ hasText: "Pendência operacional" })
+      .first();
+    await expect(overdueOnCharges.getByRole("combobox")).toBeVisible();
+    await selectField(overdueOnCharges, "paymentMethod", "Pix");
+    await overdueOnCharges.getByRole("button", { name: "Marcar como paga" }).click();
+    await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
+    await clickMainNav(page, "clientes");
+    await page.getByRole("link", { name: "Cliente MVP" }).first().click();
+    await expect(page.locator("article").filter({ hasText: "Pendência operacional" })).toHaveCount(0);
+
+    // Criar, pagar e excluir cobrança paga — Dashboard deixa de somar.
+    chargePanel = page.locator("#nova-cobranca details");
+    await chargePanel.locator("summary").click();
+    await chargePanel.getByLabel("Descrição").fill("Correção temporária");
+    await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "80");
+    await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
+    const correction = page.locator("article").filter({ hasText: "Correção temporária" }).first();
+    await selectField(correction, "paymentMethod", "Pix");
+    await correction.getByRole("button", { name: "Marcar como paga" }).click();
+    await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
+    await clickMainNav(page, "dashboard");
+    await page.getByRole("link", { name: "Todo o período" }).click();
+    await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
+      /R\$\s*680,00/,
+    );
+    await clickMainNav(page, "clientes");
+    await page.getByRole("link", { name: "Cliente MVP" }).first().click();
+    // A exclusão paga acontece em /cobrancas.
+    await clickMainNav(page, "cobrancas");
+    const paidOnCharges = page
+      .locator("article")
+      .filter({ hasText: "Correção temporária" })
+      .first();
+    await paidOnCharges.getByRole("button", { name: "Excluir paga" }).click();
+    await expect(page.getByRole("button", { name: "Excluir cobrança paga" })).toBeEnabled({
+      timeout: 6_000,
+    });
+    await page.getByRole("button", { name: "Excluir cobrança paga" }).click();
+    await expect(page.getByText(/excluíd/i)).toBeVisible({ timeout: 15_000 });
+    await clickMainNav(page, "dashboard");
+    await page.getByRole("link", { name: "Todo o período" }).click();
+    await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
+      /R\$\s*600,00/,
+    );
+
+    await clickMainNav(page, "despesas");
     const expensePanel = page.locator("details").filter({ hasText: "Nova despesa" });
     await expensePanel.locator("summary").click();
     await expensePanel.getByLabel("Descrição").fill("Ferramenta mensal");
-    await expensePanel.getByLabel("Valor").fill("200");
+    await fillMoney(expensePanel.getByRole("textbox", { name: "Valor" }), "200");
     await fillDate(expensePanel.getByLabel("Vencimento ou data", { exact: true }), dateOffset(0));
+    await selectField(expensePanel, "expenseType", "Fixa");
+    await expensePanel.getByLabel(/Repetir todo mês/i).check();
     await selectField(expensePanel, "status", "Paga");
     await expensePanel.getByRole("button", { name: "Criar despesa" }).click();
-    await expect(page.getByText("Ferramenta mensal")).toBeVisible();
+    await expect(page).toHaveURL(/\/despesas/);
+    const paidMonthly = page
+      .locator("article")
+      .filter({ hasText: "Ferramenta mensal" })
+      .filter({ has: page.locator(".charge-status--paid") });
+    const pendingMonthly = page
+      .locator("article")
+      .filter({ hasText: "Ferramenta mensal" })
+      .filter({ has: page.getByRole("button", { name: "Marcar como paga" }) });
+    await expect(paidMonthly).toBeVisible();
+    // Próxima ocorrência pendente nasce automaticamente.
+    await expect(pendingMonthly).toBeVisible();
+    await pendingMonthly.locator("button", { hasText: "Parar mensal" }).click();
+    await page.getByRole("button", { name: "Parar recorrência" }).click();
+    await expect(page.getByText(/recorrência mensal encerrada/i)).toBeVisible();
 
-    await page.getByRole("link", { name: "Domínios" }).click();
+    await clickMainNav(page, "dominios");
     const domainPanel = page.locator("details").filter({ hasText: "Novo domínio" });
     await domainPanel.locator(":scope > summary").click();
     await selectClient(domainPanel, "Cliente MVP");
@@ -171,32 +261,29 @@ test.describe("authenticated MVP journey", () => {
     await domainPanel.getByRole("button", { name: "Criar domínio" }).click();
     await expect(page.getByText("Vence em até 7 dias")).toBeVisible();
 
-    await page.getByRole("link", { name: "Dashboard" }).click();
+    await clickMainNav(page, "dashboard");
     await page.getByRole("link", { name: "Todo o período" }).click();
     await expect(page).toHaveURL(/\/dashboard\?period=all$/);
     await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
-      /R\$\s*500,00/,
+      /R\$\s*600,00/,
     );
     await expect(page.getByText("Verba e repasses", { exact: true }).locator("..")).toContainText(
-      /R\$\s*3\.000,00/,
+      /R\$\s*2\.000,00/,
     );
     await expect(page.getByRole("link", { name: /Despesas pagas/ })).toContainText(/R\$\s*200,00/);
     await expect(page.getByRole("link", { name: /Resultado gerencial/ })).toContainText(
-      /R\$\s*300,00/,
+      /R\$\s*400,00/,
     );
-    await expect(page.getByRole("heading", { name: "Cobranças vencidas (1)" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Cobranças vencidas (0)" })).toBeVisible();
+    await expect(page.getByText("Nenhuma cobrança vencida.")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Domínios nos próximos 30 dias (1)" }),
     ).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.getByRole("link", { name: "Abrir central de alertas" }).click();
-    const overdueAlert = page.locator("article").filter({ hasText: "Pendência operacional" });
-    await overdueAlert.getByRole("link", { name: "Abrir origem" }).click();
-    await expect(page).toHaveURL(/\/cobrancas\?focus=/);
-    await expect(
-      page.locator("article").filter({ hasText: "Pendência operacional" }),
-    ).toBeVisible();
+    // Pendência operacional já foi quitada; alerta de atraso não deve ser o foco.
+    await expect(page.getByRole("heading", { level: 1, name: "Alertas" })).toBeVisible();
 
     await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("link", { name: "Perfil e sistema" }).click();
@@ -229,7 +316,7 @@ test.describe("authenticated MVP journey", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: "Confirmar 1 registros" }).click();
     await expect(page.getByText("Importação concluída com sucesso.")).toBeVisible();
-    await page.getByRole("link", { name: "Clientes" }).click();
+    await clickMainNav(page, "clientes");
     await page.getByPlaceholder("Buscar cliente...").fill(importedClient);
     await page.getByRole("button", { name: "Filtrar" }).click();
     await expect(page.getByRole("link", { name: importedClient, exact: true })).toBeVisible();

@@ -1226,41 +1226,6 @@ summary::-webkit-details-marker {
   transform: translateX(-50%);
 }
 
-.soft-submit {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.soft-submit__warnings {
-  border: 1.5px solid color-mix(in srgb, var(--warning) 38%, transparent);
-  border-radius: 0.9rem;
-  background: var(--warning-soft);
-  padding: 0.7rem 0.85rem;
-}
-
-.soft-submit__title {
-  display: flex;
-  align-items: center;
-  color: var(--warning);
-  font-size: 0.82rem;
-  font-weight: 900;
-  gap: 0.4rem;
-}
-
-.soft-submit__warnings ul {
-  margin: 0.4rem 0 0.5rem;
-  padding-left: 1.1rem;
-  color: var(--foreground);
-  font-size: 0.8rem;
-  line-height: 1.5;
-  list-style: disc;
-}
-
-.soft-submit__warnings small {
-  color: var(--muted);
-  font-size: 0.72rem;
-}
-
 .client-status,
 .service-state {
   display: inline-flex;

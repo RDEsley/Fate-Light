@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { deleteOperationalRecord, markExpensePaid } from "@/app/_actions/mvp";
+import {
+  deleteOperationalRecord,
+  deletePaidFinancialRecord,
+  markExpensePaid,
+  stopExpenseRecurrence,
+} from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
@@ -43,7 +48,7 @@ export default async function ExpensesPage({
   let expensesRequest = context.supabase
     .from("expenses")
     .select(
-      "id, description, category, amount, due_date, status, paid_at, expense_type, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)",
+      "id, description, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)",
       { count: "exact" },
     )
     .eq("workspace_id", context.workspaceId)
@@ -71,7 +76,7 @@ export default async function ExpensesPage({
   };
   return (
     <AccountShell
-      description="Registre custos pagos ou pendentes e relacione-os a um cliente quando necessário."
+      description="Registre custos pagos ou pendentes. Despesas fixas podem repetir todo mês ao serem quitadas."
       title="Despesas"
     >
       <MvpStatusMessage status={parameters.status} />
@@ -136,69 +141,155 @@ export default async function ExpensesPage({
       {error ? (
         <p role="alert">Não foi possível carregar as despesas.</p>
       ) : expenses?.length ? (
-        <div className="space-y-4">
-          {expenses.map((expense) => (
-            <article
-              className="cartoon-card flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5"
-              key={expense.id}
-            >
-              <div>
-                <h2 className="font-semibold">{expense.description}</h2>
-                <p className="text-muted text-sm">
-                  {categories.find(([value]) => value === expense.category)?.[1]} ·{" "}
-                  {expense.expense_type === "fixed" ? "Fixa" : "Variável"} ·{" "}
-                  {expense.clients?.name ?? "Sem cliente"} · {formatDatePtBr(expense.due_date)}
-                </p>
-                <p
-                  className={`mt-2 font-black ${expense.status === "paid" ? "text-positive" : "text-negative"}`}
-                >
-                  {formatCurrency(expense.amount)} ·{" "}
-                  {expense.status === "paid" ? "Paga" : "Pendente"}
-                </p>
-              </div>
-              {expense.status === "pending" ? (
-                <div className="flex flex-wrap gap-2">
-                  <form action={markExpensePaid}>
-                    <input name="id" type="hidden" value={expense.id} />
-                    <SubmitButton idleLabel="Marcar como paga" />
-                  </form>
-                  <form action={deleteOperationalRecord}>
-                    <input name="clientId" type="hidden" value="" />
-                    <input name="id" type="hidden" value={expense.id} />
-                    <input name="recordType" type="hidden" value="expense" />
-                    <ConfirmDialog
-                      className="danger-action"
-                      confirmLabel="Excluir despesa"
-                      confirmation="A despesa ainda não paga some do sistema sem deixar registro."
-                      icon="trash"
-                      label="Excluir"
-                      title={expense.description}
-                    />
-                  </form>
+        <div className="charge-list">
+          {expenses.map((expense) => {
+            const monthly =
+              expense.expense_type === "fixed" &&
+              Boolean(expense.recurrence_group_id) &&
+              expense.recurrence_frequency === "monthly";
+            return (
+              <article className="charge-card" key={expense.id}>
+                <div className="charge-card__head">
+                  <div className="min-w-0">
+                    <h2>{expense.description}</h2>
+                    <p>
+                      {categories.find(([value]) => value === expense.category)?.[1]} ·{" "}
+                      {expense.clients?.name ?? "Sem cliente"} · {formatDatePtBr(expense.due_date)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span
+                      className={`charge-status ${monthly ? "charge-status--pending" : "charge-status--cancelled"}`}
+                    >
+                      {monthly ? "Mensal" : "Avulsa"}
+                    </span>
+                    <span
+                      className={`charge-status charge-status--${expense.status === "paid" ? "paid" : "pending"}`}
+                    >
+                      {expense.status === "paid" ? "Paga" : "Pendente"}
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <span className="text-muted text-sm">
-                    {expense.paid_at ? new Date(expense.paid_at).toLocaleString("pt-BR") : ""}
-                  </span>
-                  <FiscalDocumentPanel
-                    documents={(expense.fiscal_documents ?? []).map((document) => ({
-                      createdAt: document.created_at,
-                      id: document.id,
-                      mimeType: document.mime_type,
-                      sizeBytes: document.size_bytes,
-                    }))}
-                    entityId={expense.id}
-                    entityType="expense"
-                  />
-                </>
-              )}
-            </article>
-          ))}
+                <dl className="charge-card__values">
+                  <div>
+                    <dt>Valor</dt>
+                    <dd
+                      className={`font-black ${expense.status === "paid" ? "text-positive" : "text-negative"}`}
+                    >
+                      {formatCurrency(expense.amount)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Tipo</dt>
+                    <dd>{expense.expense_type === "fixed" ? "Fixa" : "Variável"}</dd>
+                  </div>
+                </dl>
+                {expense.status === "pending" ? (
+                  <div className="charge-card__actions">
+                    <form action={markExpensePaid} className="charge-settle">
+                      <input name="id" type="hidden" value={expense.id} />
+                      <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
+                    </form>
+                    <div className="charge-card__secondary">
+                      {monthly && expense.recurrence_active ? (
+                        <form action={stopExpenseRecurrence}>
+                          <input name="id" type="hidden" value={expense.id} />
+                          <ConfirmDialog
+                            className="charge-action"
+                            confirmLabel="Parar recorrência"
+                            confirmation="As próximas ocorrências deixam de ser criadas automaticamente. O histórico já lançado permanece."
+                            icon="pause"
+                            label="Parar mensal"
+                            title={expense.description}
+                            tone="default"
+                          />
+                        </form>
+                      ) : null}
+                      <form action={deleteOperationalRecord}>
+                        <input name="clientId" type="hidden" value="" />
+                        <input name="id" type="hidden" value={expense.id} />
+                        <input name="recordType" type="hidden" value="expense" />
+                        <ConfirmDialog
+                          className="charge-action charge-action--danger"
+                          confirmLabel="Excluir despesa"
+                          confirmation={
+                            monthly && expense.recurrence_active
+                              ? "Esta ocorrência some e a recorrência mensal para. O histórico já pago permanece."
+                              : "A despesa ainda não paga some do sistema sem deixar registro."
+                          }
+                          icon="trash"
+                          label="Excluir"
+                          title={expense.description}
+                        />
+                      </form>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="charge-card__footnote">
+                      <Icon className="size-4" name="check" />{" "}
+                      {expense.paid_at
+                        ? `Paga em ${new Date(expense.paid_at).toLocaleString("pt-BR")}`
+                        : "Paga"}
+                      {monthly && expense.recurrence_active
+                        ? " · série mensal ativa"
+                        : monthly
+                          ? " · série mensal encerrada"
+                          : ""}
+                    </p>
+                    <FiscalDocumentPanel
+                      documents={(expense.fiscal_documents ?? []).map((document) => ({
+                        createdAt: document.created_at,
+                        id: document.id,
+                        mimeType: document.mime_type,
+                        sizeBytes: document.size_bytes,
+                      }))}
+                      entityId={expense.id}
+                      entityType="expense"
+                    />
+                    <div className="charge-card__actions mt-3">
+                      {monthly && expense.recurrence_active ? (
+                        <form action={stopExpenseRecurrence}>
+                          <input name="id" type="hidden" value={expense.id} />
+                          <ConfirmDialog
+                            className="charge-action"
+                            confirmLabel="Parar recorrência"
+                            confirmation="As próximas ocorrências deixam de ser criadas automaticamente. O histórico já lançado permanece."
+                            icon="pause"
+                            label="Parar mensal"
+                            title={expense.description}
+                            tone="default"
+                          />
+                        </form>
+                      ) : null}
+                      <form action={deletePaidFinancialRecord}>
+                        <input name="id" type="hidden" value={expense.id} />
+                        <input name="recordType" type="hidden" value="expense" />
+                        <input name="returnTo" type="hidden" value="/despesas" />
+                        <ConfirmDialog
+                          className="charge-action charge-action--danger"
+                          confirmLabel="Excluir despesa paga"
+                          confirmation="O valor sai do dashboard e do histórico. Notas fiscais anexadas são removidas. Esta ação é irreversível."
+                          holdSeconds={3}
+                          icon="trash"
+                          label="Excluir paga"
+                          title={expense.description}
+                        />
+                      </form>
+                    </div>
+                  </>
+                )}
+              </article>
+            );
+          })}
         </div>
       ) : (
         <section className="border-line bg-surface rounded-2xl border p-8 text-center">
           <h2 className="text-xl font-semibold">Nenhuma despesa</h2>
+          <p className="text-muted mt-2">
+            Lance custos fixos ou avulsos pelo formulário acima. Despesas mensais criam a próxima
+            ocorrência ao serem marcadas como pagas.
+          </p>
         </section>
       )}
       {totalPages > 1 ? (
