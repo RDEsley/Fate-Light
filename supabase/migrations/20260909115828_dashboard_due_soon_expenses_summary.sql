@@ -1,5 +1,10 @@
 -- Dashboard: despesas nos próximos 7 dias + contagem de empresas/marcas ativas.
 
+-- PostgreSQL não permite alterar a lista de colunas OUT com CREATE OR REPLACE.
+-- A assinatura de entrada permanece igual, então removemos a versão anterior
+-- dentro da mesma transação da migration antes de recriá-la.
+drop function if exists public.dashboard_financial_summary(uuid, date, date, date, date, date, date);
+
 create or replace function public.dashboard_financial_summary(
   p_workspace_id uuid,
   p_start date,
