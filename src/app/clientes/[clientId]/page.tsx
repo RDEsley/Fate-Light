@@ -556,6 +556,7 @@ export default async function ClientDetailsPage({
         {isBillableClientStatus(client.commercial_status) && !archived ? (
           <details
             className="form-disclosure border-line mt-6 border-t pt-5"
+            id="adicionar-servico"
             open={openServiceForm}
           >
             <summary className="flex cursor-pointer items-center justify-between font-semibold">
