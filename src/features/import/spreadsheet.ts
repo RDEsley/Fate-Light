@@ -16,6 +16,7 @@ const emptyPayload = (): ImportPayload => ({
   charges: [],
   clients: [],
   domains: [],
+  entities: [],
   expenses: [],
   services: [],
 });
@@ -204,6 +205,7 @@ function parseCanonicalSheet(
     const sourceRow = index + 2;
     const type = key(value(row, headers, ["Tipo", "Type"]));
     const clientName = text(value(row, headers, ["Cliente", "Client"]));
+    const clientEntityName = text(value(row, headers, ["Empresa/Marca", "Entity"]));
     const notes = text(value(row, headers, ["Observações", "Observacoes", "Notes"]));
 
     if (!type) {
@@ -300,6 +302,7 @@ function parseCanonicalSheet(
           ? "monthly"
           : "single",
         clientName,
+        clientEntityName,
         companyRevenue,
         description: text(value(row, headers, ["Descrição", "Descricao", "Description"])),
         mediaBudget,
@@ -348,6 +351,7 @@ function parseCanonicalSheet(
       payload.charges.push({
         additionalFee,
         clientName,
+        clientEntityName,
         companyRevenue,
         description,
         dueDate,
@@ -383,6 +387,7 @@ function parseCanonicalSheet(
         amount,
         category: categoryValue(value(row, headers, ["Categoria", "Category"])),
         clientName,
+        clientEntityName,
         description,
         dueDate,
         expenseType: ["fixa", "fixed"].includes(
@@ -413,6 +418,7 @@ function parseCanonicalSheet(
           value(row, headers, ["Renovação automática", "Renovacao automatica", "Auto Renew"]),
         ),
         clientName,
+        clientEntityName,
         cost: moneyValue(value(row, headers, ["Custo", "Cost"])) || "",
         domain,
         expiresOn,
@@ -508,6 +514,7 @@ function parseLegacySheet(sheet: Sheet, payload: ImportPayload, issues: ImportIs
         additionalFee: "0.00",
         billingType,
         clientName,
+        clientEntityName: "",
         companyRevenue: amount,
         description: "Migrado da planilha legada.",
         mediaBudget: "0.00",
@@ -520,6 +527,7 @@ function parseLegacySheet(sheet: Sheet, payload: ImportPayload, issues: ImportIs
         payload.charges.push({
           additionalFee: "0.00",
           clientName,
+          clientEntityName: "",
           companyRevenue: amount,
           description: name,
           dueDate: nextDueDate,
@@ -551,6 +559,7 @@ function parseLegacySheet(sheet: Sheet, payload: ImportPayload, issues: ImportIs
           amount: expense,
           category: "other",
           clientName,
+          clientEntityName: "",
           description: `Despesa legada · ${clientName}`,
           dueDate,
           expenseType: "variable",
@@ -592,6 +601,7 @@ function parseLegacySheet(sheet: Sheet, payload: ImportPayload, issues: ImportIs
       payload.domains.push({
         autoRenew: false,
         clientName,
+        clientEntityName: "",
         cost: "",
         domain: domain.toLowerCase(),
         expiresOn,
@@ -648,9 +658,9 @@ export function normalizeWorkbook(sheets: Sheet[]): NormalizedWorkbook {
       "Nenhuma aba reconhecida. Use a coluna Tipo do modelo Fate Light ou os 18 cabeçalhos da planilha legada.",
     );
   }
+  payload.entities = entities;
   checkDuplicates(payload, issues);
-  const rowCount =
-    Object.values(payload).reduce((total, rows) => total + rows.length, 0) + entities.length;
+  const rowCount = Object.values(payload).reduce((total, rows) => total + rows.length, 0);
   if (rowCount > 1000)
     issue(issues, "Arquivo", 1, "O lote excede o limite de 1.000 registros. Divida a planilha.");
   if (rowCount === 0 && !issues.some(({ level }) => level === "error"))

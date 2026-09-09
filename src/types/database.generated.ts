@@ -1722,6 +1722,15 @@ export type Database = {
         }
         Returns: Json
       }
+      import_workspace_spreadsheet_v3: {
+        Args: {
+          p_payload: Json
+          p_source_checksum: string
+          p_source_type: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       preview_consolidate_client_into_entity: {
         Args: { p_source_client_id: string; p_target_client_id: string }
         Returns: Json

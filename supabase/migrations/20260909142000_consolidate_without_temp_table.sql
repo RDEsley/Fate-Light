@@ -35,6 +35,7 @@ declare
   v_service_links jsonb := '[]'::jsonb;
   v_moved_charge_ids uuid[] := array[]::uuid[];
   v_moved_expense_ids uuid[] := array[]::uuid[];
+  v_source public.clients%rowtype;
 begin
   if coalesce(p_confirmation, '') is distinct from 'CONSOLIDAR' then
     return jsonb_build_object('ok', false, 'reason', 'confirmation_required');
@@ -70,6 +71,10 @@ begin
   where id = p_target_client_id and workspace_id = v_workspace_id
   for update;
 
+  select * into strict v_source
+  from public.clients
+  where id = p_source_client_id and workspace_id = v_workspace_id;
+
   select entity.id
   into v_entity_id
   from public.client_entities as entity
@@ -82,11 +87,28 @@ begin
 
   if v_entity_id is null then
     insert into public.client_entities (
-      workspace_id, client_id, entity_type, display_name, status, created_by, updated_by
+      workspace_id, client_id, entity_type, display_name, legal_name, tax_id,
+      website, email, phone, notes, status, created_by, updated_by
     ) values (
-      v_workspace_id, p_target_client_id, v_entity_type, v_entity_name, 'active', v_user_id, v_user_id
+      v_workspace_id, p_target_client_id, v_entity_type, v_entity_name,
+      case when v_source.kind = 'company' then v_source.name else null end,
+      v_source.tax_id, v_source.website, v_source.email, v_source.phone,
+      nullif(concat_ws(E'\n', nullif(v_source.trade_name, ''), nullif(v_source.notes, '')), ''),
+      'active', v_user_id, v_user_id
     )
     returning id into v_entity_id;
+  else
+    update public.client_entities
+    set
+      legal_name = coalesce(legal_name,
+        case when v_source.kind = 'company' then v_source.name else null end),
+      tax_id = coalesce(tax_id, v_source.tax_id),
+      website = coalesce(website, v_source.website),
+      email = coalesce(email, v_source.email),
+      phone = coalesce(phone, v_source.phone),
+      notes = coalesce(notes,
+        nullif(concat_ws(E'\n', nullif(v_source.trade_name, ''), nullif(v_source.notes, '')), ''))
+    where id = v_entity_id and workspace_id = v_workspace_id;
   end if;
 
   select coalesce(
@@ -173,10 +195,6 @@ begin
   where workspace_id = v_workspace_id
     and client_id = p_source_client_id;
 
-  delete from public.client_contacts
-  where workspace_id = v_workspace_id
-    and client_id = p_source_client_id;
-
   update public.clients
   set
     commercial_status = 'archived',
@@ -195,11 +213,6 @@ begin
     )
   where workspace_id = v_workspace_id
     and id = p_source_client_id;
-
-  update public.activity_events
-  set client_id = p_target_client_id
-  where workspace_id = v_workspace_id
-    and client_id = p_source_client_id;
 
   insert into public.activity_events (
     workspace_id, client_id, actor_user_id, entity_type, entity_id, action, summary, event_data
@@ -225,9 +238,22 @@ begin
         'services', v_services,
         'charges', v_before_charges,
         'expenses', v_expenses,
-        'domains', v_domains,
-        'contacts_removed', v_contacts
-      )
+        'domains', v_domains
+      ),
+      'preserved', jsonb_build_object(
+        'contacts', v_contacts,
+        'activity_events', (select count(*) from public.activity_events
+          where workspace_id = v_workspace_id and client_id = p_source_client_id)
+      ),
+      'copied_fields', jsonb_strip_nulls(jsonb_build_object(
+        'legal_name', case when v_source.kind = 'company' then v_source.name end,
+        'trade_name', v_source.trade_name,
+        'tax_id', v_source.tax_id,
+        'website', v_source.website,
+        'email', v_source.email,
+        'phone', v_source.phone,
+        'notes', v_source.notes
+      ))
     )
   );
 

@@ -40,7 +40,9 @@ export default async function ExpensesPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    clientId?: string;
     due?: string;
+    entity?: string;
     page?: string;
     q?: string;
     state?: string;
@@ -66,6 +68,9 @@ export default async function ExpensesPage({
     .eq("workspace_id", context.workspaceId)
     .order("due_date", { ascending: dueWindow === "next7" })
     .range(firstRow, firstRow + pageSize - 1);
+  if (parameters.clientId) expensesRequest = expensesRequest.eq("client_id", parameters.clientId);
+  if (parameters.entity)
+    expensesRequest = expensesRequest.eq("client_entity_id", parameters.entity);
   if (query) expensesRequest = expensesRequest.ilike("description", `%${query}%`);
   if (state !== "all") expensesRequest = expensesRequest.eq("status", state);
   if (dueWindow === "next7") {
@@ -95,6 +100,8 @@ export default async function ExpensesPage({
     if (query) next.set("q", query);
     if (state !== "all") next.set("state", state);
     if (dueWindow !== "all") next.set("due", dueWindow);
+    if (parameters.clientId) next.set("clientId", parameters.clientId);
+    if (parameters.entity) next.set("entity", parameters.entity);
     if (targetPage > 1) next.set("page", String(targetPage));
     const suffix = next.toString();
     return `/despesas${suffix ? `?${suffix}` : ""}` as never;
@@ -154,8 +161,8 @@ export default async function ExpensesPage({
         <aside className="helper-note mb-4" role="status">
           <Icon className="size-4" name="calendar" />
           <span>
-            Mostrando despesas que vencem entre {formatDatePtBr(today)} e{" "}
-            {formatDatePtBr(nextWeek)}. <Link href="/despesas">Ver todas</Link>
+            Mostrando despesas que vencem entre {formatDatePtBr(today)} e {formatDatePtBr(nextWeek)}
+            . <Link href="/despesas">Ver todas</Link>
           </span>
         </aside>
       ) : null}
