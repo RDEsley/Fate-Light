@@ -42,7 +42,12 @@ jobs:
         run: npm ci
 
       - name: Start local Supabase without printing local credentials
-        run: npx supabase start >"$RUNNER_TEMP/supabase-start.log" 2>&1
+        run: |
+          if ! npx supabase start >"$RUNNER_TEMP/supabase-start.log" 2>&1; then
+            # Mostra só o diagnóstico do start; remove linhas com chaves/segredos locais.
+            sed -E '/(KEY|SECRET|PASSWORD|TOKEN|SERVICE_ROLE|JWT)=/Id' "$RUNNER_TEMP/supabase-start.log" >&2 || true
+            exit 1
+          fi
 
       - name: Reset migrations and seed
         run: npx supabase db reset --local
@@ -128,7 +133,12 @@ jobs:
         run: npm ci
 
       - name: Start local Supabase without printing local credentials
-        run: npx supabase start >"$RUNNER_TEMP/supabase-start.log" 2>&1
+        run: |
+          if ! npx supabase start >"$RUNNER_TEMP/supabase-start.log" 2>&1; then
+            # Mostra só o diagnóstico do start; remove linhas com chaves/segredos locais.
+            sed -E '/(KEY|SECRET|PASSWORD|TOKEN|SERVICE_ROLE|JWT)=/Id' "$RUNNER_TEMP/supabase-start.log" >&2 || true
+            exit 1
+          fi
 
       - name: Reset local authentication and database
         run: npx supabase db reset --local
