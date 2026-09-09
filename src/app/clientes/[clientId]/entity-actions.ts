@@ -10,11 +10,12 @@ import {
   consolidationReasonMessages,
   parseClientEntityForm,
   readConsolidationPayload,
-  type ConsolidationPreview,
 } from "@/features/clients/entity-schemas";
 import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { actionError, rejectSubmission, type ActionState } from "@/lib/forms/action-state";
+
+import type { ConsolidationActionState } from "./consolidation-state";
 
 const identifierSchema = z.string().uuid();
 
@@ -139,15 +140,6 @@ export async function restoreClientEntity(formData: FormData) {
   revalidateEntitySurfaces(clientId.data);
   statusRedirect(path, "entity-restored");
 }
-
-export type ConsolidationActionState = {
-  message?: string;
-  preview?: ConsolidationPreview;
-  sourceClientId?: string;
-  status: "error" | "idle" | "preview";
-};
-
-export const initialConsolidationState: ConsolidationActionState = { status: "idle" };
 
 function consolidationError(reason: string, fallback?: string): ConsolidationActionState {
   return {
