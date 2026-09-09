@@ -13,12 +13,12 @@
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=0B1F2A" alt="React 19.2.8" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0.3" /></a>
     <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-PostgreSQL_17-3FCF8E?logo=supabase&logoColor=white" alt="Supabase com PostgreSQL 17" /></a>
-    <a href="https://fate-eight-project-richards-projects-42fb7402.vercel.app"><img src="https://img.shields.io/badge/Vercel-online-000000?logo=vercel&logoColor=white" alt="Produção online na Vercel" /></a>
+    <a href="https://fatelight-alpha.vercel.app"><img src="https://img.shields.io/badge/Vercel-online-000000?logo=vercel&logoColor=white" alt="Produção online na Vercel" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-16A34A.svg" alt="Licença MIT" /></a>
   </p>
   <p>
     <a href="#-funcionalidades">Funcionalidades</a> •
-    <a href="https://fate-eight-project-richards-projects-42fb7402.vercel.app">Abrir sistema</a> •
+    <a href="https://fatelight-alpha.vercel.app">Abrir sistema</a> •
     <a href="#-tecnologias">Tecnologias</a> •
     <a href="#-instalação-local">Instalação</a> •
     <a href="#-deploy-na-vercel">Deploy</a> •
