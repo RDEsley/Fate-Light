@@ -215,7 +215,7 @@ test.describe("authenticated MVP journey", () => {
     await overdueOnCharges.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
     await clickMainNav(page, "clientes");
-    await page.getByRole("link", { name: "Cliente MVP" }).first().click();
+    await page.getByRole("link", { name: "Cliente MVP", exact: true }).click();
     await expect(page.locator("article").filter({ hasText: "Pendência operacional" })).toHaveCount(0);
 
     // Criar, pagar e excluir cobrança paga — Dashboard deixa de somar.
@@ -235,7 +235,7 @@ test.describe("authenticated MVP journey", () => {
       /R\$\s*680,00/,
     );
     await clickMainNav(page, "clientes");
-    await page.getByRole("link", { name: "Cliente MVP" }).first().click();
+    await page.getByRole("link", { name: "Cliente MVP", exact: true }).click();
     // A exclusão paga acontece em /cobrancas.
     await clickMainNav(page, "cobrancas");
     const paidOnCharges = page
