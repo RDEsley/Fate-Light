@@ -372,10 +372,6 @@ $$;
 
 revoke all on function public.apply_service_to_client(
   uuid, uuid, text, text, numeric, text, numeric, numeric, numeric, boolean, text,
-  date, date, integer, numeric, integer, integer, numeric, text
-) from public, anon, authenticated;
-revoke all on function public.apply_service_to_client(
-  uuid, uuid, text, text, numeric, text, numeric, numeric, numeric, boolean, text,
   date, date, integer, numeric, integer, integer, numeric, text, uuid
 ) from public, anon, authenticated;
 grant execute on function public.apply_service_to_client(
