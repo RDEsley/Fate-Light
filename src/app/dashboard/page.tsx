@@ -48,8 +48,7 @@ export default async function DashboardPage({
   // silêncio assim que o workspace crescia. Cada consulta abaixo pede só o que a página
   // realmente lê, e o horizonte das pendentes vai até o maior entre o fim do período e a
   // janela de 7 dias — os dois recortes que os cards mostram.
-  const chargeColumns =
-    "id, description, due_date, clients(name), client_entities(display_name)";
+  const chargeColumns = "id, description, due_date, clients(name), client_entities(display_name)";
   const expenseColumns =
     "id, description, amount, due_date, clients(name), client_entities(display_name)";
   const [
@@ -110,7 +109,7 @@ export default async function DashboardPage({
       .limit(4),
     context.supabase
       .from("domains")
-      .select("id, domain, expires_on, clients(name)")
+      .select("id, domain, expires_on, clients(name), client_entities(display_name)")
       .eq("workspace_id", context.workspaceId)
       .eq("status", "active")
       .lt("expires_on", today)
@@ -118,7 +117,7 @@ export default async function DashboardPage({
       .limit(4),
     context.supabase
       .from("domains")
-      .select("id, domain, expires_on, clients(name)")
+      .select("id, domain, expires_on, clients(name), client_entities(display_name)")
       .eq("workspace_id", context.workspaceId)
       .eq("status", "active")
       .gte("expires_on", today)
@@ -574,13 +573,12 @@ function expenseAlert(expense: ExpenseRow): AlertItem {
     href: `/despesas?state=pending#expense-${expense.id}` as Route,
     id: expense.id,
     meta: `${formatCurrency(expense.amount)} · ${formatDatePtBr(expense.due_date)}`,
-    title: expense.client_entities?.display_name
-      ? `${expense.description} — ${expense.client_entities.display_name}`
-      : expense.description,
+    title: `${ownerLabel(expense.clients?.name, expense.client_entities?.display_name)} — ${expense.description}`,
   };
 }
 
 type DomainRow = {
+  client_entities: { display_name: string } | null;
   clients: { name: string } | null;
   domain: string;
   expires_on: string;
@@ -592,6 +590,6 @@ function domainAlert(domain: DomainRow): AlertItem {
     href: `/dominios#domain-${domain.id}` as Route,
     id: domain.id,
     meta: formatDatePtBr(domain.expires_on),
-    title: `${domain.domain} — ${domain.clients?.name ?? "Cliente"}`,
+    title: `${domain.domain} — ${ownerLabel(domain.clients?.name, domain.client_entities?.display_name)}`,
   };
 }

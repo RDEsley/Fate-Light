@@ -17,10 +17,26 @@ export const clientEntityTypeLabels: Record<ClientEntityType, string> = {
 };
 
 export const clientEntityTypeOptions = [
-  { description: "Um CNPJ ou razão social sob o mesmo cliente", label: "Empresa", value: "company" },
-  { description: "Uma marca comercial do mesmo grupo", label: "Marca", value: "brand" },
-  { description: "Uma frente de trabalho com identidade própria", label: "Projeto", value: "project" },
-  { description: "Qualquer outro recorte que você precise separar", label: "Outro", value: "other" },
+  {
+    description: "Um CNPJ ou razão social sob o mesmo cliente",
+    label: "Empresa",
+    value: "company",
+  },
+  {
+    description: "Uma marca comercial do mesmo grupo",
+    label: "Marca",
+    value: "brand",
+  },
+  {
+    description: "Uma frente de trabalho com identidade própria",
+    label: "Projeto",
+    value: "project",
+  },
+  {
+    description: "Qualquer outro recorte que você precise separar",
+    label: "Outro",
+    value: "other",
+  },
 ];
 
 /** Rótulo seguro para valores vindos do banco, que podem ter nascido antes de um tipo novo. */
@@ -126,16 +142,23 @@ export const consolidationReasonMessages: Record<string, string> = {
 };
 
 export type ConsolidationPreview = {
-  counts: { charges: number; contacts: number; domains: number; expenses: number; services: number };
+  counts: {
+    charges: number;
+    contacts: number;
+    domains: number;
+    expenses: number;
+    services: number;
+  };
+  copiedFields: Record<string, string>;
   ok: true;
+  preserved: { activityEvents: boolean; contacts: boolean };
   source: { id: string; name: string; status: string };
   target: { id: string; name: string; status: string };
   totals: { expenses_paid: number; media: number; own_received: number };
 };
 
 export type ConsolidationResult =
-  | ConsolidationPreview
-  | { message?: string; ok: false; reason: string };
+  ConsolidationPreview | { message?: string; ok: false; reason: string };
 
 function readNumber(value: unknown) {
   const parsed = Number(value ?? 0);
@@ -161,6 +184,8 @@ export function readConsolidationPayload(payload: unknown): ConsolidationResult 
   const totals = readGroup(record.totals);
   const source = readGroup(record.source);
   const target = readGroup(record.target);
+  const preserved = readGroup(record.preserved);
+  const copiedFields = readGroup(record.copied_fields);
   return {
     counts: {
       charges: readNumber(counts.charges),
@@ -169,7 +194,16 @@ export function readConsolidationPayload(payload: unknown): ConsolidationResult 
       expenses: readNumber(counts.expenses),
       services: readNumber(counts.services),
     },
+    copiedFields: Object.fromEntries(
+      Object.entries(copiedFields).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    ),
     ok: true,
+    preserved: {
+      activityEvents: preserved.activity_events === true,
+      contacts: preserved.contacts === true,
+    },
     source: {
       id: String(source.id ?? ""),
       name: String(source.name ?? ""),

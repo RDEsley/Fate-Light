@@ -34,11 +34,7 @@ export function ClientEntityCard({
     return (
       <article className="border-brand/40 rounded-xl border-2 p-4">
         <h3 className="font-black">Editar {entity.displayName}</h3>
-        <ClientEntityForm
-          clientId={clientId}
-          entity={entity}
-          onCancel={() => setEditing(false)}
-        />
+        <ClientEntityForm clientId={clientId} entity={entity} onCancel={() => setEditing(false)} />
       </article>
     );
   }
@@ -73,9 +69,9 @@ export function ClientEntityCard({
       <div className="entity-card__actions">
         <Link
           className="text-brand-strong text-xs font-black"
-          href={`/cobrancas?clientId=${clientId}&entity=${entity.id}`}
+          href={`/clientes/${clientId}?entity=${entity.id}`}
         >
-          Abrir cobranças →
+          Abrir empresa/marca →
         </Link>
         {readOnly ? null : entity.archived ? (
           <form action={restoreClientEntity}>
