@@ -187,7 +187,7 @@ select is(
   'Authenticated não altera updated_by diretamente'
 );
 select results_eq(
-  $$select count(*)::int from information_schema.triggers
+  $$select count(distinct trigger_name)::int from information_schema.triggers
     where event_object_schema='public' and event_object_table='client_entities'$$,
   $$select 3$$,
   'Entity possui triggers de timestamp, autoria e auditoria'

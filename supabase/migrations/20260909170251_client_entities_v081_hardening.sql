@@ -305,7 +305,7 @@ begin
 
   v_result := jsonb_set(v_result, '{counts,entities}', to_jsonb(v_entities), true);
   update public.import_jobs
-    set entity_counts = v_result -> 'counts', mapping_version = 'v3'
+    set entity_counts = v_result -> 'counts'
     where id = (v_result ->> 'jobId')::uuid and workspace_id = p_workspace_id;
   return v_result;
 exception
