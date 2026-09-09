@@ -212,7 +212,11 @@ export default async function ExpensesPage({
                         <ConfirmDialog
                           className="charge-action charge-action--danger"
                           confirmLabel="Excluir despesa"
-                          confirmation="A despesa ainda não paga some do sistema sem deixar registro."
+                          confirmation={
+                            monthly && expense.recurrence_active
+                              ? "Esta ocorrência some e a recorrência mensal para. O histórico já pago permanece."
+                              : "A despesa ainda não paga some do sistema sem deixar registro."
+                          }
                           icon="trash"
                           label="Excluir"
                           title={expense.description}

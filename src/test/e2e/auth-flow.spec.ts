@@ -127,9 +127,11 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.getByRole("heading", { level: 3, name: "Landing Page" })).toBeVisible();
 
     const adsCard = page.locator("article").filter({ hasText: "Gestão de Google Ads" });
+    const nextDueBeforeManual = await adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd").innerText();
     await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
     let chargePanel = page.locator("#nova-cobranca details");
     await expect(chargePanel).toBeVisible();
+    await expect(chargePanel.getByText(/não altera a agenda automática/i)).toBeVisible();
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
     await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "500");
@@ -140,6 +142,10 @@ test.describe("authenticated MVP journey", () => {
     await selectField(paidCharge, "paymentMethod", "Pix");
     await paidCharge.getByRole("button", { name: "Marcar como paga" }).click();
     await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
+    // Cobrança manual não avança a agenda do serviço.
+    await expect(
+      adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd"),
+    ).toHaveText(nextDueBeforeManual);
 
     chargePanel = page.locator("#nova-cobranca details");
     await chargePanel.locator("summary").click();
@@ -152,15 +158,66 @@ test.describe("authenticated MVP journey", () => {
       page.locator("article").filter({ hasText: "Pendência operacional" }).getByText("Vencida"),
     ).toBeVisible();
 
+    // Pagar em /cobrancas e confirmar a ficha do cliente atualizada.
+    await page.getByRole("link", { name: "Cobranças" }).click();
+    const overdueOnCharges = page.locator("article").filter({ hasText: "Pendência operacional" });
+    await selectField(overdueOnCharges, "paymentMethod", "Pix");
+    await overdueOnCharges.getByRole("button", { name: "Marcar como paga" }).click();
+    await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
+    await page.getByRole("link", { name: "Clientes" }).click();
+    await page.getByRole("link", { name: "Cliente MVP" }).first().click();
+    await expect(page.locator("article").filter({ hasText: "Pendência operacional" })).toHaveCount(0);
+
+    // Criar, pagar e excluir cobrança paga — Dashboard deixa de somar.
+    chargePanel = page.locator("#nova-cobranca details");
+    await chargePanel.locator("summary").click();
+    await chargePanel.getByLabel("Descrição").fill("Correção temporária");
+    await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
+    await fillMoney(chargePanel.getByRole("textbox", { name: "Receita própria" }), "80");
+    await chargePanel.getByRole("button", { name: "Criar cobrança" }).click();
+    const correction = page.locator("article").filter({ hasText: "Correção temporária" });
+    await selectField(correction, "paymentMethod", "Pix");
+    await correction.getByRole("button", { name: "Marcar como paga" }).click();
+    await expect(page.getByText(/pagamento registrado/i)).toBeVisible();
+    await page.getByRole("link", { name: "Dashboard" }).click();
+    await page.getByRole("link", { name: "Todo o período" }).click();
+    await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
+      /R\$\s*680,00/,
+    );
+    await page.getByRole("link", { name: "Clientes" }).click();
+    await page.getByRole("link", { name: "Cliente MVP" }).first().click();
+    // A exclusão paga acontece em /cobrancas.
+    await page.getByRole("link", { name: "Cobranças" }).click();
+    const paidOnCharges = page.locator("article").filter({ hasText: "Correção temporária" });
+    await paidOnCharges.getByRole("button", { name: "Excluir paga" }).click();
+    await expect(page.getByRole("button", { name: "Excluir cobrança paga" })).toBeEnabled({
+      timeout: 6_000,
+    });
+    await page.getByRole("button", { name: "Excluir cobrança paga" }).click();
+    await expect(page.getByText(/excluíd/i)).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("link", { name: "Dashboard" }).click();
+    await page.getByRole("link", { name: "Todo o período" }).click();
+    await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
+      /R\$\s*600,00/,
+    );
+
     await page.getByRole("link", { name: "Despesas" }).click();
     const expensePanel = page.locator("details").filter({ hasText: "Nova despesa" });
     await expensePanel.locator("summary").click();
     await expensePanel.getByLabel("Descrição").fill("Ferramenta mensal");
     await fillMoney(expensePanel.getByRole("textbox", { name: "Valor" }), "200");
     await fillDate(expensePanel.getByLabel("Vencimento ou data", { exact: true }), dateOffset(0));
+    await selectField(expensePanel, "expenseType", "Fixa");
+    await expensePanel.getByLabel(/Repetir todo mês/i).check();
     await selectField(expensePanel, "status", "Paga");
     await expensePanel.getByRole("button", { name: "Criar despesa" }).click();
-    await expect(page.getByText("Ferramenta mensal")).toBeVisible();
+    await expect(page.getByText("Ferramenta mensal").first()).toBeVisible();
+    await expect(page.getByText("Mensal").first()).toBeVisible();
+    // Próxima ocorrência pendente nasce automaticamente.
+    await expect(page.getByRole("button", { name: "Marcar como paga" }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Parar mensal" }).first().click();
+    await page.getByRole("button", { name: "Parar recorrência" }).click();
+    await expect(page.getByText(/recorrência mensal encerrada/i)).toBeVisible();
 
     await page.getByRole("link", { name: "Domínios" }).click();
     const domainPanel = page.locator("details").filter({ hasText: "Novo domínio" });
@@ -175,28 +232,24 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("link", { name: "Todo o período" }).click();
     await expect(page).toHaveURL(/\/dashboard\?period=all$/);
     await expect(page.getByRole("link", { name: /Receita própria recebida/ })).toContainText(
-      /R\$\s*500,00/,
+      /R\$\s*600,00/,
     );
     await expect(page.getByText("Verba e repasses", { exact: true }).locator("..")).toContainText(
       /R\$\s*3\.000,00/,
     );
     await expect(page.getByRole("link", { name: /Despesas pagas/ })).toContainText(/R\$\s*200,00/);
     await expect(page.getByRole("link", { name: /Resultado gerencial/ })).toContainText(
-      /R\$\s*300,00/,
+      /R\$\s*400,00/,
     );
-    await expect(page.getByRole("heading", { name: "Cobranças vencidas (1)" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Cobranças vencidas/ })).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Domínios nos próximos 30 dias (1)" }),
     ).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.getByRole("link", { name: "Abrir central de alertas" }).click();
-    const overdueAlert = page.locator("article").filter({ hasText: "Pendência operacional" });
-    await overdueAlert.getByRole("link", { name: "Abrir origem" }).click();
-    await expect(page).toHaveURL(/\/cobrancas\?focus=/);
-    await expect(
-      page.locator("article").filter({ hasText: "Pendência operacional" }),
-    ).toBeVisible();
+    // Pendência operacional já foi quitada; alerta de atraso não deve ser o foco.
+    await expect(page.getByRole("heading", { level: 1, name: "Alertas" })).toBeVisible();
 
     await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("link", { name: "Perfil e sistema" }).click();

@@ -214,8 +214,12 @@ export async function deletePaidFinancialRecord(formData: FormData) {
   if (result.status === "blocked") statusRedirect(returnTo, "delete-blocked");
   if (result.status !== "deleted") statusRedirect(returnTo, "delete-error");
 
+  let storageCleanupFailed = false;
   if (result.objectPaths.length) {
-    await supabase.storage.from("workspace-documents").remove(result.objectPaths);
+    const { error: storageError } = await supabase.storage
+      .from("workspace-documents")
+      .remove(result.objectPaths);
+    storageCleanupFailed = Boolean(storageError);
   }
 
   const clientMatch = returnTo.match(/^\/clientes\/([0-9a-f-]{36})$/i);
@@ -224,7 +228,7 @@ export async function deletePaidFinancialRecord(formData: FormData) {
     includeCharges: values.data.recordType === "charge",
     includeExpenses: values.data.recordType === "expense",
   });
-  statusRedirect(returnTo, "paid-deleted");
+  statusRedirect(returnTo, storageCleanupFailed ? "paid-deleted-storage-pending" : "paid-deleted");
 }
 
 export async function createCharge(_state: ActionState, formData: FormData): Promise<ActionState> {
@@ -252,13 +256,15 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
   const { supabase, workspaceId } = await requireWorkspaceContext();
   // Registrar uma cobrança passada já quitada evita ter que inventar histórico depois.
   const settled = values.data.alreadyPaid;
+  // Cobrança manual nunca vincula serviço: client_service_id nulo evita que
+  // settle_charge_and_schedule_next trate o lançamento como ciclo da agenda.
   const { data, error } = await supabase
     .from("charges")
     .insert({
       additional_fee: values.data.additionalFee,
       additional_fee_is_revenue: values.data.additionalFeeIsRevenue,
       client_id: values.data.clientId,
-      client_service_id: values.data.clientServiceId || null,
+      client_service_id: null,
       company_revenue: values.data.companyRevenue,
       description: values.data.description,
       due_date: values.data.dueDate,
@@ -423,6 +429,10 @@ export async function markExpensePaid(formData: FormData) {
       ? (data as { status: string }).status
       : "";
   if (status === "not_found") statusRedirect("/despesas", "error");
+  if (status === "already_settled") {
+    revalidateFinancialSurfaces({ includeExpenses: true });
+    statusRedirect("/despesas", "expense-already-settled");
+  }
   if (status !== "settled") statusRedirect("/despesas", "error");
   revalidateFinancialSurfaces({ includeExpenses: true });
   const scheduled = Boolean((data as { scheduled?: unknown }).scheduled);

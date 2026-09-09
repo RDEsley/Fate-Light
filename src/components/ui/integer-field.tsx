@@ -32,6 +32,7 @@ export function IntegerField({
 }: IntegerFieldProps) {
   const id = useId();
   const inputId = `${id}-${name}`;
+  const errorId = `${inputId}-error`;
   const initial =
     defaultValue === null || defaultValue === undefined || defaultValue === ""
       ? ""
@@ -50,6 +51,7 @@ export function IntegerField({
         {optional ? <span className="field__optional">opcional</span> : null}
       </span>
       <input
+        aria-describedby={error ? errorId : undefined}
         aria-invalid={Boolean(error)}
         aria-label={label}
         autoComplete="off"
@@ -74,7 +76,7 @@ export function IntegerField({
         type="text"
         value={value}
       />
-      <FieldError message={error} />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }

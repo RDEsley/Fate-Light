@@ -26,8 +26,8 @@ const additionalNatureOptions = [
 ];
 
 /**
- * Cobrança no contexto do cliente. `clientId` vem oculto; serviços opcionais são só
- * deste cliente. O formulário é client component por causa do `useActionState`.
+ * Cobrança manual no contexto do cliente. Nunca grava `client_service_id`:
+ * vínculo com serviço só orienta a UX; a agenda automática do serviço não avança.
  */
 export function ChargeForm({
   clientId,
@@ -44,39 +44,33 @@ export function ChargeForm({
   const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
   const destination = returnTo ?? `/clientes/${clientId}`;
+  const contextService = services.find((service) => service.id === defaultServiceId);
+  const defaultDescription = contextService
+    ? `Ajuste — ${contextService.name}`
+    : "";
 
   return (
     <form action={formAction} className="form-grid mt-4 sm:grid-cols-2">
       <input name="clientId" type="hidden" value={clientId} />
       <input name="returnTo" type="hidden" value={destination} />
+      {/* Manual nunca entra na agenda: o RPC de baixa só avança ciclo com client_service_id. */}
+      <input name="clientServiceId" type="hidden" value="" />
       {state.status === "error" && state.message ? (
         <div className="sm:col-span-2">
           <FeedbackBanner message={state.message} tone="error" />
         </div>
       ) : null}
-      {services.length ? (
-        <SelectField
-          defaultValue={defaultServiceId ?? ""}
-          label="Serviço vinculado"
-          name="clientServiceId"
-          optional
-          options={[
-            { description: "Cobrança independente", label: "Sem vínculo", value: "" },
-            ...services.map((service) => ({
-              label: service.name,
-              value: service.id,
-            })),
-          ]}
-          placeholder="Sem vínculo"
-        />
-      ) : (
-        <input name="clientServiceId" type="hidden" value="" />
-      )}
+      {contextService ? (
+        <p className="helper-note sm:col-span-2" role="note">
+          Contexto: serviço <strong>{contextService.name}</strong>. Esta cobrança é avulsa e{" "}
+          <strong>não altera a agenda automática</strong> do serviço.
+        </p>
+      ) : null}
       <label className="field sm:col-span-2">
         <span className="field__label">Descrição</span>
         <input
           aria-invalid={Boolean(errors.description)}
-          defaultValue={sent.text("description")}
+          defaultValue={sent.text("description", defaultDescription)}
           maxLength={200}
           name="description"
           placeholder="Ex.: Gestão de tráfego — agosto"

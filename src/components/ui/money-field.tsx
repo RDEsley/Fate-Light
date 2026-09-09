@@ -102,7 +102,7 @@ export function MoneyField({
           {hint}
         </span>
       ) : null}
-      <FieldError message={error} />
+      <FieldError id={errorId} message={error} />
     </label>
   );
 }
