@@ -1,6 +1,6 @@
 # Checklist de release V1
 
-Este documento é o gate para promover o Fate Light de `0.6.1` a `1.0.0`. A versão só pode ser
+Este documento é o gate para promover o Fate Light de `0.8.0` a `1.0.0`. A versão só pode ser
 alterada quando todos os itens aplicáveis estiverem verificados e os riscos restantes forem aceitos
 explicitamente.
 
@@ -14,7 +14,8 @@ explicitamente.
   a chave real de produção ainda precisa ser criada para os domínios finais.
 - Confirmação de e-mail, SMTP e templates hospedados ainda precisam de validação manual no Supabase.
 
-Por esses motivos, a versão continua 0.6.1 e **a promoção para 1.0.0 permanece bloqueada**.
+Por esses motivos, a promoção para 1.0.0 **permanece bloqueada**; a linha `0.x` segue evoluindo
+(atualmente `0.8.0`) enquanto os itens abaixo não forem fechados.
 
 ## Código e qualidade
 
@@ -38,9 +39,10 @@ Por esses motivos, a versão continua 0.6.1 e **a promoção para 1.0.0 permanec
 ## Jornadas de produto
 
 - [ ] E2E de autenticação aprovado
-- [ ] E2E financeiro cobre cliente, serviço, cobrança, baixa, despesa, domínio, alerta e histórico
+- [ ] E2E financeiro cobre cliente, empresas/marcas, serviço, cobrança, baixa, despesa, domínio, alerta e histórico
+- [ ] consolidação de cliente em entidade validada com prévia e frase `CONSOLIDAR` (ou cobertura equivalente)
 - [ ] recorrência, promoção gratuita, parcelamento, pausa e encerramento cobertos por regressão
-- [ ] importação transacional validada com dados fictícios
+- [ ] importação transacional validada com dados fictícios (incluindo linha opcional `empresa/marca`)
 - [ ] documentos fiscais privados validados, inclusive remoção segura
 
 ## Segurança e produção

@@ -5,8 +5,10 @@
 > Para o estado de trabalho, consulte [docs/implementation-plan.md](docs/implementation-plan.md),
 > [README.md](README.md) e os ADRs.
 
-Status histórico: plano revisado e aprovado antes da implementação. A versão atual é `0.6.1`, em
-hardening para o objetivo **1.0 Production Ready**.
+Status histórico: plano revisado e aprovado antes da implementação, quando o projeto ainda estava
+na linha `0.6.x`. A versão em desenvolvimento é registrada em [package.json](package.json) e em
+[docs/implementation-plan.md](docs/implementation-plan.md); não use este arquivo como referência de
+versão.
 
 ## 1. Visão do produto
 

@@ -2,11 +2,15 @@
 
 ## Estado atual
 
-- **Versão atual:** `0.6.1`.
+- **Versão atual:** `0.8.0`.
 - **Próximo objetivo:** hardening e release candidate para **1.0 Production Ready**.
 - **Produto existente:** autenticação, onboarding, workspace, clientes, serviços, cobranças,
   despesas, domínios, alertas, histórico, importação, documentos privados, perfil, configurações,
   RLS, testes e CI/CD já possuem base implementada.
+- **Entrega `0.8.0` (ADR-0020):** `client_entities` (empresa/marca/projeto/outro) com vínculo
+  opcional em serviços, cobranças, despesas e domínios; consolidação de cliente legado com prévia e
+  frase `CONSOLIDAR`; dashboard com despesas nos próximos 7 dias e contagem de empresas/marcas
+  ativas. Naturezas financeiras e cobrança manual sem `client_service_id` permanecem intactas.
 
 As fases abaixo registram o plano de entrega original. Não devem ser interpretadas como uma ordem de
 execução pendente: a próxima frente é fechar lacunas reais de confiabilidade, segurança, cobertura,
@@ -282,7 +286,8 @@ flowchart LR
 
 ## Próximo objetivo de execução
 
-Preparar o Fate Light `0.6.1` para o release candidate 1.0, seguindo o checklist de
+Preparar o Fate Light `0.8.0` para o release candidate 1.0, seguindo o checklist de
 [release-v1.md](release-v1.md). A prioridade é: corretude financeira, segurança, confiabilidade,
-testes E2E, revisão de consultas/RLS/Storage, responsividade, acessibilidade e operação. Não criar
-novos módulos de negócio enquanto os gates existentes não estiverem concluídos.
+testes E2E (incluindo empresas/marcas e consolidação), revisão de consultas/RLS/Storage,
+responsividade, acessibilidade e operação. Não criar novos módulos de negócio enquanto os gates
+existentes não estiverem concluídos.
