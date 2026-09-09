@@ -515,18 +515,18 @@ export type Database = {
             referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_services_entity_fk"
-            columns: ["workspace_id", "client_id", "client_entity_id"]
-            isOneToOne: false
-            referencedRelation: "client_entities"
-            referencedColumns: ["workspace_id", "client_id", "id"]
-          },
-          {
             foreignKeyName: "client_services_client_fk"
             columns: ["workspace_id", "client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_services_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
             foreignKeyName: "client_services_workspace_id_fkey"
@@ -678,18 +678,18 @@ export type Database = {
             referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "domains_entity_fk"
-            columns: ["workspace_id", "client_id", "client_entity_id"]
-            isOneToOne: false
-            referencedRelation: "client_entities"
-            referencedColumns: ["workspace_id", "client_id", "id"]
-          },
-          {
             foreignKeyName: "domains_client_fk"
             columns: ["workspace_id", "client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "domains_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
             foreignKeyName: "domains_workspace_id_fkey"
@@ -826,18 +826,18 @@ export type Database = {
             referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "expenses_entity_fk"
-            columns: ["workspace_id", "client_id", "client_entity_id"]
-            isOneToOne: false
-            referencedRelation: "client_entities"
-            referencedColumns: ["workspace_id", "client_id", "id"]
-          },
-          {
             foreignKeyName: "expenses_client_fk"
             columns: ["workspace_id", "client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "expenses_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
             foreignKeyName: "expenses_workspace_id_fkey"
