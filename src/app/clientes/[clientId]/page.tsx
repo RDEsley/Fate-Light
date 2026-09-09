@@ -11,6 +11,7 @@ import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
+import { ClientStatusChip } from "@/features/clients/status-chip";
 import { formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
 import { ownRevenue } from "@/features/mvp/schemas";
@@ -291,9 +292,11 @@ export default async function ClientDetailsPage({
 
       {archived ? (
         <section className="panel-card mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-muted text-sm">
-            <strong className="text-foreground">Cliente arquivado.</strong> O histórico está
-            preservado, mas ele não aparece na operação do dia a dia.
+          <p className="text-muted flex flex-wrap items-center gap-2 text-sm">
+            <ClientStatusChip status="archived" />
+            <span>
+              O histórico está preservado, mas ele não aparece na operação do dia a dia.
+            </span>
           </p>
           <form action={restoreClient}>
             <input name="clientId" type="hidden" value={client.id} />
@@ -581,9 +584,14 @@ export default async function ClientDetailsPage({
         ) : (
           <p className="helper-note mt-5">
             <Icon className="size-4" name="info" />
-            {archived
-              ? "Desarquive o cliente para voltar a aplicar serviços."
-              : `Clientes em “${statusInfo.label}” não recebem novos serviços. Mude a situação comercial para continuar.`}
+            {archived ? (
+              "Desarquive o cliente para voltar a aplicar serviços."
+            ) : (
+              <span>
+                Clientes em <ClientStatusChip status={client.commercial_status} /> não recebem novos
+                serviços. Mude a situação comercial para continuar.
+              </span>
+            )}
           </p>
         )}
       </section>
@@ -706,7 +714,16 @@ export default async function ClientDetailsPage({
                   Adicionar serviço em vez disso →
                 </Link>
               </p>
-            ) : null}
+            ) : (
+              <p className="helper-note mt-3">
+                <Icon className="size-4" name="info" />
+                <span>
+                  Cliente em <ClientStatusChip status={client.commercial_status} />: a cobrança
+                  avulsa ainda funciona, mas novos serviços ficam bloqueados até mudar a situação
+                  comercial.
+                </span>
+              </p>
+            )}
             <ChargeForm
               clientId={client.id}
               defaultEntityId={focusedEntityId ?? undefined}
