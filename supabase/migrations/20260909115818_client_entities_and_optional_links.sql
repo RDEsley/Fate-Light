@@ -162,6 +162,12 @@ grant insert (client_entity_id) on table public.domains to authenticated;
 grant update (client_entity_id) on table public.domains to authenticated;
 
 -- apply_service_to_client: herda entidade opcional no serviço e nas cobranças geradas.
+-- Remover a assinatura antiga: parâmetro novo com default cria overload, não substitui.
+drop function if exists public.apply_service_to_client(
+  uuid, uuid, text, text, numeric, text, numeric, numeric, numeric, boolean, text,
+  date, date, integer, numeric, integer, integer, numeric, text
+);
+
 create or replace function public.apply_service_to_client(
   p_client_id uuid,
   p_service_id uuid,

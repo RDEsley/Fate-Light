@@ -1,4 +1,7 @@
 -- Despesas recorrentes herdam client_entity_id na criação e no próximo ciclo.
+drop function if exists public.create_expense_with_recurrence(
+  text, text, numeric, date, text, text, uuid, text, boolean
+);
 
 create or replace function public.create_expense_with_recurrence(
   p_description text,
