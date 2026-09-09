@@ -169,7 +169,7 @@ test.describe("authenticated MVP journey", () => {
     ).toContainText("Vencida");
 
     // Pagar em /cobrancas e confirmar a ficha do cliente atualizada.
-    await page.getByRole("link", { name: "Cobranças" }).click();
+    await page.getByRole("link", { name: "Cobranças", exact: true }).click();
     const overdueOnCharges = page
       .locator("article")
       .filter({ hasText: "Pendência operacional" })
@@ -200,7 +200,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("link", { name: "Clientes" }).click();
     await page.getByRole("link", { name: "Cliente MVP" }).first().click();
     // A exclusão paga acontece em /cobrancas.
-    await page.getByRole("link", { name: "Cobranças" }).click();
+    await page.getByRole("link", { name: "Cobranças", exact: true }).click();
     const paidOnCharges = page
       .locator("article")
       .filter({ hasText: "Correção temporária" })
