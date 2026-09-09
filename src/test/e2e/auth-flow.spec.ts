@@ -357,7 +357,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("button", { name: "Confirmar 1 registros" }).click();
     await expect(page.getByText("Importação concluída com sucesso.")).toBeVisible();
     await clickMainNav(page, "clientes");
-    await page.getByPlaceholder("Buscar cliente...").fill(importedClient);
+    await page.getByRole("searchbox", { name: "Buscar cliente" }).fill(importedClient);
     await page.getByRole("button", { name: "Filtrar" }).click();
     await expect(page.getByRole("link", { name: importedClient, exact: true })).toBeVisible();
 
