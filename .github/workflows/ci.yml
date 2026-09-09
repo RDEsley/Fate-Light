@@ -165,10 +165,9 @@ jobs:
         run: |
           # O runner inclui um repositório opcional do Chrome que pode ficar inconsistente
           # durante a publicação. O Playwright baixa seu próprio Chromium e não depende dele.
-          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
-            -exec sed -i '\|dl.google.com/linux/chrome|s|^|# disabled for Playwright: |' {} +
-          sudo sed -i '\|dl.google.com/linux/chrome|s|^|# disabled for Playwright: |' \
-            /etc/apt/sources.list 2>/dev/null || true
+          sudo rm -f \
+            /etc/apt/sources.list.d/google-chrome.list \
+            /etc/apt/sources.list.d/google-chrome.sources
           sudo rm -f /var/lib/apt/lists/dl.google.com_linux_chrome-stable_deb_dists_stable_*
           npx playwright install --with-deps chromium
 
