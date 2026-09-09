@@ -8,16 +8,10 @@ import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { ClientCombobox, type ClientOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
-import {
-  clientEntityTypeOptions,
-  consolidationPhrase,
-} from "@/features/clients/entity-schemas";
+import { clientEntityTypeOptions, consolidationPhrase } from "@/features/clients/entity-schemas";
 import { formatCurrency } from "@/features/mvp/format";
 
-import {
-  consolidateClient,
-  previewConsolidateClient,
-} from "./entity-actions";
+import { consolidateClient, previewConsolidateClient } from "./entity-actions";
 import { initialConsolidationState } from "./consolidation-state";
 
 /**
@@ -65,9 +59,9 @@ export function ConsolidateClientPanel({
   return (
     <div className="grid gap-3">
       <p className="text-muted max-w-2xl text-sm">
-        <strong className="text-foreground">Consolidar outro cliente</strong> transforma um
-        cadastro antigo em empresa/marca de {targetClientName}. Serviços, cobranças, despesas e
-        domínios mudam de dono; nenhum valor é recalculado e a origem fica arquivada.
+        <strong className="text-foreground">Consolidar outro cliente</strong> transforma um cadastro
+        antigo em empresa/marca de {targetClientName}. Serviços, cobranças, despesas e domínios
+        mudam de dono; nenhum valor é recalculado e a origem fica arquivada.
       </p>
 
       {error ? <FeedbackBanner message={error} tone="error" /> : null}
@@ -146,7 +140,7 @@ export function ConsolidateClientPanel({
                 <dd>{formatCurrency(preview.totals.expenses_paid)}</dd>
               </div>
               <div>
-                <dt>Contatos removidos</dt>
+                <dt>Contatos preservados na origem</dt>
                 <dd>{preview.counts.contacts}</dd>
               </div>
             </dl>
@@ -155,7 +149,7 @@ export function ConsolidateClientPanel({
             <ConfirmDialog
               className="danger-action"
               confirmLabel="Consolidar cliente"
-              confirmation={`${preview.counts.services} serviço(s), ${preview.counts.charges} cobrança(s), ${preview.counts.expenses} despesa(s) e ${preview.counts.domains} domínio(s) passam para ${preview.target.name}. O cliente de origem é arquivado e os contatos dele são removidos. Não há como desfazer.`}
+              confirmation={`${preview.counts.services} serviço(s), ${preview.counts.charges} cobrança(s), ${preview.counts.expenses} despesa(s) e ${preview.counts.domains} domínio(s) passam para ${preview.target.name}. O cliente de origem é arquivado; seus contatos e eventos históricos permanecem preservados. Não há como desfazer.`}
               holdSeconds={3}
               icon="archive"
               label="Consolidar cliente"

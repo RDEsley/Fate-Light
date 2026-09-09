@@ -162,7 +162,14 @@ jobs:
           rm -f "$RUNNER_TEMP/supabase-status.env"
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          # O runner inclui um repositório opcional do Chrome que pode ficar inconsistente
+          # durante a publicação. O Playwright baixa seu próprio Chromium e não depende dele.
+          sudo rm -f \
+            /etc/apt/sources.list.d/google-chrome.list \
+            /etc/apt/sources.list.d/google-chrome.sources
+          sudo rm -f /var/lib/apt/lists/dl.google.com_linux_chrome-stable_deb_dists_stable_*
+          npx playwright install --with-deps chromium
 
       - name: Run smoke, accessibility and authenticated journey tests
         run: npm run test:e2e

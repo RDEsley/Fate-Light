@@ -6,12 +6,7 @@ import readWorkbook from "read-excel-file/node";
 import { revalidatePath } from "next/cache";
 
 import { normalizeWorkbook, parseCsv } from "@/features/import/spreadsheet";
-import type {
-  ImportActionState,
-  ImportEntityRow,
-  ImportIssue,
-  ImportPreview,
-} from "@/features/import/types";
+import type { ImportActionState, ImportIssue, ImportPreview } from "@/features/import/types";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 // Keeps the complete multipart request below Vercel Functions' 4.5 MB limit.
@@ -132,53 +127,6 @@ async function validateRelations(
  * existem. Nomes repetidos são ignorados em vez de virarem erro: reimportar a mesma lista
  * de empresas não deve derrubar uma importação que já gravou o resto.
  */
-async function createImportedEntities(
-  supabase: Awaited<ReturnType<typeof requireWorkspaceContext>>["supabase"],
-  workspaceId: string,
-  rows: ImportEntityRow[],
-) {
-  const { data: clients } = await supabase
-    .from("clients")
-    .select("id,name")
-    .eq("workspace_id", workspaceId)
-    .is("archived_at", null);
-  const clientByName = new Map((clients ?? []).map((client) => [identity(client.name), client.id]));
-  const { data: existing } = await supabase
-    .from("client_entities")
-    .select("client_id,display_name")
-    .eq("workspace_id", workspaceId)
-    .is("archived_at", null);
-  const taken = new Set(
-    (existing ?? []).map((entity) => `${entity.client_id}|${identity(entity.display_name)}`),
-  );
-
-  const inserts: Array<{
-    client_id: string;
-    display_name: string;
-    entity_type: string;
-    notes: string | null;
-    workspace_id: string;
-  }> = [];
-  for (const row of rows) {
-    const clientId = clientByName.get(identity(row.clientName));
-    if (!clientId) continue;
-    const fingerprint = `${clientId}|${identity(row.displayName)}`;
-    if (taken.has(fingerprint)) continue;
-    taken.add(fingerprint);
-    inserts.push({
-      client_id: clientId,
-      display_name: row.displayName,
-      entity_type: row.entityType,
-      notes: row.notes || null,
-      workspace_id: workspaceId,
-    });
-  }
-  if (!inserts.length) return 0;
-  const { data, error } = await supabase.from("client_entities").insert(inserts).select("id");
-  if (error) return 0;
-  return data?.length ?? 0;
-}
-
 function errorState(error: unknown): ImportActionState {
   const messages: Record<string, string> = {
     "file-required": "Selecione uma planilha antes de continuar.",
@@ -231,7 +179,10 @@ export async function confirmSpreadsheet(formData: FormData): Promise<ImportActi
   try {
     const parsed = await readFile(formData);
     if (parsed.digest !== formData.get("digest")) {
-      return { message: "O arquivo mudou após a prévia. Gere uma nova prévia.", status: "error" };
+      return {
+        message: "O arquivo mudou após a prévia. Gere uma nova prévia.",
+        status: "error",
+      };
     }
     if (parsed.normalized.legacy && formData.get("acknowledgeLegacy") !== "on") {
       return {
@@ -247,7 +198,7 @@ export async function confirmSpreadsheet(formData: FormData): Promise<ImportActi
         status: "error",
       };
     }
-    const { data, error } = await supabase.rpc("import_workspace_spreadsheet_v2", {
+    const { data, error } = await supabase.rpc("import_workspace_spreadsheet_v3", {
       p_payload: parsed.normalized.payload,
       p_source_checksum: parsed.digest,
       p_source_type: parsed.sourceType,
@@ -262,13 +213,6 @@ export async function confirmSpreadsheet(formData: FormData): Promise<ImportActi
     const result = data as { counts?: Record<string, number>; status?: string };
     const duplicate = result.status === "duplicate";
     const counts = { ...(result.counts ?? {}) };
-    if (!duplicate && parsed.normalized.entities.length) {
-      counts.entities = await createImportedEntities(
-        supabase,
-        workspaceId,
-        parsed.normalized.entities,
-      );
-    }
     revalidatePath("/dashboard");
     revalidatePath("/clientes");
     revalidatePath("/cobrancas");

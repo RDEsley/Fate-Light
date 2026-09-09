@@ -29,7 +29,10 @@ import { ClientStatusSwitcher } from "./status-switcher";
 export const metadata: Metadata = { title: "Detalhes do cliente" };
 
 const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro", "Outro"];
-const paymentOptions = paymentMethods.map((method) => ({ label: method, value: method }));
+const paymentOptions = paymentMethods.map((method) => ({
+  label: method,
+  value: method,
+}));
 
 function serviceDuration(startDate: string, endedAt: string | null) {
   const start = new Date(`${startDate}T00:00:00.000Z`);
@@ -66,8 +69,7 @@ export default async function ClientDetailsPage({
   if (!clientId.success) notFound();
   const defaultServiceId = z.string().uuid().safeParse(parameters.serviceId);
   const requestedEntityId = z.string().uuid().safeParse(parameters.entity);
-  const openChargeForm =
-    parameters.action === "new-charge" || defaultServiceId.success;
+  const openChargeForm = parameters.action === "new-charge" || defaultServiceId.success;
 
   const [
     { data: client, error },
@@ -77,6 +79,7 @@ export default async function ClientDetailsPage({
     { data: pendingCharges },
     { data: entityRows },
     { data: domainRows },
+    { data: expenseRows },
     { data: otherClients },
   ] = await Promise.all([
     context.supabase
@@ -129,7 +132,12 @@ export default async function ClientDetailsPage({
       .order("display_name"),
     context.supabase
       .from("domains")
-      .select("id, client_entity_id, status")
+      .select("id, client_entity_id, status, cost")
+      .eq("client_id", clientId.data)
+      .eq("workspace_id", context.workspaceId),
+    context.supabase
+      .from("expenses")
+      .select("id, client_entity_id, status, amount")
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
     context.supabase
@@ -195,9 +203,7 @@ export default async function ClientDetailsPage({
   // mesmas listas já carregadas acima; nada aqui pede uma consulta por entidade.
   const entities = (entityRows ?? []).map((entity) => {
     const archived = Boolean(entity.archived_at) || entity.status === "archived";
-    const entityCharges = (charges ?? []).filter(
-      (charge) => charge.client_entity_id === entity.id,
-    );
+    const entityCharges = (charges ?? []).filter((charge) => charge.client_entity_id === entity.id);
     return {
       activeDomains: (domainRows ?? []).filter(
         (domain) => domain.client_entity_id === entity.id && domain.status === "active",
@@ -240,6 +246,12 @@ export default async function ClientDetailsPage({
   const visiblePendingCharges = focusedEntityId
     ? (pendingCharges ?? []).filter((charge) => charge.client_entity_id === focusedEntityId)
     : (pendingCharges ?? []);
+  const focusedExpenses = focusedEntityId
+    ? (expenseRows ?? []).filter((expense) => expense.client_entity_id === focusedEntityId)
+    : [];
+  const focusedDomains = focusedEntityId
+    ? (domainRows ?? []).filter((domain) => domain.client_entity_id === focusedEntityId)
+    : [];
   const consolidationClients = (otherClients ?? []).map((entry) => ({
     id: entry.id,
     name: entry.name,
@@ -376,15 +388,14 @@ export default async function ClientDetailsPage({
             <div>
               <h2>Empresas e marcas</h2>
               <p>
-                Separe as frentes deste cliente sem duplicar o cadastro. O vínculo é opcional:
-                o que não tem empresa continua valendo como geral.
+                Separe as frentes deste cliente sem duplicar o cadastro. O vínculo é opcional: o que
+                não tem empresa continua valendo como geral.
               </p>
             </div>
           </div>
           {activeEntities.length ? (
             <span className="entity-chip">
-              {activeEntities.length}{" "}
-              {activeEntities.length === 1 ? "ativa" : "ativas"}
+              {activeEntities.length} {activeEntities.length === 1 ? "ativa" : "ativas"}
             </span>
           ) : null}
         </div>
@@ -393,13 +404,38 @@ export default async function ClientDetailsPage({
           <aside className="helper-note mt-4" role="status">
             <Icon className="size-4" name="filter" />
             <span>
-              Mostrando serviços e cobranças de{" "}
-              <strong>{entityNames.get(focusedEntityId)}</strong>.{" "}
+              Mostrando serviços e cobranças de <strong>{entityNames.get(focusedEntityId)}</strong>.{" "}
               <Link className="font-semibold hover:underline" href={`/clientes/${client.id}`}>
                 Ver o cliente inteiro
               </Link>
             </span>
           </aside>
+        ) : null}
+
+        {focusedEntityId ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <Link
+              className="helper-note"
+              href={`/cobrancas?clientId=${client.id}&entity=${focusedEntityId}`}
+            >
+              <Icon className="size-4" name="receipt" /> Cobranças desta empresa
+            </Link>
+            <Link
+              className="helper-note"
+              href={`/despesas?clientId=${client.id}&entity=${focusedEntityId}`}
+            >
+              <Icon className="size-4" name="wallet" /> {focusedExpenses.length} despesa(s) ·{" "}
+              {formatCurrency(
+                focusedExpenses.reduce((total, item) => total + Number(item.amount), 0),
+              )}
+            </Link>
+            <Link
+              className="helper-note"
+              href={`/dominios?clientId=${client.id}&entity=${focusedEntityId}`}
+            >
+              <Icon className="size-4" name="globe" /> {focusedDomains.length} domínio(s)
+            </Link>
+          </div>
         ) : null}
 
         {entities.length ? (
@@ -415,8 +451,8 @@ export default async function ClientDetailsPage({
           </div>
         ) : (
           <p className="text-muted mt-4 text-sm">
-            Nenhuma empresa ou marca cadastrada. Crie uma quando o cliente tiver mais de um
-            negócio sob o mesmo contrato.
+            Nenhuma empresa ou marca cadastrada. Crie uma quando o cliente tiver mais de um negócio
+            sob o mesmo contrato.
           </p>
         )}
 
@@ -515,7 +551,9 @@ export default async function ClientDetailsPage({
                         {overdue ? " · vencida" : ""}
                       </p>
                     </div>
-                    <span className={`charge-status charge-status--${overdue ? "overdue" : "pending"}`}>
+                    <span
+                      className={`charge-status charge-status--${overdue ? "overdue" : "pending"}`}
+                    >
                       {overdue ? "Vencida" : "Pendente"}
                     </span>
                   </div>
@@ -560,7 +598,10 @@ export default async function ClientDetailsPage({
             })}
           </div>
           <p className="text-muted mt-3 text-sm">
-            <Link className="font-semibold hover:underline" href={`/cobrancas?clientId=${client.id}`}>
+            <Link
+              className="font-semibold hover:underline"
+              href={`/cobrancas?clientId=${client.id}`}
+            >
               Ver todas as cobranças deste cliente →
             </Link>
           </p>

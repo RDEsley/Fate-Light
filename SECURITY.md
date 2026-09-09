@@ -7,7 +7,7 @@ atual publicada. O suporte a uma versão 1.0 será definido no respectivo releas
 
 | Versão     | Suporte                  |
 | ---------- | ------------------------ |
-| `0.8.0`    | Atual em hardening       |
+| `0.8.1`    | Atual em hardening       |
 | Anteriores | Sem manutenção planejada |
 
 ## Relatar uma vulnerabilidade
@@ -38,9 +38,9 @@ vulnerabilidade antes de uma correção ou orientação de mitigação.
 - empresas/marcas (`client_entities`) usam FK composta com o cliente e policies de workspace;
   consolidação exige frase `CONSOLIDAR` e recusa quando os totais financeiros não batem.
 
-## Riscos residuais conhecidos (linha `0.8.0`)
+## Riscos residuais conhecidos (linha `0.8.1`)
 
 - Confirmação de e-mail, SMTP e Turnstile de produção ainda dependem de configuração manual antes
   do release 1.0 (ver [release-v1.md](docs/release-v1.md)).
-- A RPC de despesa recorrente ainda não recebe `client_entity_id`; a aplicação marca o grupo após
-  criar a série. Uma migration futura pode fechar o parâmetro nativo.
+- O envio de e-mail de produção depende da configuração de SMTP enquanto o projeto não possui
+  domínio próprio; autenticação por senha permanece disponível.

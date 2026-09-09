@@ -25,7 +25,14 @@ const stateFilters = [
 export default async function DomainsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; state?: string; status?: string }>;
+  searchParams: Promise<{
+    clientId?: string;
+    entity?: string;
+    page?: string;
+    q?: string;
+    state?: string;
+    status?: string;
+  }>;
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
   const query = parameters.q?.trim().slice(0, 80) ?? "";
@@ -46,6 +53,8 @@ export default async function DomainsPage({
     .eq("workspace_id", context.workspaceId)
     .order("expires_on")
     .range(firstRow, firstRow + pageSize - 1);
+  if (parameters.clientId) domainsRequest = domainsRequest.eq("client_id", parameters.clientId);
+  if (parameters.entity) domainsRequest = domainsRequest.eq("client_entity_id", parameters.entity);
   if (query) domainsRequest = domainsRequest.ilike("domain", `%${query}%`);
   if (state === "active" || state === "cancelled") {
     domainsRequest = domainsRequest.eq("status", state);
@@ -109,6 +118,8 @@ export default async function DomainsPage({
     const next = new URLSearchParams();
     if (query) next.set("q", query);
     if (state !== "all") next.set("state", state);
+    if (parameters.clientId) next.set("clientId", parameters.clientId);
+    if (parameters.entity) next.set("entity", parameters.entity);
     if (targetPage > 1) next.set("page", String(targetPage));
     const suffix = next.toString();
     return ("/dominios" + (suffix ? "?" + suffix : "")) as never;
