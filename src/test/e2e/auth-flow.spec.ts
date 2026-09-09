@@ -240,17 +240,14 @@ test.describe("authenticated MVP journey", () => {
     const paidMonthly = page
       .locator("article")
       .filter({ hasText: "Ferramenta mensal" })
-      .filter({ hasText: "Mensal" })
-      .filter({ hasText: "Paga" });
+      .filter({ has: page.locator(".charge-status--paid") });
     const pendingMonthly = page
       .locator("article")
       .filter({ hasText: "Ferramenta mensal" })
-      .filter({ hasText: "Mensal" })
-      .filter({ hasText: "Pendente" });
+      .filter({ has: page.getByRole("button", { name: "Marcar como paga" }) });
     await expect(paidMonthly).toBeVisible();
     // Próxima ocorrência pendente nasce automaticamente.
     await expect(pendingMonthly).toBeVisible();
-    await expect(pendingMonthly.getByRole("button", { name: "Marcar como paga" })).toBeVisible();
     await pendingMonthly.locator("button", { hasText: "Parar mensal" }).click();
     await page.getByRole("button", { name: "Parar recorrência" }).click();
     await expect(page.getByText(/recorrência mensal encerrada/i)).toBeVisible();
