@@ -5,14 +5,18 @@ import { useActionState, useState } from "react";
 import { applyServiceToClient, editClientService } from "@/app/_actions/client-services";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
-import { FieldHint } from "@/components/ui/field-hint";
 import { DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
+import { IntegerField } from "@/components/ui/integer-field";
+import { MoneyField } from "@/components/ui/money-field";
+import { PercentField } from "@/components/ui/percent-field";
 import { SelectField } from "@/components/ui/select-field";
-import { SoftSubmitButton } from "@/components/ui/soft-submit-button";
+import { persistedToCents } from "@/features/mvp/money";
 import { formatCurrency } from "@/features/mvp/format";
 import { billingFrequencies, type BillingFrequency } from "@/features/mvp/recurrence";
 import { initialActionState } from "@/lib/forms/action-state";
+
+import { SubmitButton } from "../../_components/submit-button";
 
 export type CatalogServiceOption = {
   adjustmentIntervalMonths: number | null;
@@ -66,9 +70,9 @@ const additionalNatureOptions = [
   },
 ];
 
-/** Converte número para texto de campo sem transformar ausência de valor em zero. */
-function moneyText(value: number | null | undefined) {
-  return value === null || value === undefined ? "" : String(value);
+function centsToNumber(cents: number | null): number {
+  if (cents === null) return 0;
+  return cents / 100;
 }
 
 export function ServiceApplicationForm({
@@ -91,22 +95,30 @@ export function ServiceApplicationForm({
 
   const [name, setName] = useState(service?.name ?? "");
   const [description, setDescription] = useState(service?.description ?? "");
-  const [listPrice, setListPrice] = useState(moneyText(service?.listPrice));
+  const [listPriceKey, setListPriceKey] = useState(0);
+  const [listPriceDefault, setListPriceDefault] = useState<number | string | null>(
+    service?.listPrice ?? null,
+  );
+  const [listPriceCents, setListPriceCents] = useState<number | null>(
+    persistedToCents(service?.listPrice ?? null),
+  );
   const [billingType, setBillingType] = useState<BillingFrequency>(
     service?.billingType ?? "monthly",
   );
   const [discountType, setDiscountType] = useState<"fixed" | "none" | "percentage">(
     service?.discountType ?? "none",
   );
-  const [discountValue, setDiscountValue] = useState(
-    service?.discountValue ? String(service.discountValue) : "",
-  );
+  const [discountValue, setDiscountValue] = useState(service?.discountValue ?? 0);
   const [promotion, setPromotion] = useState(service?.promotionalPrice !== null && editing);
-  const [promotionalPrice, setPromotionalPrice] = useState(moneyText(service?.promotionalPrice));
+  const [promotionalPriceCents, setPromotionalPriceCents] = useState<number | null>(
+    persistedToCents(service?.promotionalPrice ?? null),
+  );
   const [promotionalCycles, setPromotionalCycles] = useState(
     service?.promotionalCycles ? String(service.promotionalCycles) : "",
   );
-  const [additionalFee, setAdditionalFee] = useState(moneyText(service?.additionalFee));
+  const [additionalFeeCents, setAdditionalFeeCents] = useState<number | null>(
+    persistedToCents(service?.additionalFee ?? null),
+  );
   const [additionalNature, setAdditionalNature] = useState(
     service && !service.additionalFeeIsRevenue ? "passthrough" : "revenue",
   );
@@ -118,8 +130,8 @@ export function ServiceApplicationForm({
     service?.adjustmentRate ? String(service.adjustmentRate) : "",
   );
 
-  const price = Number(listPrice) || 0;
-  const discount = Number(discountValue) || 0;
+  const price = centsToNumber(listPriceCents);
+  const discount = discountValue;
   const finalPrice = Math.max(
     0,
     discountType === "percentage"
@@ -129,9 +141,10 @@ export function ServiceApplicationForm({
         : price,
   );
   const cycles = Number(promotionalCycles) || 0;
-  const promoValue = Number(promotionalPrice) || 0;
+  const promoValue = centsToNumber(promotionalPriceCents);
   // Só o adicional declarado como receita entra no que você recebe (ADR-0018).
-  const additionalRevenue = additionalNature === "passthrough" ? 0 : Number(additionalFee) || 0;
+  const additionalRevenue =
+    additionalNature === "passthrough" ? 0 : centsToNumber(additionalFeeCents);
   const catalogMatch = catalog.find(
     (item) => item.name.toLocaleLowerCase("pt-BR") === name.trim().toLocaleLowerCase("pt-BR"),
   );
@@ -141,7 +154,9 @@ export function ServiceApplicationForm({
     if (!chosen) return;
     setName(chosen.name);
     setDescription(chosen.description ?? "");
-    setListPrice(String(chosen.defaultPrice));
+    setListPriceDefault(chosen.defaultPrice);
+    setListPriceCents(persistedToCents(chosen.defaultPrice));
+    setListPriceKey((key) => key + 1);
     setBillingType(chosen.billingType);
     setAdjustment(Boolean(chosen.adjustmentIntervalMonths));
     setAdjustmentInterval(String(chosen.adjustmentIntervalMonths ?? 6));
@@ -192,26 +207,15 @@ export function ServiceApplicationForm({
           />
           <FieldError message={errors.name} />
         </label>
-        <label className="field">
-          <span className="field__label">
-            Valor cheio
-            <FieldHint>
-              O preço sem desconto. É a referência para promoções, reajustes e para você lembrar
-              quanto o serviço realmente vale.
-            </FieldHint>
-          </span>
-          <input
-            aria-invalid={Boolean(errors.listPrice)}
-            min="0"
-            name="listPrice"
-            onChange={(event) => setListPrice(event.target.value)}
-            placeholder="Ex.: 1500,00"
-            step="0.01"
-            type="number"
-            value={listPrice}
-          />
-          <FieldError message={errors.listPrice} />
-        </label>
+        <MoneyField
+          key={`list-price-${listPriceKey}`}
+          defaultValue={listPriceDefault}
+          error={errors.listPrice}
+          hint="O preço sem desconto. É a referência para promoções, reajustes e para você lembrar quanto o serviço realmente vale."
+          label="Valor cheio"
+          name="listPrice"
+          onCentsChange={setListPriceCents}
+        />
         <SelectField
           label="Periodicidade"
           name="billingType"
@@ -259,45 +263,44 @@ export function ServiceApplicationForm({
           <SelectField
             label="Tipo de desconto"
             name="discountType"
-            onValueChange={(value) => setDiscountType(value as "fixed" | "none" | "percentage")}
+            onValueChange={(value) => {
+              setDiscountType(value as "fixed" | "none" | "percentage");
+              setDiscountValue(0);
+            }}
             options={discountOptions}
             value={discountType}
           />
-          <label className="field">
-            <span className="field__label">
-              Desconto {discountType === "percentage" ? "(%)" : "(R$)"}
-            </span>
-            <input
-              aria-invalid={Boolean(errors.discountValue)}
-              disabled={discountType === "none"}
-              max={discountType === "percentage" ? 100 : undefined}
-              min="0"
+          {discountType === "none" ? (
+            <input name="discountValue" type="hidden" value="0" />
+          ) : discountType === "percentage" ? (
+            <PercentField
+              key="discount-percent"
+              defaultValue={service?.discountType === "percentage" ? service.discountValue : ""}
+              error={errors.discountValue}
+              label="Desconto (%)"
               name="discountValue"
-              onChange={(event) => setDiscountValue(event.target.value)}
-              placeholder={discountType === "percentage" ? "Ex.: 10" : "Ex.: 150,00"}
-              step="0.01"
-              type="number"
-              value={discountType === "none" ? "" : discountValue}
+              onCanonicalChange={(value) => setDiscountValue(Number(value) || 0)}
             />
-            <FieldError message={errors.discountValue} />
-          </label>
+          ) : (
+            <MoneyField
+              key="discount-money"
+              defaultValue={service?.discountType === "fixed" ? service.discountValue : ""}
+              error={errors.discountValue}
+              label="Desconto (R$)"
+              name="discountValue"
+              onCentsChange={(cents) => setDiscountValue(centsToNumber(cents))}
+            />
+          )}
           {billingType === "single" ? (
-            <label className="field">
-              <span className="field__label">
-                Quantidade de parcelas
-                <FieldHint>
-                  Divide o valor em cobranças mensais consecutivas a partir do primeiro vencimento.
-                </FieldHint>
-              </span>
-              <input
-                defaultValue={service?.installmentCount ?? 1}
-                max="120"
-                min="1"
-                name="installmentCount"
-                type="number"
-              />
-              <FieldError message={errors.installmentCount} />
-            </label>
+            <IntegerField
+              defaultValue={service?.installmentCount ?? 1}
+              error={errors.installmentCount}
+              label="Quantidade de parcelas"
+              max={120}
+              min={1}
+              name="installmentCount"
+              required
+            />
           ) : (
             <input name="installmentCount" type="hidden" value="1" />
           )}
@@ -325,40 +328,22 @@ export function ServiceApplicationForm({
               {promotion ? (
                 <>
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    <label className="field">
-                      <span className="field__label">Valor promocional</span>
-                      <input
-                        aria-invalid={Boolean(errors.promotionalPrice)}
-                        min="0"
-                        name="promotionalPrice"
-                        onChange={(event) => setPromotionalPrice(event.target.value)}
-                        placeholder="Ex.: 0,00"
-                        step="0.01"
-                        type="number"
-                        value={promotionalPrice}
-                      />
-                      <FieldError message={errors.promotionalPrice} />
-                    </label>
-                    <label className="field">
-                      <span className="field__label">
-                        Quantidade de ciclos
-                        <FieldHint>
-                          Quantas cobranças saem com o valor promocional. A contagem começa no
-                          primeiro vencimento, não na data de início do serviço.
-                        </FieldHint>
-                      </span>
-                      <input
-                        aria-invalid={Boolean(errors.promotionalCycles)}
-                        max="60"
-                        min="1"
-                        name="promotionalCycles"
-                        onChange={(event) => setPromotionalCycles(event.target.value)}
-                        placeholder="Ex.: 3"
-                        type="number"
-                        value={promotionalCycles}
-                      />
-                      <FieldError message={errors.promotionalCycles} />
-                    </label>
+                    <MoneyField
+                      defaultValue={service?.promotionalPrice ?? ""}
+                      error={errors.promotionalPrice}
+                      label="Valor promocional"
+                      name="promotionalPrice"
+                      onCentsChange={setPromotionalPriceCents}
+                    />
+                    <IntegerField
+                      defaultValue={promotionalCycles}
+                      error={errors.promotionalCycles}
+                      label="Quantidade de ciclos"
+                      max={60}
+                      min={1}
+                      name="promotionalCycles"
+                      onValueChange={setPromotionalCycles}
+                    />
                   </div>
                   {cycles > 0 ? (
                     <p className="promo-summary">
@@ -398,33 +383,21 @@ export function ServiceApplicationForm({
             </label>
             {adjustment ? (
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="field">
-                  <span className="field__label">A cada quantos meses</span>
-                  <input
-                    aria-invalid={Boolean(errors.adjustmentIntervalMonths)}
-                    max="60"
-                    min="1"
-                    name="adjustmentIntervalMonths"
-                    onChange={(event) => setAdjustmentInterval(event.target.value)}
-                    placeholder="Ex.: 12"
-                    type="number"
-                    value={adjustmentInterval}
-                  />
-                  <FieldError message={errors.adjustmentIntervalMonths} />
-                </label>
-                <label className="field">
-                  <span className="field__label">Sugestão de reajuste (%)</span>
-                  <input
-                    max="100"
-                    min="0"
-                    name="adjustmentRate"
-                    onChange={(event) => setAdjustmentRate(event.target.value)}
-                    placeholder="Ex.: 8"
-                    step="0.01"
-                    type="number"
-                    value={adjustmentRate}
-                  />
-                </label>
+                <IntegerField
+                  defaultValue={adjustmentInterval}
+                  error={errors.adjustmentIntervalMonths}
+                  label="A cada quantos meses"
+                  max={60}
+                  min={1}
+                  name="adjustmentIntervalMonths"
+                  onValueChange={setAdjustmentInterval}
+                />
+                <PercentField
+                  defaultValue={adjustmentRate}
+                  label="Sugestão de reajuste (%)"
+                  name="adjustmentRate"
+                  onCanonicalChange={setAdjustmentRate}
+                />
               </div>
             ) : (
               <>
@@ -434,42 +407,22 @@ export function ServiceApplicationForm({
             )}
           </div>
 
-          <label className="field">
-            <span className="field__label">
-              Verba de mídia <span className="field__optional">opcional</span>
-              <FieldHint>
-                Dinheiro do cliente que só passa por você para ser investido em anúncios. Fica
-                separado da sua receita nos relatórios.
-              </FieldHint>
-            </span>
-            <input
-              defaultValue={service ? moneyText(service.mediaBudget) : ""}
-              min="0"
-              name="mediaBudget"
-              placeholder="Ex.: 800,00"
-              step="0.01"
-              type="number"
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Custo adicional <span className="field__optional">opcional</span>
-              <FieldHint>
-                Valor extra cobrado junto do serviço. Diga ao lado se ele é seu ou se é só repasse —
-                é isso que define se entra na sua receita.
-              </FieldHint>
-            </span>
-            <input
-              min="0"
-              name="additionalFee"
-              onChange={(event) => setAdditionalFee(event.target.value)}
-              placeholder="Ex.: 120,00"
-              step="0.01"
-              type="number"
-              value={additionalFee}
-            />
-          </label>
-          {Number(additionalFee) > 0 ? (
+          <MoneyField
+            defaultValue={service ? service.mediaBudget : ""}
+            label="Verba de mídia"
+            name="mediaBudget"
+            optional
+            hint="Dinheiro do cliente que só passa por você para ser investido em anúncios. Fica separado da sua receita nos relatórios."
+          />
+          <MoneyField
+            defaultValue={service?.additionalFee ?? ""}
+            label="Custo adicional"
+            name="additionalFee"
+            optional
+            hint="Valor extra cobrado junto do serviço. Diga ao lado se ele é seu ou se é só repasse — é isso que define se entra na sua receita."
+            onCentsChange={setAdditionalFeeCents}
+          />
+          {centsToNumber(additionalFeeCents) > 0 ? (
             <SelectField
               label="O adicional é"
               name="additionalFeeNature"
@@ -488,42 +441,26 @@ export function ServiceApplicationForm({
               maxLength={3000}
               name="description"
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="O que está incluso neste serviço"
               value={description}
             />
+            <FieldError message={errors.description} />
           </label>
-          <label className="field sm:col-span-2 lg:col-span-4">
+          <label className="field sm:col-span-2">
             <span className="field__label">
               Observações <span className="field__optional">opcional</span>
             </span>
-            <textarea
-              defaultValue={service?.notes ?? ""}
-              maxLength={5000}
-              name="notes"
-              placeholder="Combinados internos sobre este serviço"
-            />
+            <textarea defaultValue={service?.notes ?? ""} maxLength={5000} name="notes" />
           </label>
         </div>
       </details>
 
-      <div className="mt-4 flex flex-wrap items-end justify-end gap-3">
+      <div className="mt-4 flex flex-wrap gap-3">
         {onCancel ? (
           <button className="modal-cancel" onClick={onCancel} type="button">
             Cancelar
           </button>
         ) : null}
-        <SoftSubmitButton
-          idleLabel={editing ? "Salvar alterações" : "Aplicar serviço e criar cobrança"}
-          pendingLabel={editing ? "Salvando…" : "Aplicando…"}
-          requirements={[
-            { message: "Dê um nome ao serviço para reconhecê-lo depois.", name: "name" },
-            {
-              message: "O valor cheio está zerado. Confirme se o serviço é mesmo gratuito.",
-              name: "listPrice",
-              warnOnZero: true,
-            },
-          ]}
-        />
+        <SubmitButton idleLabel={editing ? "Salvar alterações" : "Aplicar serviço"} />
       </div>
     </form>
   );

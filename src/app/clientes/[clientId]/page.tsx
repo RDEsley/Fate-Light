@@ -3,22 +3,29 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
+import { deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
+import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon } from "@/components/ui/icon";
+import { SelectField } from "@/components/ui/select-field";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
-import { formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
+import { formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
 import { ownRevenue } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { archiveClient, deleteClient, restoreClient } from "../actions";
 import { ClientStatusMessage } from "../status-message";
+import { ChargeForm } from "./charge-form";
 import { ServiceApplicationForm } from "./service-application-form";
 import { ServiceCard } from "./service-card";
 import { ClientStatusSwitcher } from "./status-switcher";
 
 export const metadata: Metadata = { title: "Detalhes do cliente" };
+
+const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro", "Outro"];
+const paymentOptions = paymentMethods.map((method) => ({ label: method, value: method }));
 
 function serviceDuration(startDate: string, endedAt: string | null) {
   const start = new Date(`${startDate}T00:00:00.000Z`);
@@ -39,21 +46,25 @@ export default async function ClientDetailsPage({
   searchParams,
 }: {
   params: Promise<{ clientId: string }>;
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ action?: string; serviceId?: string; status?: string }>;
 }) {
-  const [{ clientId: rawClientId }, { status }, context] = await Promise.all([
+  const [{ clientId: rawClientId }, parameters, context] = await Promise.all([
     params,
     searchParams,
     requireWorkspaceContext(),
   ]);
   const clientId = z.string().uuid().safeParse(rawClientId);
   if (!clientId.success) notFound();
+  const defaultServiceId = z.string().uuid().safeParse(parameters.serviceId);
+  const openChargeForm =
+    parameters.action === "new-charge" || defaultServiceId.success;
 
   const [
     { data: client, error },
     { data: services, error: servicesError },
     { data: catalog, error: catalogError },
     { data: charges },
+    { data: pendingCharges },
   ] = await Promise.all([
     context.supabase
       .from("clients")
@@ -85,6 +96,16 @@ export default async function ClientDetailsPage({
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
+    context.supabase
+      .from("charges")
+      .select(
+        "id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status",
+      )
+      .eq("client_id", clientId.data)
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "pending")
+      .order("due_date", { ascending: true })
+      .limit(50),
   ]);
   if (error || servicesError || catalogError || !client) notFound();
 
@@ -103,12 +124,11 @@ export default async function ClientDetailsPage({
   // são agrupados por serviço aqui, uma vez, em vez de refiltrar dentro do componente.
   const chargeTotals = new Map<
     string,
-    { duePendingCharges: number; paidCharges: number; paidRevenue: number; pendingCharges: number }
+    { paidCharges: number; paidRevenue: number; pendingCharges: number }
   >();
   for (const charge of charges ?? []) {
     if (!charge.client_service_id) continue;
     const totals = chargeTotals.get(charge.client_service_id) ?? {
-      duePendingCharges: 0,
       paidCharges: 0,
       paidRevenue: 0,
       pendingCharges: 0,
@@ -118,13 +138,10 @@ export default async function ClientDetailsPage({
       totals.paidRevenue += ownRevenue(charge);
     } else if (charge.status === "pending") {
       totals.pendingCharges += 1;
-      // "Quitar pendências" só liquida o que já venceu — um ciclo futuro marcado
-      // pago hoje inflaria a receita recebida do mês com dinheiro de meses à frente.
-      if (charge.due_date <= today) totals.duePendingCharges += 1;
     }
     chargeTotals.set(charge.client_service_id, totals);
   }
-  const emptyTotals = { duePendingCharges: 0, paidCharges: 0, paidRevenue: 0, pendingCharges: 0 };
+  const emptyTotals = { paidCharges: 0, paidRevenue: 0, pendingCharges: 0 };
   const catalogOptions = (catalog ?? []).map((service) => ({
     adjustmentIntervalMonths: service.default_adjustment_interval_months,
     adjustmentRate:
@@ -135,24 +152,30 @@ export default async function ClientDetailsPage({
     id: service.id,
     name: service.name,
   }));
+  const clientReturnTo = `/clientes/${client.id}`;
+  const chargeServices = (services ?? [])
+    .filter((service) => service.status !== "ended")
+    .map((service) => ({ id: service.id, name: service.name }));
 
   return (
     <AccountShell
       description="Dados do cliente, serviços contratados e atalhos para a operação financeira."
       title={client.name}
     >
-      <ClientStatusMessage status={status} />
+      <ClientStatusMessage status={parameters.status} />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link className="font-semibold hover:underline" href="/clientes">
           ← Voltar
         </Link>
         <div className="flex flex-wrap gap-3">
-          <Link
-            className="border-line rounded-xl border px-4 py-2 font-semibold"
-            href={`/cobrancas?clientId=${client.id}`}
-          >
-            Nova cobrança
-          </Link>
+          {!archived ? (
+            <Link
+              className="border-line rounded-xl border px-4 py-2 font-semibold"
+              href={`/clientes/${client.id}?action=new-charge#nova-cobranca`}
+            >
+              Nova cobrança
+            </Link>
+          ) : null}
           <Link
             className="bg-brand text-brand-contrast rounded-xl px-4 py-2 font-semibold"
             href={`/clientes/${client.id}/editar`}
@@ -266,6 +289,115 @@ export default async function ClientDetailsPage({
             </div>
           </div>
           <p className="client-notes">{client.notes}</p>
+        </section>
+      ) : null}
+
+      {!archived ? (
+        <section className="panel-card mt-4" id="nova-cobranca">
+          <details className="form-disclosure" open={openChargeForm}>
+            <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
+              <span className="flex items-center gap-2">
+                <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
+                  <Icon className="size-4" name="plus" />
+                </span>
+                Nova cobrança
+              </span>
+              <span className="text-muted flex items-center gap-1 text-xs">
+                <span className="form-disclosure__closed-label">Abrir formulário</span>
+                <span className="form-disclosure__open-label">Fechar formulário</span>
+                <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
+              </span>
+            </summary>
+            <p className="helper-note mt-3">
+              <Icon className="size-4" name="info" /> Lançamento avulso ou fora da recorrência do
+              serviço. Cobranças automáticas continuam nascendo ao aplicar e receber serviços.
+            </p>
+            <ChargeForm
+              clientId={client.id}
+              defaultServiceId={defaultServiceId.success ? defaultServiceId.data : undefined}
+              returnTo={clientReturnTo}
+              services={chargeServices}
+            />
+          </details>
+        </section>
+      ) : null}
+
+      {pendingCharges?.length ? (
+        <section className="panel-card mt-4">
+          <div className="section-heading mb-4">
+            <span className="section-heading__icon bg-warning-soft text-warning">
+              <Icon name="wallet" />
+            </span>
+            <div>
+              <h2>Cobranças pendentes</h2>
+              <p>Receba aqui sem sair da ficha do cliente.</p>
+            </div>
+          </div>
+          <div className="charge-list">
+            {pendingCharges.map((charge) => {
+              const overdue = charge.due_date < today;
+              return (
+                <article
+                  className={`charge-card ${overdue ? "critical-card" : ""}`}
+                  key={charge.id}
+                >
+                  <div className="charge-card__head">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold">{charge.description}</h3>
+                      <p className="text-muted text-sm">
+                        Vencimento {formatDatePtBr(charge.due_date)}
+                        {overdue ? " · vencida" : ""}
+                      </p>
+                    </div>
+                    <span className={`charge-status charge-status--${overdue ? "overdue" : "pending"}`}>
+                      {overdue ? "Vencida" : "Pendente"}
+                    </span>
+                  </div>
+                  <dl className="charge-card__values">
+                    <div>
+                      <dt>Receita própria</dt>
+                      <dd>{formatCurrency(charge.company_revenue)}</dd>
+                    </div>
+                    <div>
+                      <dt>Total bruto</dt>
+                      <dd className="font-black">{formatCurrency(charge.gross_total)}</dd>
+                    </div>
+                  </dl>
+                  <div className="charge-card__actions">
+                    <form action={markChargePaid} className="charge-settle">
+                      <input name="id" type="hidden" value={charge.id} />
+                      <input name="returnTo" type="hidden" value={clientReturnTo} />
+                      <SelectField
+                        defaultValue="Pix"
+                        label="Forma de pagamento"
+                        name="paymentMethod"
+                        options={paymentOptions}
+                      />
+                      <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
+                    </form>
+                    <form action={deleteOperationalRecord}>
+                      <input name="clientId" type="hidden" value={client.id} />
+                      <input name="id" type="hidden" value={charge.id} />
+                      <input name="recordType" type="hidden" value="charge" />
+                      <ConfirmDialog
+                        className="charge-action charge-action--danger"
+                        confirmLabel="Excluir cobrança"
+                        confirmation="A cobrança some do sistema sem deixar registro. Se ela existiu de verdade, prefira cancelar na página de cobranças."
+                        icon="trash"
+                        label="Excluir"
+                        title={charge.description}
+                      />
+                    </form>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <p className="text-muted mt-3 text-sm">
+            <Link className="font-semibold hover:underline" href={`/cobrancas?clientId=${client.id}`}>
+              Ver todas as cobranças deste cliente →
+            </Link>
+          </p>
         </section>
       ) : null}
 

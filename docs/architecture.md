@@ -26,7 +26,7 @@ flowchart LR
 - Supabase Auth, PostgreSQL, Storage e Cron.
 - Zod e React Hook Form.
 - Vitest, Testing Library e Playwright.
-- ESLint e Prettier.
+- ESLint.
 - TanStack Query e biblioteca de gráficos somente quando o ganho justificar o custo.
 
 Na Fase 2 serão fixadas versões estáveis e corrigidas. Em 2026-07-30, a linha recomendada é Next.js 16 Active LTS com o patch de segurança vigente; previews não entram no baseline.

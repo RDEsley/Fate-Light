@@ -2,12 +2,11 @@ import { Icon } from "./icon";
 
 /**
  * Erro de um campo, sempre com o mesmo ícone e a mesma posição abaixo do controle.
- * Existe para que a mensagem tenha uma forma só: antes cada formulário repetia o
- * markup, e as diferenças acumuladas iam aparecendo como ruído entre telas parecidas.
+ * `id` opcional permite ligar `aria-describedby` do controle ao aviso.
  */
-export function FieldError({ message }: { message?: string | null }) {
+export function FieldError({ id, message }: { id?: string; message?: string | null }) {
   return message ? (
-    <span className="field__error">
+    <span className="field__error" id={id}>
       <Icon className="size-3.5" name="alert" /> {message}
     </span>
   ) : null;

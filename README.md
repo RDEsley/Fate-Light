@@ -9,7 +9,7 @@
   <p>
     <a href="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml"><img src="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
     <a href="package.json"><img src="https://img.shields.io/badge/version-0.6.2-2563EB.svg" alt="Versão 0.6.2" /></a>
-    <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16.3.2-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3.2" /></a>
+    <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16.3.4-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3.4" /></a>
     <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=0B1F2A" alt="React 19.2.8" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0.3" /></a>
     <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-PostgreSQL_17-3FCF8E?logo=supabase&logoColor=white" alt="Supabase com PostgreSQL 17" /></a>
@@ -69,8 +69,8 @@ em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 | 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e alertas de vencimento                         |
 | 👥 **Clientes**   | Seis situações comerciais, site e até três links extras, observações em destaque, arquivamento, histórico anterior e ordenação por receita |
 | 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, edição do serviço aplicado, pausa reversível, encerramento, promoções e nove cadências             |
-| 💳 **Cobranças**  | Geração automática, baixa com recorrência, motivos de atraso/cancelamento e NF privada em contas pagas                                     |
-| 🧾 **Despesas**   | Categorias operacionais, despesas fixas/variáveis, cliente opcional, baixa e NF privada em contas pagas                                    |
+| 💳 **Cobranças**  | Acompanhamento, filtros, baixa com recorrência, criação na ficha do cliente, exclusão corretiva de paga e NF privada |
+| 🧾 **Despesas**   | Avulsas ou mensais recorrentes, categorias, cliente opcional, baixa que agenda o próximo mês e NF privada           |
 | 🌐 **Domínios**   | Painel de vencimentos, edição, exclusão, registrador como link, múltiplos domínios por cliente e atalho para o cadastro dele               |
 | 🔔 **Alertas**    | Antecedência configurável no perfil, faixas de atrasado/hoje/esta semana e link direto para o item citado                                  |
 | 🕘 **Histórico**  | Linha do tempo dentro do perfil, pesquisável por cliente e tipo, preservando baixas, atrasos, encerramentos e reativações                  |
@@ -105,9 +105,9 @@ O serviço aplicado a um cliente tem três estados, e a diferença importa:
 - diálogos de confirmação próprios em todo o sistema — nenhum `window.confirm` nativo; exclusões
   irreversíveis travam o botão por alguns segundos, e as mais sensíveis (conta, workspace) também
   exigem digitar uma frase;
-- avisos em vez de bloqueios: campos importantes em branco geram uma lista do que faltou, e o
-  segundo clique envia assim mesmo;
+- campos opcionais vazios seguem sem sermão; só o essencial inválido bloqueia o envio;
 - erros de formulário apontam o campo exato em português, sem perder o que foi digitado;
+- valores monetários usam máscara bancária pt-BR (dígitos deslocam centavos);
 - explicações contextuais em `?` ao lado dos rótulos que costumam gerar dúvida;
 - selects que medem o espaço disponível e abrem para cima quando não cabem abaixo;
 - alerta como guia: clicar leva à cobrança citada, com rolagem suave e destaque temporário da borda;
@@ -150,15 +150,16 @@ Duas consequências dessa regra valem destaque:
 3. Aplique um serviço no card do cliente, com desconto, parcelas, preço promocional ou lembrete de
    reajuste. **Serviços digitados aqui entram no catálogo sozinhos** e podem ser reutilizados em
    outros clientes; nomes repetidos reaproveitam o registro existente em vez de duplicar.
-4. A primeira cobrança é criada automaticamente; cobranças avulsas continuam disponíveis e mantêm
-   receita própria e mídia em campos separados.
+4. A primeira cobrança nasce do serviço aplicado; cobranças manuais são criadas na ficha do
+   cliente (a página Cobranças é só acompanhamento).
 5. Marque a cobrança como paga; serviços recorrentes agendam o próximo vencimento automaticamente.
 6. Se o cliente pedir uma pausa, use **Pausar** no serviço em vez de encerrar: alertas e cobranças
    param, e **Retomar** devolve a agenda de onde ela estava.
-7. Registre despesas e vencimentos de domínios.
-8. Acompanhe totais e alertas no **Dashboard**; clicar no alerta leva direto ao registro citado.
-9. Para migrar dados existentes, abra **Importar dados**, gere a prévia e confirme somente depois de
-   revisar as contagens, os erros e os avisos.
+7. Registre despesas avulsas ou mensais (assinaturas/SaaS) e vencimentos de domínios.
+8. Lançamento pago errado: o owner pode excluir com confirmação forte e recriar o correto.
+9. Acompanhe totais e alertas no **Dashboard**; clicar no alerta leva direto ao registro citado.
+10. Para migrar dados existentes, abra **Importar dados**, gere a prévia e confirme somente depois de
+    revisar as contagens, os erros e os avisos.
 
 ## 🛠️ Tecnologias
 
@@ -171,7 +172,7 @@ Duas consequências dessa regra valem destaque:
 - **Vitest** e Testing Library para testes de aplicação.
 - **Playwright** e Axe para jornada E2E e acessibilidade.
 - **pgTAP** para contratos, regras financeiras e isolamento do banco.
-- **ESLint** e **Prettier** para qualidade e consistência.
+- **ESLint** para qualidade e consistência.
 
 ## 🏗️ Arquitetura
 
@@ -308,7 +309,6 @@ passo a passo completo, incluindo previews, headers, Turnstile e checklist pós-
 Execute a verificação completa da aplicação:
 
 ```bash
-npm run format:check
 npm run lint
 npm run typecheck
 npm run test

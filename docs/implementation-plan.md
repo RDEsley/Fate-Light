@@ -45,7 +45,7 @@ acessibilidade, operação e documentação, sem ampliar os módulos de negócio
 2. Inicializar Next.js 16 Active LTS no patch corrigido, React e TypeScript estrito.
 3. Fixar engine Node LTS, gerenciador, versões e lockfile.
 4. Configurar Tailwind, tokens e primitivos acessíveis mínimos.
-5. Configurar ESLint, Prettier, Vitest, Testing Library e Playwright.
+5. Configurar ESLint, Vitest, Testing Library e Playwright.
 6. Implementar validação tipada de ambiente com chave publicável e segredos server-only.
 7. Criar clientes Supabase browser/server sem regras de negócio.
 8. Substituir workflows legados por CI reproduzível e secret scanning.

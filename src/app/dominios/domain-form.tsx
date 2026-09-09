@@ -8,6 +8,7 @@ import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
 import { ClientCombobox, DateField, type ClientOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
+import { MoneyField } from "@/components/ui/money-field";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 export type DomainValues = {
@@ -147,24 +148,16 @@ export function DomainForm({
             />
             <FieldError message={errors.registrar} />
           </label>
-          <label className="field">
-            <span className="field__label">
-              Custo <span className="field__optional">opcional</span>
-            </span>
-            <input
-              aria-invalid={Boolean(errors.cost)}
-              defaultValue={sent.text(
-                "cost",
-                domain?.cost === null ? "" : String(domain?.cost ?? ""),
-              )}
-              min="0"
-              name="cost"
-              placeholder="Ex.: 40,00"
-              step="0.01"
-              type="number"
-            />
-            <FieldError message={errors.cost} />
-          </label>
+          <MoneyField
+            defaultValue={sent.text(
+              "cost",
+              domain?.cost === null || domain?.cost === undefined ? "" : String(domain.cost),
+            )}
+            error={errors.cost}
+            label="Custo"
+            name="cost"
+            optional
+          />
           <div className="option-card sm:col-span-2">
             <label className="option-card__toggle">
               <input

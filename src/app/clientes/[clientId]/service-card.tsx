@@ -6,7 +6,6 @@ import { useState } from "react";
 import {
   deleteClientService,
   setClientServiceState,
-  settleServiceCharges,
 } from "@/app/_actions/mvp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon, type IconName } from "@/components/ui/icon";
@@ -60,7 +59,6 @@ export function ServiceCard({
   clientId: string;
   duration: string;
   service: ClientServiceValues & {
-    duePendingCharges: number;
     nextAdjustmentDate: string | null;
     paidCharges: number;
     paidRevenue: number;
@@ -194,7 +192,7 @@ export function ServiceCard({
         {service.status !== "ended" ? (
           <Link
             className="service-action"
-            href={`/cobrancas?clientId=${clientId}&serviceId=${service.id}`}
+            href={`/clientes/${clientId}?action=new-charge&serviceId=${service.id}#nova-cobranca`}
           >
             <Icon className="size-4" name="plus" /> Cobrança
           </Link>
@@ -234,22 +232,6 @@ export function ServiceCard({
               icon="archive"
               label="Encerrar"
               title={`Encerrar ${service.name}`}
-              tone="default"
-            />
-          </form>
-        ) : null}
-        {service.duePendingCharges > 0 ? (
-          <form action={settleServiceCharges}>
-            <input name="clientId" type="hidden" value={clientId} />
-            <input name="id" type="hidden" value={service.id} />
-            <input name="paymentMethod" type="hidden" value="Acerto final" />
-            <ConfirmDialog
-              className="service-action"
-              confirmLabel="Marcar como pago"
-              confirmation={`As ${service.duePendingCharges} cobrança(s) já vencidas ou vencendo hoje passam a constar como pagas. Ciclos futuros continuam pendentes e não são afetados.`}
-              icon="check"
-              label="Quitar pendências"
-              title={`Quitar ${service.name}`}
               tone="default"
             />
           </form>

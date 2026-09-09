@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
+import { MoneyField } from "@/components/ui/money-field";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 
@@ -36,14 +37,11 @@ export function PriorRevenueEntries({
             <form action={updateAction} className="prior-revenue-list__edit">
               <input name="clientId" type="hidden" value={clientId} />
               <input name="id" type="hidden" value={entry.id} />
-              <input
-                aria-label="Total já recebido"
+              <MoneyField
                 defaultValue={entry.amount}
-                min="0"
+                label="Total já recebido"
                 name="priorRevenue"
                 required
-                step="0.01"
-                type="number"
               />
               <DateField
                 defaultValue={entry.date}

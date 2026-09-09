@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const lifecycleMocks = vi.hoisted(() => {
   const chain = {
     eq: vi.fn(),
@@ -195,6 +197,7 @@ describe("operational lifecycle actions", () => {
     formData.set("clientId", "");
     formData.set("description", "Hospedagem de junho");
     formData.set("dueDate", "2026-06-10");
+    formData.set("enableRecurrence", "");
     formData.set("expenseType", "fixed");
     formData.set("notes", "");
     formData.set("status", "paid");
@@ -204,6 +207,35 @@ describe("operational lifecycle actions", () => {
     );
     const [payload] = lifecycleMocks.chain.insert.mock.calls.at(-1) as [{ paid_at: string }];
     expect(payload.paid_at).toBe("2026-06-10T12:00:00.000Z");
+  });
+
+  it("cria despesa mensal pela RPC de recorrência", async () => {
+    lifecycleMocks.rpc.mockResolvedValue({
+      data: { status: "created" },
+      error: null,
+    });
+    const formData = new FormData();
+    formData.set("amount", "89.90");
+    formData.set("category", "hosting");
+    formData.set("clientId", "");
+    formData.set("description", "Hospedagem mensal");
+    formData.set("dueDate", "2026-06-10");
+    formData.set("enableRecurrence", "on");
+    formData.set("expenseType", "fixed");
+    formData.set("notes", "");
+    formData.set("status", "pending");
+
+    await expect(createExpense(initialActionState, formData)).rejects.toThrow(
+      "REDIRECT:/despesas?status=created",
+    );
+    expect(lifecycleMocks.rpc).toHaveBeenCalledWith(
+      "create_expense_with_recurrence",
+      expect.objectContaining({
+        p_enable_recurrence: true,
+        p_expense_type: "fixed",
+      }),
+    );
+    expect(lifecycleMocks.chain.insert).not.toHaveBeenCalled();
   });
 
   it("usa a RPC protegida para excluir somente registros elegíveis", async () => {

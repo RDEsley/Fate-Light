@@ -76,7 +76,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (authenticated && guestOnlyPaths.has(pathname)) {
-    const destination = new URL(appendNextPath("/auth/continue", "/perfil"), request.url);
+    const destination = new URL(appendNextPath("/auth/continue", "/dashboard"), request.url);
     return applySecurityHeaders(copyCookies(response, NextResponse.redirect(destination)));
   }
 

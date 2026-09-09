@@ -33,7 +33,9 @@ Pessoa não autenticada que pode conhecer o produto, consultar os documentos leg
 9. Anexos são privados e não possuem URL pública permanente.
 10. Alertas de domínio e demais alertas têm antecedência configurável e deduplicação.
 11. Administrador global não recebe acesso financeiro por ser administrador.
-12. Exclusão destrutiva de movimentos financeiros confirmados é proibida.
+12. Movimentos financeiros confirmados não são editados in-place; o owner pode excluí-los
+    de forma corretiva (com confirmação forte, remoção de anexos e trilha mínima de
+    auditoria) e recriar o lançamento certo — ADR-0019.
 13. O workspace usa uma moeda única no MVP; não há conversão cambial.
 14. O sistema é gerencial e não será divulgado como substituto de contabilidade profissional.
 
@@ -220,7 +222,7 @@ Critério de aceite: uma conta global sem vínculo de workspace recebe zero linh
 - Convites e permissões de `admin`/`member` do workspace.
 - E-mail/push de alertas.
 - Acesso por impersonation para suporte.
-- Exclusão física imediata de movimentos financeiros.
+- Edição completa de cobrança/despesa já paga (correção = excluir + recriar, ADR-0019).
 - Monetização.
 
 ## 7. Gate de produto do MVP

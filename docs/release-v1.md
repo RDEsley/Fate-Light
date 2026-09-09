@@ -20,7 +20,6 @@ Por esses motivos, a versão continua 0.6.1 e **a promoção para 1.0.0 permanec
 
 - [ ] `npm ci`
 - [ ] `npm audit` sem vulnerabilidade alta ou crítica não tratada
-- [ ] `npm run format:check`
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run test`

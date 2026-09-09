@@ -1,6 +1,8 @@
 # ADR-0013 — Exclusão operacional e ciclo de cobrança de serviços
 
 Status: aceita em 2026-08-03.
+Supersedida parcialmente em 2026-09-08 pela [ADR-0019](0019-corrective-deletion-of-confirmed-financial-records.md)
+quanto à proibição absoluta de excluir cobrança/despesa paga.
 
 ## Contexto
 

@@ -13,6 +13,11 @@ const messages: Record<string, string> = {
   "prior-revenue-error":
     "Cliente salvo, mas o total já recebido não pôde ser registrado. Lance-o como cobrança avulsa já paga.",
   "prior-revenue-updated": "Lançamento de histórico anterior atualizado.",
+  "charge-created": "Cobrança criada neste cliente.",
+  paid: "Pagamento registrado neste cliente.",
+  "paid-deleted": "Registro pago excluído. A receita saiu do histórico.",
+  "paid-deleted-storage-pending":
+    "Registro excluído, mas um anexo privado ficou pendente de limpeza.",
   restored: "Cliente desarquivado e de volta à operação.",
   "service-created": "Serviço aplicado e cobrança criada.",
   "service-delete-blocked":

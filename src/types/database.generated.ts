@@ -651,6 +651,10 @@ export type Database = {
           id: string
           notes: string | null
           paid_at: string | null
+          recurrence_active: boolean
+          recurrence_frequency: string | null
+          recurrence_group_id: string | null
+          recurrence_sequence: number | null
           status: string
           updated_at: string
           updated_by: string
@@ -668,6 +672,10 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_at?: string | null
+          recurrence_active?: boolean
+          recurrence_frequency?: string | null
+          recurrence_group_id?: string | null
+          recurrence_sequence?: number | null
           status?: string
           updated_at?: string
           updated_by?: string
@@ -685,6 +693,10 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_at?: string | null
+          recurrence_active?: boolean
+          recurrence_frequency?: string | null
+          recurrence_group_id?: string | null
+          recurrence_sequence?: number | null
           status?: string
           updated_at?: string
           updated_by?: string
@@ -1470,6 +1482,20 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      create_expense_with_recurrence: {
+        Args: {
+          p_amount: number
+          p_category: string
+          p_client_id?: string
+          p_description: string
+          p_due_date: string
+          p_enable_recurrence?: boolean
+          p_expense_type: string
+          p_notes?: string
+          p_status: string
+        }
+        Returns: Json
+      }
       dashboard_financial_summary: {
         Args: {
           p_due_end: string
@@ -1503,6 +1529,10 @@ export type Database = {
         Returns: string
       }
       delete_domain_record: { Args: { p_domain_id: string }; Returns: string }
+      delete_paid_financial_record: {
+        Args: { p_record_id: string; p_record_type: string }
+        Returns: Json
+      }
       delete_workspace_record: {
         Args: { p_record_id: string; p_record_type: string }
         Returns: string
@@ -1582,6 +1612,11 @@ export type Database = {
         Args: { p_payment_method: string; p_service_id: string }
         Returns: number
       }
+      settle_expense_and_schedule_next: {
+        Args: { p_expense_id: string }
+        Returns: Json
+      }
+      stop_expense_recurrence: { Args: { p_expense_id: string }; Returns: Json }
       update_client_service: {
         Args: {
           p_additional_fee: number

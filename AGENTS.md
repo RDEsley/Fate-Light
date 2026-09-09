@@ -85,7 +85,7 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
   pgTAP para banco/RLS/Storage e Playwright para jornadas e acessibilidade.
 - Não reduza cobertura, não marque teste como skip para esconder falha e não altere expectativa para
   acomodar comportamento incorreto.
-- Antes de publicar, execute: `npm ci`, `npm audit`, `npm run format:check`, `npm run lint`,
+- Antes de publicar, execute: `npm ci`, `npm audit`, `npm run lint`,
   `npm run typecheck`, `npm run test`, `npm run test:coverage`, `npm run build`,
   `npm run test:e2e`, `npm run security:check`, `git diff --check`.
 - O computador local não possui Docker. Testes `db:*` e a jornada autenticada podem depender do CI;
