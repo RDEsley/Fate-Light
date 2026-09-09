@@ -16,12 +16,12 @@ function parsePercentageInput(raw: string): string {
   return whole;
 }
 
-function toCanonical(display: string): string {
+/** Converte display pt-BR para canônico sem clamp silencioso. */
+export function toPercentCanonical(display: string): string {
   if (!display) return "";
-  const value = Number.parseFloat(display);
+  const value = Number.parseFloat(display.replace(",", "."));
   if (!Number.isFinite(value)) return "";
-  const clamped = Math.min(100, Math.max(0, value));
-  return String(clamped);
+  return String(value);
 }
 
 type PercentFieldProps = {
@@ -34,7 +34,10 @@ type PercentFieldProps = {
   optional?: boolean;
 };
 
-/** Percentual com vírgula brasileira e limite 0..100 por padrão. */
+/**
+ * Percentual com vírgula brasileira. Display e hidden representam o mesmo valor.
+ * Valores acima de `max` ficam inválidos na UI; o servidor/Zod rejeita o limite.
+ */
 export function PercentField({
   defaultValue = null,
   error,
@@ -46,19 +49,28 @@ export function PercentField({
 }: PercentFieldProps) {
   const id = useId();
   const inputId = `${id}-${name}`;
+  const errorId = `${inputId}-error`;
+  const hintId = `${inputId}-hint`;
   const initial =
     defaultValue === null || defaultValue === undefined || defaultValue === ""
       ? ""
       : String(defaultValue).replace(".", ",");
   const [display, setDisplay] = useState(initial);
-  const canonical = toCanonical(display.replace(",", "."));
+  const canonical = toPercentCanonical(display);
   const numeric = canonical === "" ? null : Number(canonical);
-  const invalidMax = numeric !== null && numeric > max;
+  const overMax = numeric !== null && numeric > max;
+  const underMin = numeric !== null && numeric < 0;
+  const localError =
+    error ||
+    (overMax ? `Informe no máximo ${String(max).replace(".", ",")}%.` : null) ||
+    (underMin ? "O percentual não pode ser negativo." : null);
 
   const updateDisplay = (next: string) => {
     setDisplay(next);
-    onCanonicalChange?.(toCanonical(next.replace(",", ".")));
+    onCanonicalChange?.(toPercentCanonical(next));
   };
+
+  const describedBy = localError ? errorId : undefined;
 
   return (
     <label className="field">
@@ -67,18 +79,24 @@ export function PercentField({
         {optional ? <span className="field__optional">opcional</span> : null}
       </span>
       <input
-        aria-invalid={Boolean(error) || invalidMax}
+        aria-describedby={describedBy}
+        aria-invalid={Boolean(localError)}
         aria-label={label}
         autoComplete="off"
         id={inputId}
         inputMode="decimal"
-        onChange={(event) => updateDisplay(parsePercentageInput(event.target.value).replace(".", ","))}
+        onChange={(event) =>
+          updateDisplay(parsePercentageInput(event.target.value).replace(".", ","))
+        }
         placeholder="Ex.: 5,5"
         type="text"
         value={display}
       />
       <input name={name} type="hidden" value={canonical} />
-      <FieldError message={error} />
+      <span className="sr-only" id={hintId}>
+        Limite de {String(max).replace(".", ",")} por cento
+      </span>
+      <FieldError id={errorId} message={localError} />
     </label>
   );
 }

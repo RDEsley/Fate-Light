@@ -130,9 +130,9 @@ select results_eq(
 select results_eq(
   $$select public.settle_expense_and_schedule_next(
     current_setting('test.next_expense')::uuid
-  ) ->> 'scheduled'$$,
-  $$values ('false'::text)$$,
-  'Retry da liquidação não duplica a próxima ocorrência'
+  ) ->> 'status'$$,
+  $$values ('already_settled'::text)$$,
+  'Retry da liquidação retorna already_settled sem reagendar'
 );
 
 select results_eq(

@@ -15,8 +15,11 @@ const messages: Record<string, string> = {
   paid: "Pagamento registrado. A cobrança foi para o bloco das resolvidas e o próximo ciclo já está agendado.",
   "paid-deleted":
     "Registro pago excluído. A receita ou o custo saiu do dashboard e as notas fiscais anexadas foram removidas.",
+  "paid-deleted-storage-pending":
+    "Registro excluído, mas um anexo privado ficou pendente de limpeza. Os totais já estão corretos.",
   "expense-next-scheduled":
     "Despesa marcada como paga e próxima ocorrência mensal criada automaticamente.",
+  "expense-already-settled": "Esta despesa já estava paga. Nenhuma nova ocorrência foi criada.",
   "expense-not-recurring": "Esta despesa não faz parte de uma série mensal.",
   "expense-recurrence-stopped":
     "Recorrência mensal encerrada. Novas ocorrências deixam de ser criadas automaticamente.",
@@ -57,7 +60,7 @@ export function MvpStatusMessage({ status }: { status?: string }) {
     status?.includes("too-large") ||
     status?.includes("unavailable")
       ? "error"
-      : status?.includes("blocked")
+      : status?.includes("blocked") || status?.includes("storage-pending")
         ? "warning"
         : "success";
   return <ToastNotification message={message} tone={tone} />;

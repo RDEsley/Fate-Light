@@ -72,15 +72,33 @@ describe("financial hardening actions", () => {
       p_charge_id: chargeId,
       p_payment_method: "Pix",
     });
-    const paths = actionMocks.revalidatePath.mock.calls.map(([path]) => path);
+    const paths = actionMocks.revalidatePath.mock.calls.map(([path, type]) =>
+      type ? `${path}:${type}` : path,
+    );
     expect(paths).toEqual(
       expect.arrayContaining([
         "/dashboard",
         "/historico",
         "/cobrancas",
         "/clientes",
+        "/clientes/[clientId]:page",
         `/clientes/${clientId}`,
       ]),
+    );
+  });
+
+  it("revalida ficha dinâmica mesmo pagando em /cobrancas sem clientId", async () => {
+    actionMocks.rpc.mockResolvedValue({ data: "settled", error: null });
+    const formData = new FormData();
+    formData.set("id", chargeId);
+    formData.set("paymentMethod", "Pix");
+
+    await expect(markChargePaid(formData)).rejects.toThrow("REDIRECT:/cobrancas?status=paid");
+    const paths = actionMocks.revalidatePath.mock.calls.map(([path, type]) =>
+      type ? `${path}:${type}` : path,
+    );
+    expect(paths).toEqual(
+      expect.arrayContaining(["/clientes/[clientId]:page", "/cobrancas", "/dashboard"]),
     );
   });
 
@@ -112,6 +130,22 @@ describe("financial hardening actions", () => {
       p_record_type: "charge",
     });
     expect(actionMocks.remove).toHaveBeenCalledWith(["ws/fiscal/charge/1.pdf"]);
+  });
+
+  it("avisa limpeza pendente quando o Storage falha após exclusão financeira", async () => {
+    actionMocks.rpc.mockResolvedValue({
+      data: { object_paths: ["ws/fiscal/charge/2.pdf"], status: "deleted" },
+      error: null,
+    });
+    actionMocks.remove.mockResolvedValue({ error: { message: "storage down" } });
+    const formData = new FormData();
+    formData.set("id", chargeId);
+    formData.set("recordType", "charge");
+    formData.set("returnTo", "/cobrancas");
+
+    await expect(deletePaidFinancialRecord(formData)).rejects.toThrow(
+      "REDIRECT:/cobrancas?status=paid-deleted-storage-pending",
+    );
   });
 
   it("liquida despesa pela RPC de recorrência", async () => {
