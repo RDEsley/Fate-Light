@@ -52,7 +52,8 @@ release candidate antes de promover a 1.0.
 ## Segurança e produção
 
 - [ ] confirmação de e-mail ativada e testada no Supabase de produção
-- [ ] SMTP, template de confirmação, magic link e recuperação de senha testados
+- [ ] SMTP, template de confirmação e recuperação de senha testados
+- [ ] Magic link (implementado, fora da UX pública) validado após SMTP de produção
 - [ ] Turnstile configurado para produção; secret somente no provedor
 - [ ] Leaked Password Protection revisado/ativado no Auth do projeto remoto, se ainda desativado
 - [ ] variáveis da Vercel revisadas; nenhum segredo em `NEXT_PUBLIC_*`

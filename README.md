@@ -55,8 +55,8 @@ Ele resolve especificamente:
   cliente já pagou antes do sistema existir.
 
 A aplicação acompanha o ciclo completo, do cadastro do cliente ao recebimento, com autenticação por
-e-mail e senha ou magic link, isolamento por workspace e políticas de segurança no banco. Interface
-em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
+e-mail e senha, com confirmação de e-mail, isolamento por workspace e políticas de segurança no banco.
+Interface em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 
 > **Status:** versão `0.8.2`, candidata ao release 1.0. O hotfix isola a importação por
 > empresa/marca e evita inventar razão social na consolidação. A publicação da V1 ainda depende de
@@ -75,7 +75,7 @@ em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
 | 🔔 **Alertas**    | Antecedência configurável no perfil, faixas de atrasado/hoje/esta semana e link direto para o item citado |
 | 🕘 **Histórico**  | Linha do tempo dentro do perfil, pesquisável por cliente e tipo, preservando baixas, atrasos, encerramentos e reativações |
 | 📥 **Importação** | Prévia e confirmação transacional de planilhas Excel/CSV, linhas opcionais `empresa/marca`, formato legado e proteção contra duplicidade |
-| 🔐 **Conta**      | Login por e-mail e senha, opção de magic link, onboarding, perfil, acessibilidade, configurações e solicitações de privacidade             |
+| 🔐 **Conta**      | Login por e-mail e senha com confirmação de e-mail, recuperação de senha, onboarding, perfil, acessibilidade, configurações e solicitações de privacidade |
 
 ### Agenda e calendário
 
@@ -144,7 +144,7 @@ Duas consequências dessa regra valem destaque:
 
 ## 🧭 Fluxo de uso
 
-1. Informe seu nome ou o nome da empresa e entre com senha ou magic link; confirme o workspace sugerido no primeiro acesso.
+1. Informe seu nome ou o nome da empresa e entre com e-mail e senha; confirme o workspace sugerido no primeiro acesso.
 2. Cadastre um cliente em **Clientes**. Se ele já pagava você antes, informe o total no bloco
    "Já trabalhei com este cliente antes" e o histórico entra junto.
 3. Aplique um serviço no card do cliente, com desconto, parcelas, preço promocional ou lembrete de
@@ -166,7 +166,7 @@ Duas consequências dessa regra valem destaque:
 - **Next.js 16** com App Router e React Server Components por padrão.
 - **React 19** e **TypeScript 6** em modo estrito.
 - **Tailwind CSS 4** para a interface responsiva.
-- **Supabase** para autenticação por senha ou magic link e PostgreSQL 17.
+- **Supabase** para autenticação por e-mail e senha e PostgreSQL 17.
 - **read-excel-file** para leitura de planilhas `.xlsx`, sem armazenar o arquivo enviado.
 - **Zod** para validação nas bordas da aplicação.
 - **Vitest** e Testing Library para testes de aplicação.
@@ -181,7 +181,7 @@ flowchart LR
     U[Usuário] --> N[Next.js App Router]
     N --> A[Supabase Auth]
     N --> D[(PostgreSQL 17)]
-    A --> M[Senha ou magic link]
+    A --> M[E-mail e senha]
     D --> R[RLS por workspace]
     D --> F[Clientes e serviços]
     D --> C[Cobranças e despesas]
@@ -261,8 +261,8 @@ Acesse:
 - Mailpit local: [http://127.0.0.1:54324](http://127.0.0.1:54324)
 - Supabase Studio: [http://127.0.0.1:54323](http://127.0.0.1:54323)
 
-O Mailpit recebe somente as mensagens do ambiente local e permite abrir os magic links de cadastro
-e login sem configurar um provedor de e-mail.
+O Mailpit recebe somente as mensagens do ambiente local e permite abrir os links de confirmação e
+recuperação de senha gerados nos testes.
 
 ## ☁️ Deploy na Vercel
 
@@ -329,9 +329,9 @@ npm run test:e2e:auth
 ```
 
 O E2E autenticado cobre o fluxo operacional completo: conta, workspace, cliente, dois serviços,
-cobrança, pagamento, despesa, domínio, dashboard, importação, login por senha, magic link,
-recuperação e troca de senha. Em caso de falha no CI, screenshots, traces e o relatório do Playwright
-ficam disponíveis temporariamente como artefato da execução.
+cobrança, pagamento, despesa, domínio, dashboard, importação, login por senha, recuperação e troca
+de senha. Em caso de falha no CI, screenshots, traces e o relatório do Playwright ficam disponíveis
+temporariamente como artefato da execução.
 
 ### Comandos úteis
 
@@ -352,7 +352,7 @@ ficam disponíveis temporariamente como artefato da execução.
 
 ## 🔐 Segurança
 
-- Autenticação SSR por e-mail e senha ou magic link, com cookies tratados no servidor.
+- Autenticação SSR por e-mail e senha, com cookies tratados no servidor.
 - Rotas privadas protegidas antes da renderização.
 - Isolamento de dados por workspace aplicado no PostgreSQL.
 - Nenhuma operação financeira confia em `workspace_id` enviado pelo formulário.

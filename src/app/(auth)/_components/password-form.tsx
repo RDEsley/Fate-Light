@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { Route } from "next";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
@@ -29,8 +28,6 @@ export function PasswordForm({
 }) {
   const isLogin = mode === "login";
   const message = status ? messages[status] : undefined;
-  const magicLinkHref =
-    `${isLogin ? "/login" : "/cadastro"}?method=magic-link&next=${encodeURIComponent(nextPath)}` as Route;
 
   return (
     <>
@@ -148,22 +145,6 @@ export function PasswordForm({
           pendingLabel={isLogin ? "Entrando…" : "Criando conta…"}
         />
       </form>
-      {isLogin ? (
-        <p className="text-muted mt-3 text-center text-sm">
-          Sua conta ainda não tem senha? Use o magic link abaixo.
-        </p>
-      ) : null}
-      <div className="my-4 flex items-center gap-3" aria-hidden="true">
-        <span className="border-line h-px flex-1 border-t" />
-        <span className="text-muted text-xs uppercase">ou</span>
-        <span className="border-line h-px flex-1 border-t" />
-      </div>
-      <Link
-        className="cartoon-card hover:bg-brand-soft block min-h-11 px-5 py-3 text-center font-black"
-        href={magicLinkHref}
-      >
-        {isLogin ? "Entrar com magic link" : "Criar conta com magic link"}
-      </Link>
       <p className="text-muted mt-4 text-center text-sm leading-6">
         {isLogin ? "Ainda não tem uma conta?" : "Já possui uma conta?"}{" "}
         <Link

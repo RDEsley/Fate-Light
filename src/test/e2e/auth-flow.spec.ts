@@ -171,7 +171,7 @@ test.describe("authenticated MVP journey", () => {
     ).toBeVisible();
     const nextDueBeforeManual = await adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd").innerText();
     await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
-    let chargePanel = page.locator("#cobranca-avulsa details");
+    let chargePanel = page.locator("#nova-cobranca-avulsa");
     await expect(chargePanel).toBeVisible();
     await expect(chargePanel.getByText(/não altera a agenda automática/i)).toBeVisible();
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
@@ -193,7 +193,7 @@ test.describe("authenticated MVP journey", () => {
       adsCard.locator("dt", { hasText: "Próximo vencimento" }).locator("..").locator("dd"),
     ).toHaveText(nextDueBeforeManual);
 
-    chargePanel = page.locator("#cobranca-avulsa details");
+    chargePanel = page.locator("#nova-cobranca-avulsa");
     await chargePanel.locator("summary").filter({ hasText: "Nova cobrança avulsa" }).click();
     await chargePanel.getByLabel("Descrição").fill("Pendência operacional");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(-1));
@@ -219,7 +219,7 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.locator("article").filter({ hasText: "Pendência operacional" })).toHaveCount(0);
 
     // Criar, pagar e excluir cobrança paga — Dashboard deixa de somar.
-    chargePanel = page.locator("#cobranca-avulsa details");
+    chargePanel = page.locator("#nova-cobranca-avulsa");
     await chargePanel.locator("summary").filter({ hasText: "Nova cobrança avulsa" }).click();
     await chargePanel.getByLabel("Descrição").fill("Correção temporária");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
@@ -371,17 +371,11 @@ test.describe("authenticated MVP journey", () => {
 
     await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("button", { name: "Sair" }).click();
-    await page.getByRole("link", { name: /entrar com magic link/i }).click();
-    await expect(page).toHaveURL(/method=magic-link/);
-    await page.getByLabel("E-mail").fill(email);
-    await waitForCaptcha(page);
-    await page.getByRole("button", { name: /receber link de acesso/i }).click();
-    const login = await waitForMagicLink(request, email);
-    await page.goto(login.href);
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.getByRole("link", { name: /entrar com magic link/i })).toHaveCount(0);
+    await page.goto("/login?method=magic-link");
+    await expect(page.getByLabel("Senha", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /receber link de acesso/i })).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
-    await page.getByRole("button", { name: "Sair" }).click();
     await page.getByRole("link", { name: "Esqueci minha senha" }).click();
     await expect(page).toHaveURL(/\/esqueci-senha$/);
     await page.getByLabel("E-mail").fill(email);
@@ -389,7 +383,7 @@ test.describe("authenticated MVP journey", () => {
     await page.getByRole("button", { name: "Enviar link de recuperação" }).click();
     await expect(page).toHaveURL(/\/esqueci-senha\?status=sent$/, { timeout: 15_000 });
     await expect(page.getByText(/enviaremos um link seguro/i)).toBeVisible();
-    const recovery = await waitForMagicLink(request, email, new Set([login.messageId]));
+    const recovery = await waitForMagicLink(request, email);
     await page.goto(recovery.href);
     await expect(page).toHaveURL(/\/redefinir-senha/);
     const newPassword = "Mvp-Nova-Senha-2026!";
