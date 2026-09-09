@@ -300,9 +300,6 @@ end;
 $$;
 
 revoke all on function public.create_expense_with_recurrence(
-  text, text, numeric, date, text, text, uuid, text, boolean
-) from public, anon, authenticated;
-revoke all on function public.create_expense_with_recurrence(
   text, text, numeric, date, text, text, uuid, text, boolean, uuid
 ) from public, anon, authenticated;
 grant execute on function public.create_expense_with_recurrence(
