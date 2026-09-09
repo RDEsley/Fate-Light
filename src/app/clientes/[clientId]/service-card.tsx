@@ -11,6 +11,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 import { billingFrequencyLabel } from "@/features/mvp/recurrence";
+import {
+  currentServiceOwnRevenue,
+  promotionalStatusLabel,
+} from "@/features/mvp/service-pricing";
 
 import {
   ServiceApplicationForm,
@@ -94,16 +98,13 @@ export function ServiceCard({
     );
   }
 
-  const remainingPromo =
-    service.promotionalCycles === null
-      ? 0
-      : Math.max(0, service.promotionalCycles - service.promotionalCyclesUsed);
-  const appliedPrice =
-    service.discountType === "percentage"
-      ? service.listPrice * (1 - service.discountValue / 100)
-      : service.discountType === "fixed"
-        ? service.listPrice - service.discountValue
-        : service.listPrice;
+  const pricing = currentServiceOwnRevenue(service);
+  const promoLabel = promotionalStatusLabel({
+    promoActive: pricing.promoActive,
+    promoRemaining: pricing.promoRemaining,
+    promoTotalCycles: pricing.promoTotalCycles,
+    promotionalCyclesUsed: service.promotionalCyclesUsed,
+  });
   // Adicional de repasse acompanha a verba de mídia; só o declarado como receita
   // entra no que você recebe (ADR-0018).
   const additionalRevenue = service.additionalFeeIsRevenue ? Number(service.additionalFee) : 0;
@@ -135,14 +136,16 @@ export function ServiceCard({
           <dd>{formatCurrency(service.listPrice)}</dd>
         </div>
         <div>
-          <dt className="text-muted">{additionalRevenue > 0 ? "A receber" : "Valor aplicado"}</dt>
+          <dt className="text-muted">{additionalRevenue > 0 ? "A receber" : "Valor atual"}</dt>
           <dd className="text-positive font-black">
-            {formatCurrency(appliedPrice + additionalRevenue)}
+            {formatCurrency(pricing.amount + additionalRevenue)}
           </dd>
           {additionalRevenue > 0 ? (
             <small className="text-muted">
-              {formatCurrency(appliedPrice)} + {formatCurrency(additionalRevenue)} de adicional
+              {formatCurrency(pricing.amount)} + {formatCurrency(additionalRevenue)} de adicional
             </small>
+          ) : pricing.promoActive ? (
+            <small className="text-muted">{promoLabel}</small>
           ) : service.discountType !== "none" ? (
             <small className="text-muted">
               desconto de{" "}
@@ -185,9 +188,9 @@ export function ServiceCard({
       </dl>
       {service.promotionalPrice !== null ? (
         <p className="service-note service-note--promo mt-3">
-          {service.promotionalPrice === 0 ? "Gratuito" : formatCurrency(service.promotionalPrice)}{" "}
-          por {service.promotionalCycles} ciclos ·{" "}
-          {remainingPromo ? `${remainingPromo} restante(s)` : "promoção concluída"}
+          {pricing.promoActive
+            ? promoLabel
+            : `${service.promotionalPrice === 0 ? "Gratuito" : formatCurrency(service.promotionalPrice)} por ${service.promotionalCycles} ciclos · promoção concluída`}
         </p>
       ) : null}
       {service.nextAdjustmentDate ? (
