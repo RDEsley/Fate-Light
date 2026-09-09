@@ -1,6 +1,6 @@
 ﻿begin;
 
-select plan(29);
+select plan(30);
 
 insert into auth.users (id, email)
 values
@@ -406,6 +406,12 @@ select results_eq(
     where display_name='DX Dedetizadora' and client_id='91919191-0001-4919-8919-919191919191'::uuid$$,
   $$select '12345678901'$$,
   'Metadata inequívoca da origem é copiada para a entity'
+);
+select results_eq(
+  $$select legal_name is null from public.client_entities
+    where display_name='DX Dedetizadora' and client_id='91919191-0001-4919-8919-919191919191'::uuid$$,
+  $$select true$$,
+  'Consolidação não inventa legal_name a partir do nome do cliente'
 );
 select results_eq(
   $$select event_data #>> '{preserved,contacts}' from public.activity_events
