@@ -14,6 +14,7 @@ import {
 } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
+import { AlertList, type AlertItem } from "./alert-list";
 import { FinancialPrivacy } from "./financial-privacy";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -47,12 +48,16 @@ export default async function DashboardPage({
   // silêncio assim que o workspace crescia. Cada consulta abaixo pede só o que a página
   // realmente lê, e o horizonte das pendentes vai até o maior entre o fim do período e a
   // janela de 7 dias — os dois recortes que os cards mostram.
-  const chargeColumns = "id, description, due_date, clients(name)";
+  const chargeColumns =
+    "id, description, due_date, clients(name), client_entities(display_name)";
+  const expenseColumns =
+    "id, description, amount, due_date, clients(name), client_entities(display_name)";
   const [
     { data: summary, error: summaryError },
     { data: overdueRows, error: overdueError },
     { data: dueSoonRows, error: dueSoonError },
     { data: overdueExpenseRows, error: overdueExpensesError },
+    { data: dueSoonExpenseRows, error: dueSoonExpensesError },
     { data: expiredDomainRows, error: expiredDomainsError },
     { data: upcomingDomainRows, error: upcomingDomainsError },
   ] = await Promise.all([
@@ -86,10 +91,21 @@ export default async function DashboardPage({
       .limit(4),
     context.supabase
       .from("expenses")
-      .select("id, description, amount, due_date")
+      .select(expenseColumns)
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .lt("due_date", today)
+      .order("due_date")
+      .limit(4),
+    // Janela fechada: hoje até o sétimo dia. As vencidas já têm card próprio e contá-las
+    // duas vezes faria o painel exagerar o tamanho do problema.
+    context.supabase
+      .from("expenses")
+      .select(expenseColumns)
+      .eq("workspace_id", context.workspaceId)
+      .eq("status", "pending")
+      .gte("due_date", today)
+      .lte("due_date", nextWeek)
       .order("due_date")
       .limit(4),
     context.supabase
@@ -119,20 +135,28 @@ export default async function DashboardPage({
   const overdue = overdueRows ?? [];
   const dueSoon = dueSoonRows ?? [];
   const overdueExpenses = overdueExpenseRows ?? [];
+  const dueSoonExpenses = dueSoonExpenseRows ?? [];
   const expiredDomains = expiredDomainRows ?? [];
   const upcomingDomains = upcomingDomainRows ?? [];
   const overdueCount = Number(summary?.overdue_charges ?? 0);
   const dueSoonCount = Number(summary?.due_soon_charges ?? 0);
   const overdueExpensesCount = Number(summary?.overdue_expenses ?? 0);
+  const dueSoonExpensesCount = Number(summary?.due_soon_expenses ?? 0);
   const expiredDomainsCount = Number(summary?.expired_domains ?? 0);
   const upcomingDomainsCount = Number(summary?.upcoming_domains ?? 0);
   const attentionTotal =
-    overdueCount + dueSoonCount + overdueExpensesCount + expiredDomainsCount + upcomingDomainsCount;
+    overdueCount +
+    dueSoonCount +
+    overdueExpensesCount +
+    dueSoonExpensesCount +
+    expiredDomainsCount +
+    upcomingDomainsCount;
   const hasError = Boolean(
     summaryError ||
     overdueError ||
     dueSoonError ||
     overdueExpensesError ||
+    dueSoonExpensesError ||
     expiredDomainsError ||
     upcomingDomainsError,
   );
@@ -210,7 +234,7 @@ export default async function DashboardPage({
                 </h2>
                 <p className="text-muted mt-1 text-sm">
                   {attentionTotal
-                    ? `${overdueCount + overdueExpensesCount + expiredDomainsCount} atrasado(s) e ${dueSoonCount + upcomingDomainsCount} próximo(s).`
+                    ? `${overdueCount + overdueExpensesCount + expiredDomainsCount} atrasado(s) e ${dueSoonCount + dueSoonExpensesCount + upcomingDomainsCount} próximo(s).`
                     : "Tudo em dia. Aproveite para planejar o próximo passo."}
                 </p>
               </div>
@@ -319,65 +343,74 @@ export default async function DashboardPage({
                 color="violet"
               />
             </div>
-            <Link
-              className="mt-5 block rounded-xl bg-[#f1f3ef] p-4 hover:bg-[#e9ece5]"
-              href="/clientes?state=active"
-            >
-              <p className="text-muted text-xs font-bold uppercase">Clientes ativos</p>
-              <p className="mt-1 text-2xl font-black tabular-nums">
-                {summary?.active_clients ?? 0}
-              </p>
-            </Link>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <MiniCount
+                href="/clientes?state=active"
+                label="Clientes ativos"
+                value={Number(summary?.active_clients ?? 0)}
+              />
+              <MiniCount
+                href="/clientes?view=entities"
+                label="Empresas/marcas"
+                value={Number(summary?.active_client_entities ?? 0)}
+              />
+            </div>
           </section>
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
           <AlertList
+            count={overdueCount}
             empty="Nenhuma cobrança vencida."
-            href="/cobrancas"
-            items={overdue.map(
-              (charge) =>
-                `${charge.clients?.name ?? "Cliente"} — ${charge.description} (${formatDatePtBr(charge.due_date)})`,
-            )}
-            title={`Cobranças vencidas (${overdueCount})`}
+            href="/cobrancas?state=pending"
+            icon="receipt"
+            items={overdue.map((charge) => chargeAlert(charge))}
+            title="Cobranças vencidas"
             tone="danger"
           />
           <AlertList
+            count={dueSoonCount}
             empty="Nenhuma cobrança nos próximos 7 dias."
-            href="/cobrancas"
-            items={dueSoon.map(
-              (charge) =>
-                `${charge.clients?.name ?? "Cliente"} — ${charge.description} (${formatDatePtBr(charge.due_date)})`,
-            )}
-            title={`Próximos 7 dias (${dueSoonCount})`}
+            href="/cobrancas?state=pending"
+            icon="receipt"
+            items={dueSoon.map((charge) => chargeAlert(charge))}
+            title="Cobranças nos próximos 7 dias"
             tone="warning"
           />
           <AlertList
+            count={overdueExpensesCount}
             empty="Nenhuma despesa vencida."
             href="/despesas?state=pending"
-            items={overdueExpenses.map(
-              (expense) =>
-                `${expense.description} — ${formatCurrency(expense.amount)} (${formatDatePtBr(expense.due_date)})`,
-            )}
-            title={`Despesas vencidas (${overdueExpensesCount})`}
+            icon="wallet"
+            items={overdueExpenses.map((expense) => expenseAlert(expense))}
+            title="Despesas vencidas"
             tone="danger"
           />
           <AlertList
+            count={dueSoonExpensesCount}
+            empty="Nenhuma despesa vence nos próximos 7 dias."
+            href="/despesas?state=pending&due=next7"
+            icon="wallet"
+            items={dueSoonExpenses.map((expense) => expenseAlert(expense))}
+            title="Despesas nos próximos 7 dias"
+            tone="warning"
+          />
+          <AlertList
+            count={expiredDomainsCount}
             empty="Nenhum domínio vencido."
             href="/dominios"
-            items={expiredDomains.map(
-              (domain) => `${domain.domain} — ${domain.clients?.name ?? "Cliente"}`,
-            )}
-            title={`Domínios vencidos (${expiredDomainsCount})`}
+            icon="globe"
+            items={expiredDomains.map((domain) => domainAlert(domain))}
+            title="Domínios vencidos"
             tone="danger"
           />
           <AlertList
+            count={upcomingDomainsCount}
             empty="Nenhum domínio expira nos próximos 30 dias."
             href="/dominios"
-            items={upcomingDomains.map(
-              (domain) => `${domain.domain} — ${formatDatePtBr(domain.expires_on)}`,
-            )}
-            title={`Domínios nos próximos 30 dias (${upcomingDomainsCount})`}
+            icon="globe"
+            items={upcomingDomains.map((domain) => domainAlert(domain))}
+            title="Domínios nos próximos 30 dias"
             tone="warning"
           />
         </div>
@@ -501,45 +534,64 @@ function QuickAction({
   );
 }
 
-function AlertList({
-  empty,
-  href,
-  items,
-  title,
-  tone,
-}: {
-  empty: string;
-  href: Route;
-  items: string[];
-  title: string;
-  tone: "danger" | "warning";
-}) {
+/** Contagem compacta das ações rápidas: clientes e empresas/marcas lado a lado. */
+function MiniCount({ href, label, value }: { href: Route; label: string; value: number }) {
   return (
-    <section className="panel-card p-0!">
-      <div className="flex items-center justify-between gap-3 border-b px-5 py-4">
-        <div className="flex items-center gap-2">
-          <span
-            className={`${tone === "danger" ? "bg-negative-soft text-negative" : "bg-warning-soft text-warning"} grid size-8 place-items-center rounded-lg`}
-          >
-            <Icon className="size-4" name="alert" />
-          </span>
-          <h2 className="font-black">{title}</h2>
-        </div>
-        <Link className="text-brand-strong text-xs font-black" href={href}>
-          Ver todos
-        </Link>
-      </div>
-      {items.length ? (
-        <ul className="divide-line divide-y px-5">
-          {items.slice(0, 4).map((item) => (
-            <li className="py-3 text-sm" key={item}>
-              {item}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-muted p-5 text-sm">{empty}</p>
-      )}
-    </section>
+    <Link className="mini-count" href={href}>
+      <span className="mini-count__label">{label}</span>
+      <strong className="mini-count__value tabular-nums">{value}</strong>
+    </Link>
   );
+}
+
+/** "Cliente · Empresa" quando o lançamento tem entidade; só o cliente quando é geral. */
+function ownerLabel(clientName: string | undefined, entityName: string | undefined) {
+  const client = clientName ?? "Cliente";
+  return entityName ? `${client} · ${entityName}` : client;
+}
+
+type ChargeRow = {
+  client_entities: { display_name: string } | null;
+  clients: { name: string } | null;
+  description: string;
+  due_date: string;
+  id: string;
+};
+
+function chargeAlert(charge: ChargeRow): AlertItem {
+  return {
+    href: `/cobrancas?state=pending#charge-${charge.id}` as Route,
+    id: charge.id,
+    meta: formatDatePtBr(charge.due_date),
+    title: `${ownerLabel(charge.clients?.name, charge.client_entities?.display_name)} — ${charge.description}`,
+  };
+}
+
+type ExpenseRow = ChargeRow & { amount: number };
+
+function expenseAlert(expense: ExpenseRow): AlertItem {
+  return {
+    href: `/despesas?state=pending#expense-${expense.id}` as Route,
+    id: expense.id,
+    meta: `${formatCurrency(expense.amount)} · ${formatDatePtBr(expense.due_date)}`,
+    title: expense.client_entities?.display_name
+      ? `${expense.description} — ${expense.client_entities.display_name}`
+      : expense.description,
+  };
+}
+
+type DomainRow = {
+  clients: { name: string } | null;
+  domain: string;
+  expires_on: string;
+  id: string;
+};
+
+function domainAlert(domain: DomainRow): AlertItem {
+  return {
+    href: `/dominios#domain-${domain.id}` as Route,
+    id: domain.id,
+    meta: formatDatePtBr(domain.expires_on),
+    title: `${domain.domain} — ${domain.clients?.name ?? "Cliente"}`,
+  };
 }

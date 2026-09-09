@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
 import { clientServiceSchema, identifierSchema } from "@/features/mvp/schemas";
@@ -11,6 +12,8 @@ import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 /** "Nome" aqui é o do serviço, não o do cliente. */
 const serviceLabels = { description: "Descrição do serviço", name: "Nome do serviço" };
+
+const optionalIdentifierSchema = z.union([z.literal(""), identifierSchema]);
 
 function readServiceForm(formData: FormData) {
   return clientServiceSchema.safeParse({
@@ -45,6 +48,10 @@ export async function applyServiceToClient(
 ): Promise<ActionState> {
   const clientId = identifierSchema.safeParse(formData.get("clientId"));
   if (!clientId.success) return actionError("Cliente não identificado. Recarregue a página.");
+  const clientEntityId = optionalIdentifierSchema.safeParse(formData.get("clientEntityId") ?? "");
+  if (!clientEntityId.success) {
+    return actionError("Empresa/marca inválida. Recarregue a página.");
+  }
 
   const values = readServiceForm(formData);
   if (!values.success) {
@@ -55,12 +62,14 @@ export async function applyServiceToClient(
   const { supabase } = await requireWorkspaceContext();
   // Os parâmetros da função aceitam NULL, mas o tipo gerado do Supabase não expressa isso.
   const sqlNullable = <Value>(value: Value | null) => value as Value;
+  // A própria RPC confere que a entidade é do cliente, do workspace e está ativa.
   const { error } = await supabase.rpc("apply_service_to_client", {
     p_additional_fee: values.data.additionalFee,
     p_additional_fee_is_revenue: values.data.additionalFeeIsRevenue,
     p_adjustment_interval_months: sqlNullable(values.data.adjustmentIntervalMonths),
     p_adjustment_rate: sqlNullable(values.data.adjustmentRate),
     p_billing_type: values.data.billingType,
+    p_client_entity_id: sqlNullable(clientEntityId.data || null),
     p_client_id: clientId.data,
     p_description: values.data.description,
     p_discount_type: values.data.discountType,

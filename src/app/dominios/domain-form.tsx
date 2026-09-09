@@ -6,13 +6,20 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
 import { FieldHint } from "@/components/ui/field-hint";
-import { ClientCombobox, DateField, type ClientOption } from "@/components/ui/form-controls";
+import {
+  ClientCombobox,
+  DateField,
+  EntitySelect,
+  type ClientEntityOption,
+  type ClientOption,
+} from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { MoneyField } from "@/components/ui/money-field";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 export type DomainValues = {
   autoRenew: boolean;
+  clientEntityId: string | null;
   clientId: string;
   cost: number | null;
   domain: string;
@@ -32,22 +39,26 @@ export function DomainForm({
   action,
   clients,
   domain,
+  entities = [],
   onCancel,
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   clients: (ClientOption & { website?: string | null })[];
   domain?: DomainValues;
+  entities?: ClientEntityOption[];
   onCancel?: () => void;
 }) {
   const editing = Boolean(domain);
   const [state, formAction] = useActionState(action, initialActionState);
   const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
+  const [clientId, setClientId] = useState(domain?.clientId ?? "");
   const [domainName, setDomainName] = useState(domain?.domain ?? "");
   const [responsibility, setResponsibility] = useState(domain?.paymentResponsibility ?? "");
   const [suggestion, setSuggestion] = useState<string | null>(null);
 
   const applyClient = (client: ClientOption | null) => {
+    setClientId(client?.id ?? "");
     if (!client) {
       setSuggestion(null);
       return;
@@ -103,6 +114,12 @@ export function DomainForm({
         label="Data de expiração"
         name="expiresOn"
         required
+      />
+      <EntitySelect
+        clientId={clientId || null}
+        defaultValue={sent.text("clientEntityId", domain?.clientEntityId ?? "")}
+        entities={entities}
+        error={errors.clientEntityId}
       />
       <label className="field">
         <span className="field__label">

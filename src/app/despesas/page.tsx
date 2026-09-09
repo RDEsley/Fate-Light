@@ -13,7 +13,8 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
 import { Icon } from "@/components/ui/icon";
-import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
+import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
+import { addDays, formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { ExpenseForm } from "./expense-form";
@@ -38,38 +39,62 @@ const categoryOptions = categories.map(([value, label]) => ({ label, value }));
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; state?: string; status?: string }>;
+  searchParams: Promise<{
+    due?: string;
+    page?: string;
+    q?: string;
+    state?: string;
+    status?: string;
+  }>;
 }) {
   const [parameters, context] = await Promise.all([searchParams, requireWorkspaceContext()]);
   const query = parameters.q?.trim().slice(0, 80) ?? "";
   const state = ["pending", "paid"].includes(parameters.state ?? "") ? parameters.state! : "all";
+  // `due=next7` é o destino do card "Despesas nos próximos 7 dias" do dashboard: mesmo
+  // recorte que a RPC do painel conta, para o número e a lista nunca se contradizerem.
+  const dueWindow = parameters.due === "next7" ? "next7" : "all";
+  const today = isoDateInTimeZone(context.workspaceTimezone);
+  const nextWeek = addDays(today, 7);
   const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
   const firstRow = (page - 1) * pageSize;
   let expensesRequest = context.supabase
     .from("expenses")
     .select(
-      "id, description, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), fiscal_documents(id, created_at, mime_type, size_bytes)",
+      "id, description, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)",
       { count: "exact" },
     )
     .eq("workspace_id", context.workspaceId)
-    .order("due_date", { ascending: false })
+    .order("due_date", { ascending: dueWindow === "next7" })
     .range(firstRow, firstRow + pageSize - 1);
   if (query) expensesRequest = expensesRequest.ilike("description", `%${query}%`);
   if (state !== "all") expensesRequest = expensesRequest.eq("status", state);
-  const [{ data: clients }, { data: expenses, error, count }] = await Promise.all([
-    context.supabase
-      .from("clients")
-      .select("id, name, trade_name, commercial_status")
-      .eq("workspace_id", context.workspaceId)
-      .is("archived_at", null)
-      .order("name"),
-    expensesRequest,
-  ]);
+  if (dueWindow === "next7") {
+    expensesRequest = expensesRequest.gte("due_date", today).lte("due_date", nextWeek);
+  }
+  const [{ data: clients }, { data: entityRows }, { data: expenses, error, count }] =
+    await Promise.all([
+      context.supabase
+        .from("clients")
+        .select("id, name, trade_name, commercial_status")
+        .eq("workspace_id", context.workspaceId)
+        .is("archived_at", null)
+        .order("name"),
+      context.supabase
+        .from("client_entities")
+        .select("id, client_id, display_name, entity_type")
+        .eq("workspace_id", context.workspaceId)
+        .eq("status", "active")
+        .is("archived_at", null)
+        .order("display_name")
+        .limit(2000),
+      expensesRequest,
+    ]);
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
   const expenseHref = (targetPage: number) => {
     const next = new URLSearchParams();
     if (query) next.set("q", query);
     if (state !== "all") next.set("state", state);
+    if (dueWindow !== "all") next.set("due", dueWindow);
     if (targetPage > 1) next.set("page", String(targetPage));
     const suffix = next.toString();
     return `/despesas${suffix ? `?${suffix}` : ""}` as never;
@@ -107,6 +132,17 @@ export default async function ExpensesPage({
             <option value="paid">Pagas</option>
           </select>
         </label>
+        <label>
+          <span className="sr-only">Filtrar por vencimento</span>
+          <select
+            className="min-h-11 w-full rounded-xl px-3 text-sm sm:w-44"
+            defaultValue={dueWindow}
+            name="due"
+          >
+            <option value="all">Qualquer vencimento</option>
+            <option value="next7">Próximos 7 dias</option>
+          </select>
+        </label>
         <button
           className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 text-sm font-black"
           type="submit"
@@ -114,6 +150,15 @@ export default async function ExpensesPage({
           Filtrar
         </button>
       </form>
+      {dueWindow === "next7" ? (
+        <aside className="helper-note mb-4" role="status">
+          <Icon className="size-4" name="calendar" />
+          <span>
+            Mostrando despesas que vencem entre {formatDatePtBr(today)} e{" "}
+            {formatDatePtBr(nextWeek)}. <Link href="/despesas">Ver todas</Link>
+          </span>
+        </aside>
+      ) : null}
       <details className="panel-card form-disclosure mb-5">
         <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
           <span className="flex items-center gap-2">
@@ -136,6 +181,12 @@ export default async function ExpensesPage({
             status: client.commercial_status,
             tradeName: client.trade_name,
           }))}
+          entities={(entityRows ?? []).map((entity) => ({
+            clientId: entity.client_id,
+            id: entity.id,
+            name: entity.display_name,
+            typeLabel: clientEntityTypeLabel(entity.entity_type),
+          }))}
         />
       </details>
       {error ? (
@@ -148,13 +199,17 @@ export default async function ExpensesPage({
               Boolean(expense.recurrence_group_id) &&
               expense.recurrence_frequency === "monthly";
             return (
-              <article className="charge-card" key={expense.id}>
+              <article className="charge-card" id={`expense-${expense.id}`} key={expense.id}>
                 <div className="charge-card__head">
                   <div className="min-w-0">
                     <h2>{expense.description}</h2>
                     <p>
                       {categories.find(([value]) => value === expense.category)?.[1]} ·{" "}
-                      {expense.clients?.name ?? "Sem cliente"} · {formatDatePtBr(expense.due_date)}
+                      {expense.clients?.name ?? "Sem cliente"}
+                      {expense.client_entities?.display_name
+                        ? ` · ${expense.client_entities.display_name}`
+                        : ""}{" "}
+                      · {formatDatePtBr(expense.due_date)}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
@@ -287,8 +342,9 @@ export default async function ExpensesPage({
         <section className="border-line bg-surface rounded-2xl border p-8 text-center">
           <h2 className="text-xl font-semibold">Nenhuma despesa</h2>
           <p className="text-muted mt-2">
-            Lance custos fixos ou avulsos pelo formulário acima. Despesas mensais criam a próxima
-            ocorrência ao serem marcadas como pagas.
+            {dueWindow === "next7"
+              ? "Nenhuma despesa vence nos próximos 7 dias com os filtros atuais."
+              : "Lance custos fixos ou avulsos pelo formulário acima. Despesas mensais criam a próxima ocorrência ao serem marcadas como pagas."}
           </p>
         </section>
       )}

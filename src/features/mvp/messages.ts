@@ -15,6 +15,7 @@ const fieldLabels: Record<string, string> = {
   billingType: "Periodicidade",
   cancelReason: "Motivo do cancelamento",
   category: "Categoria",
+  clientEntityId: "Empresa/marca",
   clientId: "Cliente",
   clientServiceId: "Serviço vinculado",
   companyName: "Razão social ou nome fantasia",
@@ -54,6 +55,8 @@ const ruleMessages: Record<string, string> = {
   adjustmentIntervalMonths:
     "Preencha o intervalo e a porcentagem do reajuste juntos, com a porcentagem até 100.",
   amount: "Informe um valor maior que zero.",
+  clientEntityId:
+    "Escolha uma empresa/marca do cliente selecionado, ou deixe em “Geral / sem empresa”.",
   companyRevenue: "A cobrança precisa de algum valor: receita, verba de mídia ou adicional.",
   discountValue: "O desconto não pode passar de 100% nem ser maior que o valor cheio do serviço.",
   domain: "Informe só o endereço, como exemplo.com.br — sem espaços nem caminho depois da barra.",

@@ -50,6 +50,16 @@ const nullableInteger = (maximum: number) =>
 export const identifierSchema = z.string().uuid();
 
 /**
+ * Vínculo opcional com empresa/marca do cliente (ADR-0020): "" significa "geral". O campo
+ * some do formulário quando o cliente não tem nenhuma empresa cadastrada, então `null`
+ * precisa valer o mesmo que vazio — senão o seletor ausente reprovaria o envio inteiro.
+ */
+const optionalIdentifier = z
+  .union([z.literal(""), z.null(), identifierSchema])
+  .optional()
+  .transform((value) => value ?? "");
+
+/**
  * Natureza do custo adicional (ADR-0018). Ausente ou vazio vale como receita própria:
  * é o default da coluna e o comportamento que o dashboard já praticava.
  */
@@ -154,6 +164,7 @@ export const chargeSchema = z
     additionalFee: moneyFromForm,
     additionalFeeIsRevenue: additionalFeeNature,
     alreadyPaid: z.boolean(),
+    clientEntityId: optionalIdentifier,
     clientId: identifierSchema,
     clientServiceId: z.union([z.literal(""), identifierSchema]),
     companyRevenue: moneyFromForm,
@@ -184,6 +195,7 @@ export const expenseSchema = z
       "marketing",
       "other",
     ]),
+    clientEntityId: optionalIdentifier,
     clientId: z.union([z.literal(""), identifierSchema]),
     description: z.string().trim().min(2).max(200),
     dueDate: z.string().date(),
@@ -194,6 +206,10 @@ export const expenseSchema = z
   })
   .refine((value) => !value.enableRecurrence || value.expenseType === "fixed", {
     path: ["enableRecurrence"],
+  })
+  // Espelha `expenses_entity_requires_client_check`: despesa sem cliente não tem entidade.
+  .refine((value) => !value.clientEntityId || Boolean(value.clientId), {
+    path: ["clientEntityId"],
   });
 
 /** Destino seguro após mutação financeira: listas financeiras ou ficha do cliente. */
@@ -216,6 +232,7 @@ export const paidFinancialDeletionSchema = z.object({
 
 export const domainSchema = z.object({
   autoRenew: z.boolean(),
+  clientEntityId: optionalIdentifier,
   clientId: identifierSchema,
   cost: optionalMoney,
   domain: z
