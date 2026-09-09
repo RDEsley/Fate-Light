@@ -1262,6 +1262,21 @@ summary::-webkit-details-marker {
   white-space: nowrap;
 }
 
+/* Versão encaixada em avisos/helper notes: menor e alinhada ao texto. */
+.client-status--inline,
+.service-state--inline {
+  vertical-align: -0.12em;
+  margin-inline: 0.1rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.68rem;
+  gap: 0.22rem;
+}
+
+.helper-note .client-status--inline,
+.helper-note .service-state--inline {
+  flex: none;
+}
+
 .client-status--active,
 .service-state--active {
   border-color: color-mix(in srgb, var(--positive) 25%, transparent);
@@ -2691,8 +2706,6 @@ summary::-webkit-details-marker {
   pointer-events: auto;
 }
 
-.client-summary-card__body > a,
-.client-summary-card .client-card-contact a,
 .client-summary-card .border-t a,
 .client-summary-card .border-t button {
   transition:
@@ -2700,11 +2713,25 @@ summary::-webkit-details-marker {
     transform 0.15s ease;
 }
 
-.client-summary-card__body > a:hover,
-.client-summary-card .client-card-contact a:hover,
 .client-summary-card .border-t a:hover,
 .client-summary-card .border-t button:hover {
   transform: scale(1.05);
+}
+
+/* Nome e contato: só cor/ícone leve — sem scale no texto. */
+.client-summary-card__body > a {
+  transition: color 0.15s ease;
+}
+
+.client-card-contact a {
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.client-card-contact a:hover {
+  color: var(--brand-strong);
+  opacity: 0.92;
 }
 
 .client-card-status {
@@ -3336,9 +3363,13 @@ html[data-link-emphasis="on"] body a:not(.brand-mark) {
 }
 
 .cartoon-card:hover .section-heading__icon svg,
-.settings-tabs__item:hover svg,
-.client-card-contact a:hover svg {
+.settings-tabs__item:hover svg {
   transform: scale(1.16) rotate(-6deg);
+}
+
+.client-card-contact a:hover svg {
+  transform: scale(1.06);
+  color: var(--brand-strong);
 }
 
 .service-action:hover svg {
