@@ -46,8 +46,6 @@ select set_config(
 );
 
 reset role;
-select set_config('request.jwt.claim.sub', '91919191-9191-4919-8919-919191919191', true);
-set local role authenticated;
 insert into public.clients (id, workspace_id, kind, name, commercial_status)
 values
   (
@@ -59,6 +57,11 @@ values
     '91919191-0002-4919-8919-919191919191',
     current_setting('test.workspace_a')::uuid,
     'company', 'Richard — DX', 'active'
+  ),
+  (
+    '92929292-0001-4929-8929-929292929292',
+    current_setting('test.workspace_b')::uuid,
+    'person', 'Outro', 'active'
   );
 
 insert into public.client_entities (
@@ -76,19 +79,21 @@ insert into public.client_entities (
 
 insert into public.client_services (
   id, workspace_id, client_id, client_entity_id, name, company_revenue, media_budget,
-  billing_type, start_date, next_due_date, status
+  billing_type, start_date, next_due_date, status, created_by, updated_by
 ) values (
   '91919191-00s1-4919-8919-919191919191',
   current_setting('test.workspace_a')::uuid,
   '91919191-0001-4919-8919-919191919191',
   '91919191-00e1-4919-8919-919191919191',
   'Gestão Ads',
-  500, 1000, 'monthly', date '2026-01-01', date '2026-02-01', 'active'
+  500, 1000, 'monthly', date '2026-01-01', date '2026-02-01', 'active',
+  '91919191-9191-4919-8919-919191919191',
+  '91919191-9191-4919-8919-919191919191'
 );
 
 insert into public.charges (
   id, workspace_id, client_id, client_entity_id, client_service_id, description, due_date,
-  company_revenue, media_budget, additional_fee, status
+  company_revenue, media_budget, additional_fee, status, created_by, updated_by
 ) values (
   '91919191-00c1-4919-8919-919191919191',
   current_setting('test.workspace_a')::uuid,
@@ -97,19 +102,14 @@ insert into public.charges (
   '91919191-00s1-4919-8919-919191919191',
   'Gestão Ads',
   date '2026-02-01',
-  500, 1000, 0, 'pending'
+  500, 1000, 0, 'pending',
+  '91919191-9191-4919-8919-919191919191',
+  '91919191-9191-4919-8919-919191919191'
 );
 
 -- Isolamento: workspace B não vê entity de A.
 select set_config('request.jwt.claim.sub', '92929292-9292-4929-8929-929292929292', true);
 set local role authenticated;
-
-insert into public.clients (id, workspace_id, kind, name, commercial_status)
-values (
-  '92929292-0001-4929-8929-929292929292',
-  current_setting('test.workspace_b')::uuid,
-  'person', 'Outro', 'active'
-);
 
 select is_empty(
   $$select id from public.client_entities
