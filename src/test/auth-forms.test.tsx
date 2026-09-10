@@ -49,6 +49,24 @@ describe("associação rótulo-campo nos formulários de autenticação", () => 
     render(<PasswordForm mode="signup" nextPath="/onboarding" />);
     expect(screen.queryByRole("link", { name: /magic link/i })).not.toBeInTheDocument();
   });
+
+  it("senha (cadastro): oferece botões para mostrar e ocultar senha", async () => {
+    const { userEvent } = await import("@testing-library/user-event");
+    const user = userEvent.setup();
+    render(<PasswordForm mode="signup" nextPath="/onboarding" />);
+
+    const password = screen.getByLabelText("Senha", { exact: true });
+    const confirm = screen.getByLabelText("Confirmar senha");
+    const toggles = screen.getAllByRole("button", { name: /mostrar senha/i });
+
+    expect(password).toHaveAttribute("type", "password");
+    expect(confirm).toHaveAttribute("type", "password");
+    expect(toggles).toHaveLength(2);
+
+    await user.click(toggles[0]);
+    expect(password).toHaveAttribute("type", "text");
+    expect(screen.getByRole("button", { name: /ocultar senha/i })).toBeVisible();
+  });
 });
 
 describe("páginas públicas de autenticação", () => {

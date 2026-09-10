@@ -5,6 +5,18 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-09-09
+
+### Changed
+
+- Login e cadastro mais limpos: textos longos removidos, benefícios em cards horizontais e layout
+  sem scroll no desktop.
+- Landing compacta em viewport fixa, com fundos leves e trilha de ondulação sob o cursor.
+
+### Added
+
+- Botões para mostrar/ocultar senha no cadastro.
+
 ## [0.8.3] - 2026-09-09
 
 ### Changed

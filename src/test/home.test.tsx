@@ -16,6 +16,7 @@ describe("Home", () => {
     expect(screen.getByRole("link", { name: /^entrar$/i })).toHaveAttribute("href", "/login");
     expect(screen.queryByText(/gestão financeira sem cara de planilha/i)).not.toBeInTheDocument();
     expect(screen.getByText(/resumo operacional/i)).toBeInTheDocument();
+    expect(document.querySelector(".landing-water-cursor")).toBeInTheDocument();
     expect(document.querySelectorAll(".landing-hero__word")).toHaveLength(6);
     expect(document.querySelector(".landing-hero__period")).toHaveTextContent(".");
     expect(document.querySelectorAll(".landing-feather")).toHaveLength(2);
