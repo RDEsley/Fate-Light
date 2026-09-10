@@ -13,6 +13,7 @@ import type { AttentionItem } from "@/features/alerts/attention";
 import { getInitials } from "@/lib/profile/initials";
 
 import { ProductTour } from "./product-tour";
+import { FullscreenToggle } from "./fullscreen-toggle";
 
 const navigation: { href: Route; icon: IconName; label: string }[] = [
   { href: "/dashboard", icon: "dashboard", label: "Visão geral" },
@@ -193,6 +194,7 @@ export function AppFrame({
               para abrir sempre logo abaixo do bloco da conta. */}
           <div className="relative ml-auto flex items-center gap-2">
             <div className="contents" id="financial-privacy-control" />
+            <FullscreenToggle />
             <details className="group" data-tour="notifications">
               <summary
                 aria-label={`Notificações: ${unreadCount} novas, ${attentionTotal} abertas`}
