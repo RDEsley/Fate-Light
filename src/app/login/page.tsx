@@ -19,11 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const nextPath = sanitizeNextPath(parameters.next);
 
   return (
-    <AuthShell
-      description="Use seu e-mail e senha para continuar no workspace."
-      eyebrow="Acesso"
-      title="Entre no seu workspace."
-    >
+    <AuthShell eyebrow="Acesso" title="Entre no seu workspace.">
       <PasswordForm mode="login" nextPath={nextPath} status={parameters.status} />
     </AuthShell>
   );

@@ -454,6 +454,47 @@ summary::-webkit-details-marker {
 }
 
 /* Landing pública: CTAs e painel de preview operacional */
+.landing-page {
+  background: var(--canvas);
+}
+
+.landing-bg {
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  filter: blur(42px);
+  opacity: 0.55;
+}
+
+.landing-bg--one {
+  top: -8rem;
+  left: -6rem;
+  width: 22rem;
+  height: 22rem;
+  background: rgb(8 127 115 / 0.16);
+}
+
+.landing-bg--two {
+  right: -4rem;
+  bottom: -10rem;
+  width: 26rem;
+  height: 26rem;
+  background: rgb(79 82 181 / 0.1);
+}
+
+.landing-bg--three {
+  top: 38%;
+  left: 42%;
+  width: 14rem;
+  height: 14rem;
+  background: rgb(8 127 115 / 0.07);
+}
+
+.landing-water-cursor {
+  mix-blend-mode: multiply;
+}
+
 .landing-cta {
   border-radius: 0.8rem;
   font-weight: 700;
@@ -491,19 +532,19 @@ summary::-webkit-details-marker {
 
 .landing-preview__panel {
   border: 1px solid color-mix(in srgb, var(--line) 88%, var(--brand));
-  border-radius: 1.15rem;
+  border-radius: 1.05rem;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(248 250 248 / 0.98)),
     var(--surface-raised);
   box-shadow:
     0 1px 0 rgb(37 50 58 / 0.04),
     0 22px 48px -32px rgb(37 50 58 / 0.45);
-  padding: 1.25rem 1.25rem 1.35rem;
+  padding: 1rem 1.05rem 1.1rem;
 }
 
 @media (min-width: 640px) {
   .landing-preview__panel {
-    padding: 1.45rem 1.5rem 1.55rem;
+    padding: 1.15rem 1.2rem 1.25rem;
   }
 }
 
@@ -512,18 +553,18 @@ summary::-webkit-details-marker {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding-bottom: 1rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--line);
 }
 
 .landing-preview__status {
   display: inline-flex;
   align-items: center;
-  min-height: 1.7rem;
+  min-height: 1.6rem;
   border: 1px solid color-mix(in srgb, var(--positive) 22%, var(--line));
   border-radius: 999px;
   background: var(--positive-soft);
-  padding: 0.2rem 0.7rem;
+  padding: 0.15rem 0.65rem;
   color: var(--positive);
   font-size: 0.68rem;
   font-weight: 700;
@@ -532,48 +573,38 @@ summary::-webkit-details-marker {
 
 .landing-preview__grid {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
 }
 
 @media (min-width: 640px) {
   .landing-preview__grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 .landing-preview__card {
   display: flex;
-  gap: 0.85rem;
+  gap: 0.7rem;
   align-items: flex-start;
   border: 1px solid var(--line);
-  border-radius: 0.9rem;
+  border-radius: 0.8rem;
   background: color-mix(in srgb, var(--surface) 70%, white);
-  padding: 0.95rem 1rem;
-}
-
-.landing-preview__card--wide {
-  grid-column: 1 / -1;
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, var(--brand-soft) 38%, white),
-    color-mix(in srgb, var(--surface) 80%, white)
-  );
-  border-color: color-mix(in srgb, var(--brand) 16%, var(--line));
+  padding: 0.8rem 0.85rem;
 }
 
 .landing-preview__icon {
   display: grid;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.1rem;
+  height: 2.1rem;
   flex: none;
   place-items: center;
-  border-radius: 0.7rem;
+  border-radius: 0.65rem;
 }
 
 .landing-preview__icon svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .landing-preview__icon--0 {
@@ -594,14 +625,14 @@ summary::-webkit-details-marker {
 /* Autenticação: shell editorial / SaaS financeiro */
 .auth-shell {
   background:
-    radial-gradient(circle at 12% 0%, rgb(8 127 115 / 0.08), transparent 26rem),
-    radial-gradient(circle at 88% 100%, rgb(37 50 58 / 0.05), transparent 24rem),
+    radial-gradient(circle at 12% 0%, rgb(8 127 115 / 0.1), transparent 24rem),
+    radial-gradient(circle at 88% 100%, rgb(37 50 58 / 0.06), transparent 22rem),
     var(--canvas);
 }
 
 .auth-shell__frame {
   border: 1px solid color-mix(in srgb, var(--line) 80%, var(--brand));
-  border-radius: 1.15rem;
+  border-radius: 1.05rem;
   background: var(--surface-raised);
   box-shadow:
     0 1px 0 rgb(37 50 58 / 0.04),
@@ -612,6 +643,38 @@ summary::-webkit-details-marker {
   border-right: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   background:
     linear-gradient(165deg, color-mix(in srgb, var(--brand-soft) 55%, white) 0%, #f4f7f5 48%, #eef4f1 100%);
+}
+
+.auth-shell__glow {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(36px);
+  opacity: 0.7;
+}
+
+.auth-shell__glow--one {
+  top: -5rem;
+  right: -3rem;
+  width: 14rem;
+  height: 14rem;
+  background: rgb(8 127 115 / 0.18);
+}
+
+.auth-shell__glow--two {
+  bottom: -4rem;
+  left: -3rem;
+  width: 12rem;
+  height: 12rem;
+  background: rgb(79 82 181 / 0.1);
+}
+
+.auth-shell__glow--form {
+  right: -4rem;
+  bottom: 10%;
+  width: 11rem;
+  height: 11rem;
+  background: rgb(8 127 115 / 0.06);
 }
 
 .auth-shell__kicker {
@@ -632,7 +695,8 @@ summary::-webkit-details-marker {
 
 .auth-shell__benefits {
   display: grid;
-  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -640,35 +704,35 @@ summary::-webkit-details-marker {
 
 .auth-shell__benefit {
   display: grid;
-  grid-template-columns: 2.35rem 1fr;
-  gap: 0.75rem;
-  align-items: flex-start;
+  gap: 0.45rem;
+  justify-items: center;
   border: 1px solid color-mix(in srgb, var(--line) 75%, white);
-  border-radius: 0.85rem;
+  border-radius: 0.8rem;
   background: rgb(255 255 255 / 0.72);
-  padding: 0.8rem 0.9rem;
+  padding: 0.7rem 0.45rem 0.75rem;
+  text-align: center;
 }
 
 .auth-shell__benefit-icon {
   display: grid;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.1rem;
+  height: 2.1rem;
   place-items: center;
-  border-radius: 0.7rem;
+  border-radius: 0.65rem;
   background: color-mix(in srgb, var(--brand-soft) 70%, white);
   color: var(--brand-strong);
 }
 
 .auth-shell__panel {
   border: 1px solid var(--line);
-  border-radius: 1rem;
+  border-radius: 0.95rem;
   background: color-mix(in srgb, var(--surface) 55%, white);
-  padding: 1.15rem 1.1rem 1.25rem;
+  padding: 0.95rem 0.95rem 1.05rem;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
 }
 
 .auth-shell__panel .field input {
-  min-height: 2.65rem;
+  min-height: 2.5rem;
   border-radius: 0.7rem;
   border-color: color-mix(in srgb, var(--line) 85%, var(--brand));
   background: var(--surface-raised);
@@ -684,8 +748,43 @@ summary::-webkit-details-marker {
   font-weight: 700;
 }
 
+.auth-password-field {
+  position: relative;
+}
+
+.auth-password-field input {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+
+.auth-password-field__toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+
+.auth-password-field__toggle:hover,
+.auth-password-field__toggle:focus-visible {
+  background: color-mix(in srgb, var(--brand-soft) 55%, white);
+  color: var(--brand-strong);
+  outline: none;
+}
+
+.auth-password-field__toggle:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-soft) 80%, transparent);
+}
+
 .auth-shell__submit {
-  min-height: 2.75rem;
+  min-height: 2.6rem;
   border-width: 1px;
   border-radius: 0.75rem;
   font-weight: 700;
@@ -696,7 +795,11 @@ summary::-webkit-details-marker {
 .auth-shell__panel [data-testid="turnstile-field"] {
   display: flex;
   justify-content: flex-start;
-  padding-top: 0.15rem;
+  padding-top: 0.1rem;
+}
+
+.auth-shell__panel [data-testid="turnstile-field"] iframe {
+  max-width: 100%;
 }
 
 .panel-card {
@@ -3687,11 +3790,17 @@ html[data-system-motion="off"] *::after {
 html[data-system-motion="off"] .landing-hero__word,
 html[data-system-motion="off"] .landing-hero__period,
 html[data-system-motion="off"] .landing-feather,
+html[data-system-motion="off"] .landing-water-cursor,
 html[data-system-motion="off"] .cartoon-loader {
   animation: none;
 }
 
-html[data-mouse-motion="off"] .pointer-effects {
+html[data-system-motion="off"] .landing-water-cursor {
+  display: none;
+}
+
+html[data-mouse-motion="off"] .pointer-effects,
+html[data-mouse-motion="off"] .landing-water-cursor {
   display: none;
 }
 
@@ -3706,7 +3815,8 @@ html[data-mouse-motion="off"] .pointer-effects {
     animation-iteration-count: 1 !important;
   }
 
-  .pointer-effects {
+  .pointer-effects,
+  .landing-water-cursor {
     display: none;
   }
 

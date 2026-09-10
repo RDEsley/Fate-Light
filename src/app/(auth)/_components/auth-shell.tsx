@@ -8,61 +8,45 @@ type AuthShellProps = {
   children: ReactNode;
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
 };
 
-const benefits: { icon: IconName; label: string; detail: string }[] = [
-  {
-    icon: "check",
-    label: "Acesso protegido",
-    detail: "Sessão autenticada e isolamento por workspace.",
-  },
-  {
-    icon: "history",
-    label: "Histórico confiável",
-    detail: "Movimentações rastreáveis para revisão e auditoria.",
-  },
-  {
-    icon: "dashboard",
-    label: "Operação clara",
-    detail: "Clientes, cobranças e vencimentos no mesmo lugar.",
-  },
+const benefits: { icon: IconName; label: string }[] = [
+  { icon: "check", label: "Seguro" },
+  { icon: "history", label: "Histórico" },
+  { icon: "dashboard", label: "Clareza" },
 ];
 
 export function AuthShell({ children, description, eyebrow, title }: AuthShellProps) {
   return (
-    <main className="auth-shell text-foreground min-h-screen p-3 sm:p-6">
-      <div className="auth-shell__frame mx-auto grid min-h-[calc(100vh-1.5rem)] w-full max-w-6xl overflow-hidden lg:grid-cols-[minmax(20rem,0.92fr)_minmax(28rem,1.08fr)] sm:min-h-[calc(100vh-3rem)]">
-        <aside className="auth-shell__aside relative hidden overflow-hidden p-10 lg:flex lg:flex-col">
+    <main className="auth-shell text-foreground h-dvh overflow-hidden p-3 sm:p-4">
+      <div className="auth-shell__frame mx-auto grid h-full w-full max-w-6xl overflow-hidden lg:grid-cols-[minmax(18rem,0.9fr)_minmax(26rem,1.1fr)]">
+        <aside className="auth-shell__aside relative hidden overflow-hidden p-8 lg:flex lg:flex-col xl:p-10">
+          <span aria-hidden="true" className="auth-shell__glow auth-shell__glow--one" />
+          <span aria-hidden="true" className="auth-shell__glow auth-shell__glow--two" />
           <BrandMark />
-          <div className="relative my-auto max-w-md py-14">
+          <div className="relative my-auto max-w-md py-8">
             <p className="auth-shell__kicker">Fate Light</p>
-            <h2 className="mt-3 text-[2rem] leading-[1.12] font-semibold tracking-[-0.04em] xl:text-[2.25rem]">
+            <h2 className="mt-3 text-[1.85rem] leading-[1.12] font-semibold tracking-[-0.04em] xl:text-[2.1rem]">
               Clareza financeira para quem opera de verdade.
             </h2>
-            <p className="text-muted mt-4 max-w-sm text-[0.95rem] leading-7">
-              Organize clientes, cobranças e vencimentos com uma interface limpa — feita para
-              rotina profissional, sem ruído visual.
-            </p>
-            <ul className="auth-shell__benefits mt-9" aria-label="Benefícios do acesso">
-              {benefits.map(({ icon, label, detail }) => (
+            <ul className="auth-shell__benefits mt-8" aria-label="Benefícios do acesso">
+              {benefits.map(({ icon, label }) => (
                 <li className="auth-shell__benefit" key={label}>
                   <span aria-hidden="true" className="auth-shell__benefit-icon">
                     <Icon className="size-4" name={icon} />
                   </span>
-                  <span>
-                    <span className="block text-sm font-semibold tracking-[-0.01em]">{label}</span>
-                    <span className="text-muted mt-0.5 block text-xs leading-5">{detail}</span>
-                  </span>
+                  <span className="text-xs font-semibold tracking-[-0.01em]">{label}</span>
                 </li>
               ))}
             </ul>
           </div>
-          <p className="text-muted text-xs">Desenvolvido pela Fate Eight Tech.</p>
+          <p className="text-muted relative text-xs">Desenvolvido pela Fate Eight Tech.</p>
         </aside>
 
-        <section className="auth-shell__content flex min-w-0 flex-col overflow-y-auto bg-[var(--surface-raised)] p-5 sm:p-8 lg:p-11">
-          <header className="flex items-center justify-between lg:justify-end">
+        <section className="auth-shell__content relative flex min-w-0 flex-col overflow-y-auto bg-[var(--surface-raised)] p-4 sm:p-6 lg:overflow-hidden lg:p-8">
+          <span aria-hidden="true" className="auth-shell__glow auth-shell__glow--form" />
+          <header className="relative flex shrink-0 items-center justify-between lg:justify-end">
             <span className="lg:hidden">
               <BrandMark />
             </span>
@@ -70,15 +54,15 @@ export function AuthShell({ children, description, eyebrow, title }: AuthShellPr
               Voltar ao início
             </Link>
           </header>
-          <div className="auth-shell__form mx-auto my-auto w-full max-w-[24rem] py-6 sm:py-8">
+          <div className="auth-shell__form relative mx-auto my-auto w-full max-w-[24rem] py-3">
             <p className="auth-shell__eyebrow">{eyebrow}</p>
-            <h1 className="mt-2 text-[1.65rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[1.85rem]">
+            <h1 className="mt-1.5 text-[1.5rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[1.7rem]">
               {title}
             </h1>
-            <p className="text-muted mt-2 text-sm leading-6">{description}</p>
-            <div className="auth-shell__panel mt-6">{children}</div>
+            {description ? <p className="text-muted mt-1.5 text-sm leading-6">{description}</p> : null}
+            <div className="auth-shell__panel mt-4">{children}</div>
           </div>
-          <footer className="text-muted flex justify-center gap-4 text-xs">
+          <footer className="text-muted relative flex shrink-0 justify-center gap-4 pt-2 text-xs">
             <Link className="hover:text-brand-strong hover:underline" href="/termos">
               Termos de Uso
             </Link>

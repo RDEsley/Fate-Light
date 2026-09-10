@@ -5,6 +5,7 @@ import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { publicEnvironment } from "@/config/env/public";
 
 import { authenticateWithPassword } from "../actions";
+import { PasswordRevealField } from "./password-reveal-field";
 import { TurnstileField } from "./turnstile-field";
 
 const messages: Record<string, string> = {
@@ -46,7 +47,7 @@ export function PasswordForm({
           }
         />
       ) : null}
-      <form action={authenticateWithPassword} className="space-y-4">
+      <form action={authenticateWithPassword} className="space-y-3">
         <input name="mode" type="hidden" value={mode} />
         <input name="next" type="hidden" value={nextPath} />
         <div className="absolute -left-[10000px]" aria-hidden="true">
@@ -75,9 +76,6 @@ export function PasswordForm({
               required
               type="text"
             />
-            <span className="field__hint">
-              Usaremos esse nome para preparar seu primeiro acesso.
-            </span>
           </div>
         ) : null}
         <div className="field">
@@ -95,51 +93,49 @@ export function PasswordForm({
             type="email"
           />
         </div>
-        <div className="field">
-          <span className="flex items-center justify-between gap-3">
-            <label className="field__label" htmlFor={`${mode}-password`}>
-              Senha
-            </label>
-            {isLogin ? (
+        {isLogin ? (
+          <div className="field">
+            <span className="flex items-center justify-between gap-3">
+              <label className="field__label" htmlFor={`${mode}-password`}>
+                Senha
+              </label>
               <Link
                 className="text-brand-strong text-xs font-bold hover:underline"
                 href="/esqueci-senha"
               >
                 Esqueci minha senha
               </Link>
-            ) : null}
-          </span>
-          <input
-            autoComplete={isLogin ? "current-password" : "new-password"}
-            className="text-base"
-            id={`${mode}-password`}
-            maxLength={72}
-            minLength={8}
-            name="password"
-            required
-            type="password"
-          />
-          {!isLogin ? <span className="field__hint">Use pelo menos 8 caracteres.</span> : null}
-        </div>
-        {!isLogin ? (
-          <div className="field">
-            <label className="field__label" htmlFor={`${mode}-password-confirm`}>
-              Confirmar senha
-            </label>
+            </span>
             <input
-              autoComplete="new-password"
+              autoComplete="current-password"
               className="text-base"
-              id={`${mode}-password-confirm`}
+              id={`${mode}-password`}
               maxLength={72}
               minLength={8}
-              name="confirmPassword"
+              name="password"
               required
               type="password"
             />
           </div>
-        ) : null}
+        ) : (
+          <>
+            <PasswordRevealField
+              autoComplete="new-password"
+              hint="Mínimo de 8 caracteres."
+              id={`${mode}-password`}
+              label="Senha"
+              name="password"
+            />
+            <PasswordRevealField
+              autoComplete="new-password"
+              id={`${mode}-password-confirm`}
+              label="Confirmar senha"
+              name="confirmPassword"
+            />
+          </>
+        )}
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
-        <div className="pt-1">
+        <div className="pt-0.5">
           <SubmitButton
             className="auth-shell__submit w-full"
             idleLabel={isLogin ? "Entrar" : "Criar conta"}
@@ -147,7 +143,7 @@ export function PasswordForm({
           />
         </div>
       </form>
-      <p className="text-muted mt-5 text-center text-sm leading-6">
+      <p className="text-muted mt-4 text-center text-sm leading-6">
         {isLogin ? "Ainda não tem uma conta?" : "Já possui uma conta?"}{" "}
         <Link
           className="text-brand-strong font-semibold underline-offset-4 hover:underline"
