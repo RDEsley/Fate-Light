@@ -31,6 +31,20 @@ const tabs: SettingsTab[] = [
     section: "/perfil",
   },
   {
+    description: "Trocar senha da conta",
+    href: "/perfil#seguranca",
+    icon: "check",
+    label: "Segurança",
+    section: "/perfil",
+  },
+  {
+    description: "WhatsApp da Fate Eight",
+    href: "/perfil#suporte",
+    icon: "phone",
+    label: "Suporte",
+    section: "/perfil",
+  },
+  {
     description: "Movimento, contraste e leitura",
     href: "/perfil#experiencia",
     icon: "sparkles",

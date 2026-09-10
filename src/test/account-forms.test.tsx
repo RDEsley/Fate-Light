@@ -5,6 +5,7 @@ vi.mock("@/app/onboarding/actions", () => ({
   bootstrapAccount: vi.fn(async (state: unknown) => state),
 }));
 vi.mock("@/app/perfil/actions", () => ({
+  changePassword: vi.fn(async (state: unknown) => state),
   updateProfile: vi.fn(async (state: unknown) => state),
 }));
 vi.mock("@/app/perfil/lifecycle-actions", () => ({
