@@ -5,6 +5,14 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-09-09
+
+### Changed
+
+- Landing e autenticação com visual mais maduro: badge promocional removido, cards do hero
+  refinados e telas de login/cadastro com shell editorial menos infantil, mantendo a identidade
+  leve da Fate Light.
+
 ## [0.8.2] - 2026-09-09
 
 ### Fixed
