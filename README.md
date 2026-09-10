@@ -1,127 +1,161 @@
 <div align="center">
-  <img src="public/favicons/logo.png" width="128" alt="Identidade visual do Fate Light" />
-  <h1>💰 Fate Light</h1>
-  <h3>Clareza financeira. Caminho Certo.</h3>
+  <img src="public/favicons/logo.png" width="128" alt="Logo do Fate Light" />
+
+# 💰 Fate Light
+
+### Gestão leve para freelancers e pequenos negócios digitais.
+
   <p>
-    Centralize clientes, serviços, cobranças, despesas e domínios em um workspace seguro,<br />
-    com visão clara do caixa e dos próximos vencimentos.
+    Clientes, serviços, cobranças, despesas e domínios em um só lugar.<br />
+    Feito para quem trabalha com projetos digitais e precisa ter clareza sobre a própria operação.
   </p>
+
   <p>
-    <a href="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml"><img src="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-    <a href="package.json"><img src="https://img.shields.io/badge/version-0.8.2-2563EB.svg" alt="Versão 0.8.2" /></a>
-    <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16.3.4-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3.4" /></a>
-    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=0B1F2A" alt="React 19.2.8" /></a>
-    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0.3" /></a>
-    <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-PostgreSQL_17-3FCF8E?logo=supabase&logoColor=white" alt="Supabase com PostgreSQL 17" /></a>
-    <a href="https://fatelight-alpha.vercel.app"><img src="https://img.shields.io/badge/Vercel-online-000000?logo=vercel&logoColor=white" alt="Produção online na Vercel" /></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-16A34A.svg" alt="Licença MIT" /></a>
+    <a href="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml">
+      <img src="https://github.com/RDEsley/Fate-Light/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" />
+    </a>
+    <a href="package.json">
+      <img src="https://img.shields.io/badge/version-0.8.2-2563EB.svg" alt="Versão 0.8.2" />
+    </a>
+    <a href="https://nextjs.org/">
+      <img src="https://img.shields.io/badge/Next.js-16.3.4-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16.3.4" />
+    </a>
+    <a href="https://react.dev/">
+      <img src="https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=0B1F2A" alt="React 19.2.8" />
+    </a>
+    <a href="https://www.typescriptlang.org/">
+      <img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0.3" />
+    </a>
+    <a href="https://supabase.com/">
+      <img src="https://img.shields.io/badge/Supabase-PostgreSQL_17-3FCF8E?logo=supabase&logoColor=white" alt="Supabase com PostgreSQL 17" />
+    </a>
+    <a href="https://fatelight-alpha.vercel.app">
+      <img src="https://img.shields.io/badge/Vercel-online-000000?logo=vercel&logoColor=white" alt="Produção online na Vercel" />
+    </a>
+    <a href="LICENSE">
+      <img src="https://img.shields.io/badge/license-MIT-16A34A.svg" alt="Licença MIT" />
+    </a>
   </p>
+
   <p>
-    <a href="#-funcionalidades">Funcionalidades</a> •
-    <a href="https://fatelight-alpha.vercel.app">Abrir sistema</a> •
-    <a href="#-tecnologias">Tecnologias</a> •
-    <a href="#-instalação-local">Instalação</a> •
-    <a href="#-deploy-na-vercel">Deploy</a> •
-    <a href="#-qualidade-e-testes">Testes</a> •
-    <a href="#-segurança">Segurança</a> •
-    <a href="#-créditos">Créditos</a>
+    <a href="https://fatelight-alpha.vercel.app"><strong>🌐 Abrir Fate Light</strong></a>
+    &nbsp;•&nbsp;
+    <a href="#-funcionalidades">Funcionalidades</a>
+    &nbsp;•&nbsp;
+    <a href="#-tecnologias">Tecnologias</a>
+    &nbsp;•&nbsp;
+    <a href="#-executando-localmente">Executar localmente</a>
   </p>
 </div>
 
 ---
 
-## 📌 Sobre o projeto
+## ✨ Sobre o Fate Light
 
-O **Fate Light** é um sistema de gestão financeira operacional desenvolvido pela **Fate Eight Tech**.
+O **Fate Light** é um sistema de gestão financeira e operacional criado pela **Fate Eight Tech** para profissionais que trabalham com serviços digitais.
 
-### Para quem ele serve
+Ele nasceu de uma necessidade simples: organizar a rotina de quem cria sites, gerencia campanhas, mantém projetos recorrentes e precisa acompanhar clientes e dinheiro sem depender de várias planilhas.
 
-Para quem hoje controla o próprio negócio em uma planilha e já sentiu que ela não dá mais conta:
-**freelancers de criação de sites, profissionais que gerenciam Google Ads e outras campanhas,
-agências pequenas e prestadores de serviços recorrentes**. O Fate Light organiza a operação sem
-misturar dinheiro próprio com verba administrada e sem se apresentar como sistema contábil.
+### Feito especialmente para
 
-Ele resolve especificamente:
+* desenvolvedores e designers freelancers;
+* profissionais que criam e mantêm sites;
+* gestores de Google Ads e outras campanhas;
+* pequenas agências;
+* prestadores de serviços recorrentes;
+* profissionais que ainda controlam a operação em planilhas.
 
-- **cobrar projetos e mensalidades sem esquecer** — do site parcelado à gestão recorrente de campanhas,
-  você aplica o serviço uma vez no cliente e acompanha cada vencimento;
-- **não misturar o que é seu com o que é do cliente** — verba de mídia entra e sai sem nunca contar
-  como seu faturamento;
-- **acompanhar a operação digital no mesmo contexto** — sites, domínios, campanhas de divulgação e
-  serviços ficam ligados ao cliente certo;
-- **saber o que vence antes de vencer** — alertas levam você direto à cobrança citada, com rolagem
-  guiada até o card certo;
-- **começar com o histórico que você já tem** — importação de planilha ou registro de tudo que o
-  cliente já pagou antes do sistema existir.
+O Fate Light não tenta substituir um sistema contábil. O objetivo é ser um **workspace simples para acompanhar a operação do dia a dia**.
 
-A aplicação acompanha o ciclo completo, do cadastro do cliente ao recebimento, com autenticação por
-e-mail e senha, com confirmação de e-mail, isolamento por workspace e políticas de segurança no banco.
-Interface em PT-BR, tema claro, identidade cartoon própria e acessibilidade persistente.
+---
 
-> **Status:** versão `0.8.2`, candidata ao release 1.0. O hotfix isola a importação por
-> empresa/marca e evita inventar razão social na consolidação. A publicação da V1 ainda depende de
-> SMTP com domínio próprio e do checklist operacional de produção.
+## 🎯 O que ele resolve
 
-## ✨ Funcionalidades
+Com o Fate Light, você consegue:
 
-| Área              | Recursos disponíveis                                                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 📊 **Dashboard**  | Saudação pessoal, workspace atual, receitas, mídia separada, despesas, resultado, clientes e empresas/marcas ativas, alertas de cobranças e despesas nos próximos 7 dias |
-| 👥 **Clientes**   | Seis situações comerciais, empresas/marcas sob o mesmo cliente, consolidação confirmada, site e links extras, arquivamento e ordenação por receita |
-| 🧩 **Serviços**   | Catálogo automático sem duplicar nomes, vínculo opcional a empresa/marca, edição do serviço aplicado, pausa, encerramento, promoções e nove cadências |
-| 💳 **Cobranças**  | Acompanhamento, filtros, baixa com recorrência, criação na ficha do cliente com empresa/marca opcional, exclusão corretiva de paga e NF privada |
-| 🧾 **Despesas**   | Avulsas ou mensais recorrentes, categorias, cliente e empresa/marca opcionais, baixa que agenda o próximo mês e NF privada |
-| 🌐 **Domínios**   | Painel de vencimentos, edição, exclusão, empresa/marca opcional, registrador como link e atalho para o cadastro do cliente |
-| 🔔 **Alertas**    | Antecedência configurável no perfil, faixas de atrasado/hoje/esta semana e link direto para o item citado |
-| 🕘 **Histórico**  | Linha do tempo dentro do perfil, pesquisável por cliente e tipo, preservando baixas, atrasos, encerramentos e reativações |
-| 📥 **Importação** | Prévia e confirmação transacional de planilhas Excel/CSV, linhas opcionais `empresa/marca`, formato legado e proteção contra duplicidade |
-| 🔐 **Conta**      | Login por e-mail e senha com confirmação de e-mail, recuperação de senha, onboarding, perfil, acessibilidade, configurações e solicitações de privacidade |
+* acompanhar clientes e empresas/marcas vinculadas;
+* cadastrar serviços únicos, parcelados ou recorrentes;
+* saber quem precisa pagar e quando;
+* registrar despesas da operação;
+* controlar vencimentos de domínios;
+* separar verba de mídia do faturamento real;
+* receber alertas de cobranças e despesas próximas do vencimento;
+* importar dados que antes estavam em planilhas;
+* consultar o histórico financeiro de cada cliente.
 
-### Agenda e calendário
+Tudo fica ligado ao contexto certo, evitando clientes em uma planilha, domínios em outra, cobranças no WhatsApp e despesas esquecidas no cartão.
 
-O Fate Light organiza vencimentos e alertas internamente. Quando for útil abrir um compromisso fora
-do sistema, a integração prevista é um **link de evento para o Google Agenda**: o usuário confirma o
-evento no próprio Google. Não há OAuth, leitura de calendário, sincronização automática nem API do
-Google Agenda nesta versão.
+---
 
-### Situações do cliente e do serviço
+## 🖼️ Preview
 
-O cliente tem seis situações: **Orçamento**, **Pendente**, **Ativo**, **Inativo**, **Lista negra** e
-**Arquivado**. Só Orçamento, Pendente e Ativo recebem serviços novos. Arquivar preserva todo o
-histórico e é a saída recomendada quando a exclusão está bloqueada. A lista ordena por situação
-primeiro — ativos no topo, lista negra no fim — e, dentro de cada uma, por quanto o cliente já
-rendeu, com o mais antigo desempatando.
+<div align="center">
+  <img width="1911" height="939" alt="Dashboard do Fate Light" src="https://github.com/user-attachments/assets/15114c35-e4a5-4890-af66-4495b528aa71" />
+  <br /><br />
+  <img width="1901" height="938" alt="Interface do Fate Light" src="https://github.com/user-attachments/assets/4ac608e2-4d09-4d0e-b51f-97b4325f0f2b" />
+</div>
 
-O serviço aplicado a um cliente tem três estados, e a diferença importa:
+---
 
-| Estado        | O que acontece                                                                                                                                    |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Ativo**     | Gera cobranças no ciclo e aparece nos alertas                                                                                                     |
-| **Pausado**   | Para de gerar cobranças e some do radar de alertas; retomar restaura a agenda de onde parou, com os ciclos promocionais já consumidos preservados |
-| **Encerrado** | Definitivo. Nada mais é gerado; cobranças e histórico permanecem intactos                                                                         |
+## 🚀 Funcionalidades
 
-### Experiência de uso
+| Área              | Recursos                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| 📊 **Dashboard**  | Receitas, despesas, resultado, clientes ativos, empresas/marcas e próximos vencimentos |
+| 👥 **Clientes**   | Cadastro, situação comercial, empresas/marcas, histórico, links e arquivamento         |
+| 🧩 **Serviços**   | Serviços únicos ou recorrentes, parcelas, promoções, pausas, encerramento e reajustes  |
+| 💳 **Cobranças**  | Vencimentos, pagamentos, recorrência automática e acompanhamento por cliente           |
+| 🧾 **Despesas**   | Despesas avulsas ou recorrentes, categorias, clientes e comprovantes privados          |
+| 🌐 **Domínios**   | Registro de domínios, registrador, vencimento e vínculo com clientes                   |
+| 🔔 **Alertas**    | Cobranças e despesas atrasadas ou próximas do vencimento                               |
+| 🕘 **Histórico**  | Linha do tempo pesquisável de pagamentos, atrasos, serviços e alterações               |
+| 📥 **Importação** | Importação de Excel/CSV com prévia, validação e proteção contra duplicidade            |
+| 🔐 **Conta**      | Autenticação, confirmação de e-mail, recuperação de senha, perfil e privacidade        |
 
-- diálogos de confirmação próprios em todo o sistema — nenhum `window.confirm` nativo; exclusões
-  irreversíveis travam o botão por alguns segundos, e as mais sensíveis (conta, workspace) também
-  exigem digitar uma frase;
-- campos opcionais vazios seguem sem sermão; só o essencial inválido bloqueia o envio;
-- erros de formulário apontam o campo exato em português, sem perder o que foi digitado;
-- valores monetários usam máscara bancária pt-BR (dígitos deslocam centavos);
-- explicações contextuais em `?` ao lado dos rótulos que costumam gerar dúvida;
-- selects que medem o espaço disponível e abrem para cima quando não cabem abaixo;
-- alerta como guia: clicar leva à cobrança citada, com rolagem suave e destaque temporário da borda;
-- tour de primeiro acesso que escurece a tela, ilumina a funcionalidade explicada e navega junto;
-- exclusão irreversível exige leitura: o diálogo mostra quanto sai do histórico, pede o nome
-  digitado e mantém o botão travado por três segundos;
-- dashboard com cards que levam à origem do número, filtro de período, menu lateral recolhível e
-  navegação adaptada para celular;
-- notificações e avisos ancorados no canto superior direito, logo abaixo do bloco da conta;
-- clique com efeito de onda de água, desativável junto com as demais animações;
-- botão global de acessibilidade com texto maior, contraste reforçado e destaque de links;
-- zonas de risco padronizadas, sempre fechadas por padrão e com confirmação digitada.
+---
 
-### Regra financeira central
+## 💡 Pensado para a rotina de freelancers
+
+Um projeto de site raramente termina apenas na entrega.
+
+Depois aparecem:
+
+* hospedagem;
+* domínio;
+* manutenção;
+* alterações;
+* tráfego pago;
+* mensalidades;
+* parcelas;
+* novos serviços;
+* despesas com ferramentas.
+
+O Fate Light mantém tudo isso conectado ao cliente.
+
+### Exemplo
+
+Um cliente pode ter:
+
+```text
+Cliente
+├── Site institucional
+│   ├── 2 parcelas
+│   └── manutenção mensal
+├── Google Ads
+│   ├── gestão mensal
+│   └── verba de mídia
+├── Domínio
+│   └── vencimento anual
+└── Histórico financeiro
+```
+
+Assim, a operação continua organizada mesmo quando a quantidade de clientes começa a crescer.
+
+---
+
+## 💰 Regra financeira central
+
+O Fate Light separa **receita própria** de valores administrados em nome do cliente.
 
 ```text
 Total bruto = receita própria + verba de mídia + adicionais
@@ -131,48 +165,70 @@ Resultado da empresa = receita própria recebida
                      - despesas pagas
 ```
 
-A **verba de mídia nunca entra na receita da empresa**. Cobranças atrasadas são identificadas pela
-data de vencimento, sem depender de Cron ou de atualização manual de status.
+A **verba de mídia não entra no faturamento da empresa**.
 
-Duas consequências dessa regra valem destaque:
+Isso evita, por exemplo, que R$ 2.000 recebidos para investimento em Google Ads apareçam como R$ 2.000 de receita do freelancer ou da agência.
 
-- **receita é sempre a soma das cobranças.** Não existe campo separado de "total já recebido": o
-  histórico anterior ao sistema vira uma cobrança real, já quitada, para que dashboard e histórico
-  fechem sozinhos;
-- **cobrança de R$ 0,00 é válida.** Um ciclo promocional gratuito precisa existir como cobrança —
-  é a liquidação dela que avança a recorrência para o ciclo seguinte.
+---
 
-## 🧭 Fluxo de uso
+## 🔄 Fluxo básico
 
-1. Informe seu nome ou o nome da empresa e entre com e-mail e senha; confirme o workspace sugerido no primeiro acesso.
-2. Cadastre um cliente em **Clientes**. Se ele já pagava você antes, informe o total no bloco
-   "Já trabalhei com este cliente antes" e o histórico entra junto.
-3. Aplique um serviço no card do cliente, com desconto, parcelas, preço promocional ou lembrete de
-   reajuste. **Serviços digitados aqui entram no catálogo sozinhos** e podem ser reutilizados em
-   outros clientes; nomes repetidos reaproveitam o registro existente em vez de duplicar.
-4. A primeira cobrança nasce do serviço aplicado; cobranças manuais são criadas na ficha do
-   cliente (a página Cobranças é só acompanhamento).
-5. Marque a cobrança como paga; serviços recorrentes agendam o próximo vencimento automaticamente.
-6. Se o cliente pedir uma pausa, use **Pausar** no serviço em vez de encerrar: alertas e cobranças
-   param, e **Retomar** devolve a agenda de onde ela estava.
-7. Registre despesas avulsas ou mensais (assinaturas/SaaS) e vencimentos de domínios.
-8. Lançamento pago errado: o owner pode excluir com confirmação forte e recriar o correto.
-9. Acompanhe totais e alertas no **Dashboard**; clicar no alerta leva direto ao registro citado.
-10. Para migrar dados existentes, abra **Importar dados**, gere a prévia e confirme somente depois de
-    revisar as contagens, os erros e os avisos.
+```mermaid
+flowchart LR
+    A[Cliente] --> B[Serviço]
+    B --> C[Cobrança]
+    C --> D[Pagamento]
+    D --> E[Dashboard]
+    B --> F[Recorrência]
+    F --> C
+    A --> G[Domínios]
+    A --> H[Histórico]
+    I[Despesas] --> E
+```
+
+Na prática:
+
+1. Cadastre o cliente.
+2. Aplique um serviço.
+3. O Fate Light cria ou acompanha a cobrança.
+4. Marque o pagamento quando ele acontecer.
+5. Serviços recorrentes geram o próximo ciclo.
+6. Dashboard, alertas e histórico são atualizados a partir desses dados.
+
+---
 
 ## 🛠️ Tecnologias
 
-- **Next.js 16** com App Router e React Server Components por padrão.
-- **React 19** e **TypeScript 6** em modo estrito.
-- **Tailwind CSS 4** para a interface responsiva.
-- **Supabase** para autenticação por e-mail e senha e PostgreSQL 17.
-- **read-excel-file** para leitura de planilhas `.xlsx`, sem armazenar o arquivo enviado.
-- **Zod** para validação nas bordas da aplicação.
-- **Vitest** e Testing Library para testes de aplicação.
-- **Playwright** e Axe para jornada E2E e acessibilidade.
-- **pgTAP** para contratos, regras financeiras e isolamento do banco.
-- **ESLint** para qualidade e consistência.
+<div align="center">
+
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs\&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react\&logoColor=0B1F2A)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript\&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss\&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_17-3FCF8E?logo=supabase\&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-tests-6E9F18?logo=vitest\&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?logo=playwright\&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-deploy-000000?logo=vercel\&logoColor=white)
+
+</div>
+
+### Stack principal
+
+* **Next.js 16** com App Router;
+* **React 19**;
+* **TypeScript 6** em modo estrito;
+* **Tailwind CSS 4**;
+* **Supabase Auth**;
+* **PostgreSQL 17**;
+* **Zod** para validação;
+* **read-excel-file** para importação `.xlsx`;
+* **Vitest + Testing Library**;
+* **Playwright + Axe**;
+* **pgTAP** para testes do banco;
+* **ESLint**;
+* **Vercel** para deploy.
+
+---
 
 ## 🏗️ Arquitetura
 
@@ -181,7 +237,6 @@ flowchart LR
     U[Usuário] --> N[Next.js App Router]
     N --> A[Supabase Auth]
     N --> D[(PostgreSQL 17)]
-    A --> M[E-mail e senha]
     D --> R[RLS por workspace]
     D --> F[Clientes e serviços]
     D --> C[Cobranças e despesas]
@@ -191,37 +246,58 @@ flowchart LR
     V --> D
 ```
 
-Princípios adotados:
+Alguns princípios do projeto:
 
-- componentes de servidor por padrão;
-- validação de formulários no servidor;
-- `workspace_id` em todos os dados operacionais;
-- RLS e `FORCE RLS` nas tabelas protegidas;
-- FKs compostas para impedir relações entre workspaces;
-- valores monetários em `numeric(15,2)`;
-- vencimentos em `date` e eventos reais em `timestamptz`;
-- nenhuma chave privilegiada em componentes do navegador.
-- importação confirmada em uma única transação, sob os mesmos grants e RLS do usuário.
+* Server Components por padrão;
+* validação também no servidor;
+* isolamento dos dados por `workspace_id`;
+* RLS e `FORCE RLS` nas tabelas protegidas;
+* FKs compostas para impedir relações entre workspaces;
+* valores monetários em `numeric(15,2)`;
+* importações confirmadas em uma única transação;
+* nenhuma chave privilegiada exposta ao navegador.
 
-## ✅ Pré-requisitos
+---
 
-- [Node.js `24.18.1`](https://nodejs.org/) — fixado em `.nvmrc` e na CI; o deploy aceita a linha
-  `24.x` administrada pela Vercel.
-- npm `11.16.0` para desenvolvimento e lockfile; o runtime hospedado aceita npm `11.x`.
-- Docker Desktop ou runtime compatível com o Supabase CLI, somente para executar o banco local e os
-  testes pgTAP; não é necessário para usar o Supabase remoto.
-- Git.
+## 📂 Estrutura
 
-## 🚀 Instalação local
+```text
+.
+├── docs/                     # Requisitos, arquitetura e decisões técnicas
+├── scripts/                  # Segurança, tipos do banco e utilitários
+├── src/
+│   ├── app/                  # Rotas e App Router
+│   ├── components/           # Componentes compartilhados
+│   ├── config/               # Variáveis e contratos de ambiente
+│   ├── features/             # Regras dos domínios funcionais
+│   ├── lib/                  # Auth, Supabase e utilitários
+│   ├── test/                 # Testes
+│   └── types/                # Tipos gerados do PostgreSQL
+└── supabase/
+    ├── migrations/           # Migrations do banco
+    ├── templates/            # Templates locais de autenticação
+    └── tests/                # Testes pgTAP
+```
 
-### 1. Clone o repositório
+---
+
+## 💻 Executando localmente
+
+### Pré-requisitos
+
+* Node.js `24.18.1`;
+* npm `11.16.0`;
+* Git;
+* Docker Desktop ou runtime compatível, caso queira executar o Supabase localmente.
+
+### 1. Clone o projeto
 
 ```bash
 git clone https://github.com/RDEsley/Fate-Light.git fate-light
 cd fate-light
 ```
 
-### 2. Instale as dependências exatas
+### 2. Instale as dependências
 
 ```bash
 npm ci
@@ -236,7 +312,7 @@ npx supabase db reset --local
 
 ### 4. Configure o ambiente
 
-Copie `.env.example` para `.env.local` e preencha somente o contrato necessário:
+Copie `.env.example` para `.env.local`:
 
 ```dotenv
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -246,67 +322,32 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 SUPABASE_SECRET_KEY=
 ```
 
-> ⚠️ A saída completa de `supabase status` contém credenciais locais privilegiadas. Copie somente a
-> URL pública e a publishable key. Nunca publique a saída completa nem valores reais de `.env`.
+> Nunca publique valores reais de `.env` ou a saída completa de `supabase status`.
 
-### 5. Execute a aplicação
+### 5. Inicie a aplicação
 
 ```bash
 npm run dev
 ```
 
-Acesse:
-
-- Aplicação: [http://localhost:3000](http://localhost:3000)
-- Mailpit local: [http://127.0.0.1:54324](http://127.0.0.1:54324)
-- Supabase Studio: [http://127.0.0.1:54323](http://127.0.0.1:54323)
-
-O Mailpit recebe somente as mensagens do ambiente local e permite abrir os links de confirmação e
-recuperação de senha gerados nos testes.
-
-## ☁️ Deploy na Vercel
-
-O repositório já inclui configuração para instalação determinística e Functions em São Paulo,
-próximas do banco Supabase. Na Vercel, selecione **Next.js**, Node.js **24.x**, mantenha os comandos de
-build/output padrão e cadastre:
-
-```dotenv
-NEXT_PUBLIC_APP_URL=https://seu-dominio
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site-key-de-producao>
-SUPABASE_SECRET_KEY=
-```
-
-`SUPABASE_SECRET_KEY` permanece vazia: o produto não usa cliente privilegiado. Em produção, a site
-key do Turnstile é obrigatória e a secret deve ser configurada apenas no Supabase. Configure também
-a Site URL, Redirect URLs, confirmação de e-mail e templates de recuperação no Supabase Auth. O
-passo a passo completo, incluindo previews, headers, Turnstile e checklist pós-deploy, está em
-[docs/deployment-vercel.md](docs/deployment-vercel.md).
-
-## 📂 Estrutura do projeto
+A aplicação ficará disponível em:
 
 ```text
-.
-├── docs/                     # Requisitos, arquitetura e decisões técnicas
-├── scripts/                  # Segurança, tipos do banco e executor E2E autenticado
-├── src/
-│   ├── app/                  # Rotas, Server Actions e componentes do App Router
-│   ├── components/           # Componentes compartilhados de interface
-│   ├── config/               # Contratos de variáveis de ambiente
-│   ├── features/             # Regras e validações dos domínios funcionais
-│   ├── lib/                  # Autenticação, Supabase e utilitários
-│   ├── test/                 # Testes unitários, componentes e E2E
-│   └── types/                # Tipos gerados do PostgreSQL
-└── supabase/
-    ├── migrations/           # Evolução incremental e reproduzível do banco
-    ├── templates/            # E-mails locais de autenticação
-    └── tests/                # Testes pgTAP de regras e isolamento
+http://localhost:3000
 ```
+
+Ambiente Supabase local:
+
+```text
+Studio:  http://127.0.0.1:54323
+Mailpit: http://127.0.0.1:54324
+```
+
+---
 
 ## 🧪 Qualidade e testes
 
-Execute a verificação completa da aplicação:
+Principais verificações:
 
 ```bash
 npm run lint
@@ -318,7 +359,7 @@ npm run test:e2e
 npm run security:check
 ```
 
-Com o Supabase local iniciado, valide também o banco e a jornada autenticada:
+Com o Supabase local:
 
 ```bash
 npm run db:test
@@ -328,93 +369,124 @@ npm run db:advisors:security
 npm run test:e2e:auth
 ```
 
-O E2E autenticado cobre o fluxo operacional completo: conta, workspace, cliente, dois serviços,
-cobrança, pagamento, despesa, domínio, dashboard, importação, login por senha, recuperação e troca
-de senha. Em caso de falha no CI, screenshots, traces e o relatório do Playwright ficam disponíveis
-temporariamente como artefato da execução.
-
-### Comandos úteis
-
-| Comando                   | Finalidade                                      |
-| ------------------------- | ----------------------------------------------- |
-| `npm run dev`             | Servidor de desenvolvimento                     |
-| `npm run build`           | Build otimizado de produção                     |
-| `npm run start`           | Executa o build de produção                     |
-| `npm run test`            | Testes unitários e de componentes               |
-| `npm run test:watch`      | Testes em modo interativo                       |
-| `npm run test:e2e`        | Smoke, rotas públicas e acessibilidade          |
-| `npm run test:e2e:auth`   | Jornada real com Supabase e Mailpit             |
-| `npm run db:test`         | Regras e isolamento PostgreSQL com pgTAP        |
-| `npm run db:types`        | Atualiza os tipos gerados do banco local        |
-| `npm run db:types:linked` | Atualiza os tipos do projeto Supabase vinculado |
-| `npm run security:check`  | Detecta arquivos proibidos e padrões de segredo |
-| `npm run supabase:stop`   | Encerra a infraestrutura local                  |
-
-## 🔐 Segurança
-
-- Autenticação SSR por e-mail e senha, com cookies tratados no servidor.
-- Rotas privadas protegidas antes da renderização.
-- Isolamento de dados por workspace aplicado no PostgreSQL.
-- Nenhuma operação financeira confia em `workspace_id` enviado pelo formulário.
-- Grants explícitos e ausência de `DELETE` para os registros operacionais.
-- Chave secret reservada ao servidor e atualmente sem cliente privilegiado.
-- Validação de entradas com Zod e constraints equivalentes no banco.
-- Auditoria de segurança do banco e scanner do repositório integrados ao CI.
-- Arquivos de importação processados somente em memória, com limite, hash de idempotência e
-  confirmação atômica no PostgreSQL.
-
-Consulte [SECURITY.md](SECURITY.md) antes de relatar uma vulnerabilidade. Não abra issues públicas
-com detalhes exploráveis.
-
-## ⚠️ Limites atuais do MVP
-
-- A agenda aceita cobrança única, diária, semanal, quinzenal, mensal, bimestral, trimestral,
-  semestral e anual. O próximo ciclo nasce na baixa da cobrança atual; não há um agendador em
-  segundo plano que faça isso sem a ação do usuário.
-- Não há pagamentos parciais, estornos contábeis ou múltiplos pagamentos por cobrança.
-- Não há fornecedores, rateios, centros de custo ou contabilidade completa.
-- Não há anexos genéricos, notificações por e-mail, push ou Cron; notas fiscais podem ser guardadas
-  de forma privada em cobranças e despesas pagas, e os alertas ficam disponíveis dentro do sistema.
-- A importação aceita `.xlsx` e `.csv` de até 4 MB e 1.000 registros por lote; arquivos maiores devem
-  ser divididos.
-- A exclusão é conservadora por padrão, mas o dono decide: clientes com vínculos e cobranças pagas
-  seguem protegidos, e excluir um serviço remove apenas as cobranças **não pagas** dele. Havendo
-  pagamento confirmado, a exclusão é bloqueada — e só prossegue no modo forçado, que exibe quanto
-  de receita sai do histórico e trava o botão por três segundos. Encerrar continua sendo o caminho
-  recomendado.
-- Serviços do catálogo em uso podem ser removidos com **desvínculo**: o item some do catálogo e os
-  clientes seguem com o serviço ativo e o valor combinado.
-- Pedidos de exportação e exclusão registram a solicitação, mas não executam jobs automaticamente.
-- Os documentos legais incluídos no seed são fictícios e precisam de revisão antes da produção.
-- SMTP, Turnstile e URLs de redirecionamento devem ser configurados no ambiente hospedado.
-
-## 🤝 Contribuição
-
-1. Crie uma branch a partir de `main`.
-2. Faça mudanças pequenas e focadas.
-3. Execute os gates de qualidade e segurança.
-4. Use Conventional Commits.
-5. Abra um pull request descrevendo comportamento, testes e eventuais riscos.
-
-Não versione arquivos `.env`, credenciais, builds, cobertura, relatórios de teste ou dados privados.
-
-## 📄 Licença
-
-Distribuído sob a licença MIT. Consulte [LICENSE](LICENSE) para mais informações.
+O projeto possui testes de aplicação, banco, acessibilidade e fluxo autenticado.
 
 ---
 
-## 👨‍💻 Créditos
+## 🔐 Segurança
+
+O Fate Light foi estruturado para que o isolamento dos dados não dependa apenas da interface.
+
+Entre as principais proteções estão:
+
+* autenticação SSR;
+* rotas privadas protegidas;
+* RLS por workspace no PostgreSQL;
+* validação com Zod e constraints no banco;
+* scanner de segredos integrado ao fluxo de qualidade;
+* importações processadas em memória;
+* nenhuma chave privilegiada utilizada no navegador;
+* confirmações reforçadas para operações destrutivas.
+
+Para reportar vulnerabilidades, consulte [`SECURITY.md`](SECURITY.md).
+
+**Não abra issues públicas contendo detalhes exploráveis de segurança.**
+
+---
+
+## ☁️ Deploy
+
+O projeto está preparado para deploy na **Vercel**.
+
+Produção atual:
+
+👉 **https://fatelight-alpha.vercel.app**
+
+As instruções completas estão em:
+
+[`docs/deployment-vercel.md`](docs/deployment-vercel.md)
+
+---
+
+## 📍 Status do projeto
+
+**Versão atual:** `0.8.2`
+
+O Fate Light está em fase de preparação para a **V1**.
+
+A aplicação principal já está funcional, incluindo clientes, serviços, cobranças, despesas, domínios, importação, autenticação, histórico e isolamento por workspace.
+
+Antes do release definitivo, ainda existem verificações operacionais e configurações de produção previstas no checklist do projeto.
+
+---
+
+## ⚠️ Escopo atual
+
+O Fate Light é uma ferramenta de gestão operacional e financeira para pequenos prestadores de serviço.
+
+Ele **não é**:
+
+* sistema contábil;
+* ERP completo;
+* gateway de pagamentos;
+* emissor fiscal;
+* sistema bancário.
+
+Algumas automações também dependem da ação do usuário. Por exemplo, o próximo ciclo de uma cobrança recorrente é criado quando a cobrança atual é marcada como paga.
+
+Esse escopo é intencional: manter o produto simples, previsível e útil para operações pequenas.
+
+---
+
+## 🤝 Contribuição
+
+Contribuições são bem-vindas.
+
+1. Crie uma branch a partir de `main`.
+2. Faça mudanças pequenas e focadas.
+3. Execute os testes e verificações de segurança.
+4. Utilize Conventional Commits.
+5. Abra um Pull Request descrevendo a alteração.
+
+Não versione:
+
+* `.env`;
+* credenciais;
+* builds;
+* cobertura;
+* relatórios temporários;
+* dados privados.
+
+---
+
+## 📄 Licença
+
+Distribuído sob a licença **MIT**.
+
+Consulte [`LICENSE`](LICENSE) para mais informações.
+
+---
+
+## 👨‍💻 Desenvolvimento
 
 <div align="center">
   <a href="https://github.com/RDEsley">
-    <img src="https://github.com/RDEsley.png" width="140" height="140" alt="Foto de Richard Oliveira" style="border-radius: 50%;" />
+    <img src="https://github.com/RDEsley.png" width="130" height="130" alt="Richard Oliveira" />
   </a>
-  <h3>Richard Oliveira</h3>
-  <p><strong>Desenvolvimento e arquitetura de software</strong></p>
+
+### Richard Oliveira
+
+**Desenvolvimento e arquitetura de software**
+
   <p>
-    <a href="https://github.com/RDEsley"><img src="https://img.shields.io/badge/GitHub-RDEsley-181717?logo=github" alt="GitHub RDEsley" /></a>
-    <a href="mailto:richardesleyso@gmail.com"><img src="https://img.shields.io/badge/E--mail-richardesleyso%40gmail.com-EA4335?logo=gmail&logoColor=white" alt="E-mail" /></a>
+    <a href="https://github.com/RDEsley">
+      <img src="https://img.shields.io/badge/GitHub-RDEsley-181717?logo=github" alt="GitHub RDEsley" />
+    </a>
+    <a href="mailto:richardesleyso@gmail.com">
+      <img src="https://img.shields.io/badge/E--mail-richardesleyso%40gmail.com-EA4335?logo=gmail&logoColor=white" alt="E-mail" />
+    </a>
   </p>
-  <p>Produto desenvolvido pela <strong>Fate Eight Tech</strong> para empresas que buscam clareza operacional. 🚀</p>
+
+Produto desenvolvido pela **Fate Eight Tech**.
+
 </div>
