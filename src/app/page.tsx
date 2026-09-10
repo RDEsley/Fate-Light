@@ -5,21 +5,29 @@ import { LandingHeroTitle } from "@/components/landing-hero-title";
 import { LandingWaterCursor } from "@/components/landing-water-cursor";
 import { Icon, type IconName } from "@/components/ui/icon";
 
-const highlights: { description: string; icon: IconName; title: string }[] = [
+const highlights: { description: string; icon: IconName; title: string; wide?: boolean }[] = [
   {
     icon: "bell",
-    title: "Vencimentos",
-    description: "Alertas antes da urgência.",
+    title: "Vencimentos sob controle",
+    description: "Cobranças, despesas e domínios aparecem com antecedência, antes da urgência.",
+    wide: true,
   },
   {
     icon: "wallet",
-    title: "Receitas claras",
-    description: "Própria e mídia separadas.",
+    title: "Receitas separadas",
+    description: "Receita própria e verba de mídia permanecem distintas na operação e nos totais.",
   },
   {
     icon: "users",
-    title: "Por cliente",
-    description: "Contexto sem misturar contas.",
+    title: "Contexto por cliente",
+    description: "Cada lançamento fica ligado ao cliente e ao workspace, sem misturar contas.",
+  },
+  {
+    icon: "dashboard",
+    title: "Operação em um só lugar",
+    description:
+      "Dashboard, clientes, cobranças e histórico no mesmo workspace — com isolamento e rastreio.",
+    wide: true,
   },
 ];
 
@@ -82,19 +90,22 @@ export default function Home() {
                   <p className="text-[0.95rem] font-semibold tracking-[-0.02em]">
                     Resumo operacional
                   </p>
-                  <p className="text-muted mt-0.5 text-xs">O essencial do dia</p>
+                  <p className="text-muted mt-0.5 text-xs">Visão do que merece atenção hoje</p>
                 </div>
                 <span className="landing-preview__status">Em ordem</span>
               </div>
               <div className="landing-preview__grid">
                 {highlights.map((item, index) => (
-                  <article className="landing-preview__card" key={item.title}>
+                  <article
+                    className={`landing-preview__card${item.wide ? " landing-preview__card--wide" : ""}`}
+                    key={item.title}
+                  >
                     <span className={`landing-preview__icon landing-preview__icon--${index}`}>
                       <Icon name={item.icon} />
                     </span>
                     <div className="min-w-0">
-                      <h2 className="text-sm font-semibold tracking-[-0.015em]">{item.title}</h2>
-                      <p className="text-muted mt-0.5 text-xs leading-5">{item.description}</p>
+                      <h2 className="text-[0.95rem] font-semibold tracking-[-0.015em]">{item.title}</h2>
+                      <p className="text-muted mt-1 text-sm leading-6">{item.description}</p>
                     </div>
                   </article>
                 ))}

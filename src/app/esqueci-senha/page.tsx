@@ -32,7 +32,7 @@ export default async function ForgotPasswordPage({
       {status && messages[status] ? (
         <FeedbackBanner message={messages[status]} tone={status === "sent" ? "success" : "error"} />
       ) : null}
-      <form action={requestPasswordRecovery} className="space-y-4">
+      <form action={requestPasswordRecovery} className="auth-shell__fields">
         <div className="absolute -left-[10000px]" aria-hidden="true">
           <label htmlFor="recovery-website">Website</label>
           <input autoComplete="off" id="recovery-website" name="website" tabIndex={-1} />
@@ -50,15 +50,12 @@ export default async function ForgotPasswordPage({
         </label>
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
         <SubmitButton
-          className="w-full"
+          className="auth-shell__submit w-full"
           idleLabel="Enviar link de recuperação"
           pendingLabel="Enviando…"
         />
       </form>
-      <Link
-        className="text-brand-strong mt-5 block text-center text-sm font-bold hover:underline"
-        href="/login"
-      >
+      <Link className="auth-shell__switch text-brand-strong block text-sm font-semibold hover:underline" href="/login">
         Voltar para o login
       </Link>
     </AuthShell>

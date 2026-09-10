@@ -5,6 +5,13 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-09-09
+
+### Changed
+
+- Login e cadastro com shell premium (vidro suave, showcase editorial e formulário limpo).
+- Landing com cards do preview restaurados e um card amplo adicional.
+
 ## [0.8.5] - 2026-09-09
 
 ### Fixed
