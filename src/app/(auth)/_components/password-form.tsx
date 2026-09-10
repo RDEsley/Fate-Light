@@ -47,7 +47,7 @@ export function PasswordForm({
           }
         />
       ) : null}
-      <form action={authenticateWithPassword} className="space-y-3">
+      <form action={authenticateWithPassword} className="auth-shell__fields">
         <input name="mode" type="hidden" value={mode} />
         <input name="next" type="hidden" value={nextPath} />
         <div className="absolute -left-[10000px]" aria-hidden="true">
@@ -100,7 +100,7 @@ export function PasswordForm({
                 Senha
               </label>
               <Link
-                className="text-brand-strong text-xs font-bold hover:underline"
+                className="text-brand-strong text-xs font-semibold hover:underline"
                 href="/esqueci-senha"
               >
                 Esqueci minha senha
@@ -135,15 +135,13 @@ export function PasswordForm({
           </>
         )}
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
-        <div className="pt-0.5">
-          <SubmitButton
-            className="auth-shell__submit w-full"
-            idleLabel={isLogin ? "Entrar" : "Criar conta"}
-            pendingLabel={isLogin ? "Entrando…" : "Criando conta…"}
-          />
-        </div>
+        <SubmitButton
+          className="auth-shell__submit w-full"
+          idleLabel={isLogin ? "Entrar" : "Criar conta"}
+          pendingLabel={isLogin ? "Entrando…" : "Criando conta…"}
+        />
       </form>
-      <p className="text-muted mt-4 text-center text-sm leading-6">
+      <p className="auth-shell__switch text-muted text-center text-sm leading-6">
         {isLogin ? "Ainda não tem uma conta?" : "Já possui uma conta?"}{" "}
         <Link
           className="text-brand-strong font-semibold underline-offset-4 hover:underline"

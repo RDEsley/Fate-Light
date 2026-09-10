@@ -29,7 +29,7 @@ export default async function ResetPasswordPage({
           tone="error"
         />
       ) : null}
-      <form action={updateRecoveredPassword} className="space-y-4">
+      <form action={updateRecoveredPassword} className="auth-shell__fields">
         <label className="field">
           <span className="field__label">Nova senha</span>
           <input
@@ -52,7 +52,11 @@ export default async function ResetPasswordPage({
             type="password"
           />
         </label>
-        <SubmitButton className="w-full" idleLabel="Atualizar senha" pendingLabel="Atualizando…" />
+        <SubmitButton
+          className="auth-shell__submit w-full"
+          idleLabel="Atualizar senha"
+          pendingLabel="Atualizando…"
+        />
       </form>
     </AuthShell>
   );

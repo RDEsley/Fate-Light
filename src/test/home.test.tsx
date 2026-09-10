@@ -16,6 +16,8 @@ describe("Home", () => {
     expect(screen.getByRole("link", { name: /^entrar$/i })).toHaveAttribute("href", "/login");
     expect(screen.queryByText(/gestão financeira sem cara de planilha/i)).not.toBeInTheDocument();
     expect(screen.getByText(/resumo operacional/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /operação em um só lugar/i })).toBeInTheDocument();
+    expect(document.querySelectorAll(".landing-preview__card--wide")).toHaveLength(2);
     expect(document.querySelector(".landing-water-cursor")).toBeInTheDocument();
     expect(document.querySelectorAll(".landing-hero__word")).toHaveLength(6);
     expect(document.querySelector(".landing-hero__period")).toHaveTextContent(".");

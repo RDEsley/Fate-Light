@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const nextPath = sanitizeNextPath(parameters.next);
 
   return (
-    <AuthShell eyebrow="Acesso" title="Entre no seu workspace.">
+    <AuthShell eyebrow="Acesso" title="Bem-vindo de volta.">
       <PasswordForm mode="login" nextPath={nextPath} status={parameters.status} />
     </AuthShell>
   );
