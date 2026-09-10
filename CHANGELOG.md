@@ -5,6 +5,12 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-09-09
+
+### Fixed
+
+- Cobertura de testes do efeito de água da landing, restaurando o limiar de branches no CI.
+
 ## [0.8.4] - 2026-09-09
 
 ### Changed
