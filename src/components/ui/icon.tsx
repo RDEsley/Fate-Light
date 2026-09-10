@@ -28,7 +28,9 @@ export type IconName =
   | "link"
   | "logout"
   | "mail"
+  | "maximize"
   | "menu"
+  | "minimize"
   | "pause"
   | "paperclip"
   | "phone"
@@ -105,7 +107,9 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     mail: (
       <path d="M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm0 0 8 7 8-7" />
     ),
+    maximize: <path d="M9 3H3v6m12-6h6v6M9 21H3v-6m18 0v6h-6" />,
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+    minimize: <path d="M9 9H3V3m18 0v6h-6M9 15H3v6m18 0v-6h-6" />,
     pause: <path d="M9 5v14M15 5v14" />,
     paperclip: (
       <path d="m20.5 11.5-8.7 8.7a5.3 5.3 0 0 1-7.5-7.5l9.1-9.1a3.6 3.6 0 0 1 5.1 5.1l-9.1 9.1a1.9 1.9 0 0 1-2.7-2.7l8.4-8.4" />
