@@ -13,8 +13,10 @@ import { getInitials } from "@/lib/profile/initials";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 import { AlertPreferences } from "./alert-preferences";
+import { ChangePasswordForm } from "./change-password-form";
 import { LifecycleRequestPanel } from "./lifecycle-request-panel";
 import { ProfileForm } from "./profile-form";
+import { SupportContactPanel } from "./support-contact-panel";
 
 export const metadata: Metadata = { title: "Perfil" };
 
@@ -115,6 +117,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           </section>
 
           <AlertPreferences offsets={settings?.default_alert_offsets ?? fallbackAlertOffsets} />
+
+          <ChangePasswordForm />
+
+          <SupportContactPanel />
 
           <MotionSettings />
 
