@@ -18,9 +18,9 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
 
   return (
     <AuthShell
-      description="Crie uma senha segura. Depois, revise os termos e configure seu workspace."
-      eyebrow="Nova conta"
-      title="Organize a operação desde a origem."
+      description="Defina e-mail e senha. Em seguida, confirme o e-mail e configure o workspace."
+      eyebrow="Criar conta"
+      title="Comece a organizar sua operação."
     >
       <PasswordForm mode="signup" nextPath="/onboarding" status={status} />
     </AuthShell>

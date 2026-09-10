@@ -48,6 +48,6 @@ for (const protectedRoute of [
     await page.goto(protectedRoute);
 
     await expect(page).toHaveURL(/\/login\?next=/);
-    await expect(page.getByRole("heading", { name: /entre para cuidar/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /entre no seu workspace/i })).toBeVisible();
   });
 }

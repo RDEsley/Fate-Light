@@ -139,19 +139,21 @@ export function PasswordForm({
           </div>
         ) : null}
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
-        <SubmitButton
-          className="w-full"
-          idleLabel={isLogin ? "Entrar" : "Criar conta"}
-          pendingLabel={isLogin ? "Entrando…" : "Criando conta…"}
-        />
+        <div className="pt-1">
+          <SubmitButton
+            className="auth-shell__submit w-full"
+            idleLabel={isLogin ? "Entrar" : "Criar conta"}
+            pendingLabel={isLogin ? "Entrando…" : "Criando conta…"}
+          />
+        </div>
       </form>
-      <p className="text-muted mt-4 text-center text-sm leading-6">
+      <p className="text-muted mt-5 text-center text-sm leading-6">
         {isLogin ? "Ainda não tem uma conta?" : "Já possui uma conta?"}{" "}
         <Link
           className="text-brand-strong font-semibold underline-offset-4 hover:underline"
           href={isLogin ? "/cadastro" : "/login"}
         >
-          {isLogin ? "Cadastre-se" : "Entrar"}
+          {isLogin ? "Criar conta" : "Entrar"}
         </Link>
       </p>
     </>

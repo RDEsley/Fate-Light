@@ -7,18 +7,18 @@ import { Icon, type IconName } from "@/components/ui/icon";
 const highlights: { description: string; icon: IconName; title: string }[] = [
   {
     icon: "bell",
-    title: "Atenção no que vence",
-    description: "Cobranças, despesas e domínios aparecem antes de virarem urgência.",
+    title: "Vencimentos sob controle",
+    description: "Cobranças, despesas e domínios aparecem com antecedência, antes da urgência.",
   },
   {
     icon: "wallet",
-    title: "Valores sem confusão",
-    description: "Receita própria e verba de mídia ficam visualmente separadas.",
+    title: "Receitas separadas",
+    description: "Receita própria e verba de mídia permanecem distintas na operação e nos totais.",
   },
   {
     icon: "users",
-    title: "Operação no contexto",
-    description: "Cada registro continua ligado ao cliente e ao seu workspace.",
+    title: "Contexto por cliente",
+    description: "Cada lançamento fica ligado ao cliente e ao workspace, sem misturar contas.",
   },
 ];
 
@@ -30,15 +30,12 @@ export default function Home() {
           <BrandMark />
           <div className="flex items-center gap-2">
             <Link
-              className="hover:bg-brand-soft min-h-11 rounded-xl px-4 py-3 text-sm font-black"
+              className="text-foreground hover:bg-brand-soft min-h-11 rounded-xl px-4 py-3 text-sm font-semibold"
               href="/login"
             >
               Entrar
             </Link>
-            <Link
-              className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-4 py-2.5 text-sm font-black shadow-[2px_2px_0_rgba(37,50,58,.14)]"
-              href="/cadastro"
-            >
+            <Link className="landing-cta landing-cta--primary min-h-11 px-4 py-2.5 text-sm" href="/cadastro">
               Criar conta
             </Link>
           </div>
@@ -48,24 +45,20 @@ export default function Home() {
           <div className="relative z-10">
             <span aria-hidden="true" className="landing-feather landing-feather--one" />
             <span aria-hidden="true" className="landing-feather landing-feather--two" />
-            <span aria-hidden="true" className="landing-feather landing-feather--three" />
-            <p className="bg-warning-soft text-warning border-warning/25 inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5 text-xs font-black">
-              <Icon className="size-4" name="sparkles" /> Gestão financeira sem cara de planilha
-            </p>
             <LandingHeroTitle />
-            <p className="text-muted mt-6 max-w-2xl text-lg leading-8">
-              A Fate Light reúne clientes, cobranças, despesas e vencimentos em uma experiência
-              clara, visual e gostosa de usar. Clareza financeira. Caminho Certo.
+            <p className="text-muted mt-6 max-w-xl text-lg leading-8">
+              Clientes, cobranças, despesas e vencimentos em um workspace claro — para operar com
+              confiança no dia a dia. Clareza financeira. Caminho certo.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                className="bg-brand text-brand-contrast border-brand-strong flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-6 font-black shadow-[3px_3px_0_rgba(37,50,58,.14)]"
+                className="landing-cta landing-cta--primary flex min-h-12 items-center justify-center gap-2 px-6"
                 href="/cadastro"
               >
                 Começar agora <Icon className="size-4 -rotate-90" name="arrow-down" />
               </Link>
               <Link
-                className="cartoon-card flex min-h-12 items-center justify-center px-6 font-black"
+                className="landing-cta landing-cta--secondary flex min-h-12 items-center justify-center px-6"
                 href="/login"
               >
                 Já tenho uma conta
@@ -73,31 +66,28 @@ export default function Home() {
             </div>
           </div>
 
-          <aside className="relative mx-auto w-full max-w-xl">
-            <span className="border-violet/25 absolute -top-12 -right-10 size-32 rounded-full border-2 border-dashed" />
-            <div className="cartoon-card relative overflow-hidden bg-white p-5 sm:p-7">
-              <div className="flex items-center justify-between border-b pb-4">
+          <aside className="landing-preview relative mx-auto w-full max-w-xl">
+            <div className="landing-preview__panel">
+              <div className="landing-preview__header">
                 <div>
-                  <p className="font-black">Hoje na sua operação</p>
-                  <p className="text-muted text-xs">Clareza antes da correria</p>
+                  <p className="text-[0.95rem] font-semibold tracking-[-0.02em]">Resumo operacional</p>
+                  <p className="text-muted mt-0.5 text-xs">Visão do que merece atenção hoje</p>
                 </div>
-                <span className="bg-positive-soft text-positive rounded-full px-3 py-1 text-xs font-black">
-                  Em ordem
-                </span>
+                <span className="landing-preview__status">Em ordem</span>
               </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="landing-preview__grid">
                 {highlights.map((item, index) => (
                   <article
-                    className={`${index === 0 ? "sm:col-span-2" : ""} rounded-2xl border-2 border-slate-700/10 bg-[#f8f8f3] p-4`}
+                    className={`landing-preview__card${index === 0 ? " landing-preview__card--wide" : ""}`}
                     key={item.title}
                   >
-                    <span
-                      className={`${["bg-negative-soft text-negative", "bg-brand-soft text-brand-strong", "bg-violet-soft text-violet"][index]} grid size-10 place-items-center rounded-xl`}
-                    >
+                    <span className={`landing-preview__icon landing-preview__icon--${index}`}>
                       <Icon name={item.icon} />
                     </span>
-                    <h2 className="mt-4 font-black">{item.title}</h2>
-                    <p className="text-muted mt-1 text-sm leading-6">{item.description}</p>
+                    <div className="min-w-0">
+                      <h2 className="text-[0.95rem] font-semibold tracking-[-0.015em]">{item.title}</h2>
+                      <p className="text-muted mt-1 text-sm leading-6">{item.description}</p>
+                    </div>
                   </article>
                 ))}
               </div>
