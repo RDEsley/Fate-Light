@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import Link from "next/link";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -18,18 +19,18 @@ describe("ProductTour", () => {
     render(
       <>
         <nav aria-label="Navegação principal">
-          <a data-tour="nav-dashboard" href="/dashboard">
+          <Link data-tour="nav-dashboard" href="/dashboard">
             Visão geral
-          </a>
-          <a data-tour="nav-clientes" href="/clientes">
+          </Link>
+          <Link data-tour="nav-clientes" href="/clientes">
             Clientes
-          </a>
-          <a data-tour="nav-servicos" href="/servicos">
+          </Link>
+          <Link data-tour="nav-servicos" href="/servicos">
             Serviços
-          </a>
-          <a data-tour="nav-cobrancas" href="/cobrancas">
+          </Link>
+          <Link data-tour="nav-cobrancas" href="/cobrancas">
             Cobranças
-          </a>
+          </Link>
           <details data-tour="notifications">
             <summary>Notificações</summary>
           </details>
