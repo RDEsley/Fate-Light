@@ -101,7 +101,7 @@ Tudo fica ligado ao contexto certo, evitando clientes em uma planilha, domínios
 
 | Área              | Recursos                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------- |
-| 📊 **Dashboard**  | Receitas, despesas, resultado, clientes ativos, empresas/marcas e próximos vencimentos |
+| 📊 **Dashboard**  | Receitas, despesas, resultado, clientes ativos, empresas/marcas, vencimentos e tour de abas no menu |
 | 👥 **Clientes**   | Cadastro, situação comercial, empresas/marcas, histórico, links e arquivamento         |
 | 🧩 **Serviços**   | Serviços únicos ou recorrentes, parcelas, promoções, pausas, encerramento e reajustes  |
 | 💳 **Cobranças**  | Vencimentos, pagamentos, recorrência automática e acompanhamento por cliente           |
