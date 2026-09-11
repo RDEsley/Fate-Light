@@ -82,7 +82,7 @@ describe("workspace configuration action", () => {
       "update_current_workspace_configuration",
       expect.objectContaining({
         p_address_city: "Recife",
-        p_default_alert_offsets: [30, 7, 1],
+        p_default_alert_offsets: [1, 7, 30],
         p_tax_id: "12345678000195",
         p_timezone: "America/Recife",
         p_workspace_name: "Workspace Atualizado",

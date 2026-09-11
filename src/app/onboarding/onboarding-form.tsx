@@ -135,7 +135,7 @@ export function OnboardingForm({
         <div className="mt-5">
           <p className="field__label">Antecedência padrão dos alertas</p>
           <div className="mt-3 flex flex-wrap gap-4">
-            {[30, 15, 7, 1].map((days) => (
+            {[1, 7, 15, 30].map((days) => (
               <label className="inline-flex items-center gap-2 text-sm" key={days}>
                 <input defaultChecked name="alertOffsets" type="checkbox" value={days} />
                 {days} {days === 1 ? "dia" : "dias"}

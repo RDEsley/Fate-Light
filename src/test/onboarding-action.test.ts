@@ -87,7 +87,7 @@ describe("onboarding action", () => {
       "bootstrap_identity_workspace",
       expect.objectContaining({
         p_accepted_legal_document_ids: onboardingMocks.legalDocuments.map(({ id }) => id),
-        p_default_alert_offsets: [30, 15, 7, 1],
+        p_default_alert_offsets: [1, 7, 15, 30],
         p_tax_id: "12345678000195",
         p_workspace_name: "Empresa Exemplo",
       }),
