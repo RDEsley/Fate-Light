@@ -1,6 +1,6 @@
 {
   "name": "fate-light",
-  "version": "0.9.1",
+  "version": "0.9.3",
   "private": true,
   "type": "module",
   "packageManager": "npm@11.16.0",

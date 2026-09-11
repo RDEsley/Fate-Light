@@ -4,7 +4,7 @@
  */
 
 /** Usado quando o workspace ainda não tem preferência salva. */
-export const fallbackAlertOffsets = [30, 15, 7, 1];
+export const fallbackAlertOffsets = [1, 7, 15, 30];
 
 /**
  * Janela de antecedência efetiva do workspace. O maior offset escolhido define até onde

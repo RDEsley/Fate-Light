@@ -10,7 +10,7 @@ import { initialActionState } from "@/lib/forms/action-state";
 
 import { updateAlertPreferences } from "./actions";
 
-const options = [60, 30, 15, 7, 3, 1, 0] as const;
+const options = [0, 1, 3, 7, 15, 30, 60] as const;
 
 function optionLabel(days: number) {
   if (days === 0) return "No dia";
@@ -71,7 +71,9 @@ export function AlertPreferences({ offsets }: { offsets: number[] }) {
         <p className="helper-note">
           <Icon className="size-4 shrink-0" name="info" />
           {selected.length
-            ? `O radar enxerga até ${horizon} dia(s) à frente. Nada com vencimento além disso aparece nos alertas.`
+            ? horizon === 0
+              ? "O radar mostra os itens no próprio dia do vencimento."
+              : `O radar enxerga até ${optionLabel(horizon)} à frente. Nada com vencimento além disso aparece nos alertas.`
             : "Sem nenhuma opção marcada você não recebe aviso nenhum. Escolha ao menos uma."}
         </p>
         <div className="flex justify-end">

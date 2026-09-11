@@ -12,7 +12,7 @@ const onboardingSchema = z.object({
   alertOffsets: z
     .array(z.coerce.number().int().min(0).max(365))
     .min(1)
-    .transform((values) => [...new Set(values)]),
+    .transform((values) => [...new Set(values)].sort((left, right) => left - right)),
   currency: z.literal("BRL"),
   dateFormat: z.literal("DD/MM/YYYY"),
   fullName: z.string().trim().min(2).max(120),

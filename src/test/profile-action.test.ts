@@ -25,7 +25,7 @@ vi.mock("@/lib/auth/workspace-context", () => ({
   })),
 }));
 
-import { updateProfile } from "@/app/perfil/actions";
+import { updateAlertPreferences, updateProfile } from "@/app/perfil/actions";
 import { initialActionState } from "@/lib/forms/action-state";
 
 function profileForm(overrides: Record<string, string> = {}) {
@@ -80,5 +80,16 @@ describe("profile action", () => {
       status: "error",
     });
     expect(profileMocks.update).not.toHaveBeenCalled();
+  });
+
+  it("salva as antecedências sem duplicatas e em ordem crescente", async () => {
+    const formData = new FormData();
+    [30, 1, 7, 1].forEach((days) => formData.append("alertOffsets", String(days)));
+
+    await expect(updateAlertPreferences(initialActionState, formData)).resolves.toMatchObject({
+      status: "success",
+    });
+
+    expect(profileMocks.update).toHaveBeenCalledWith({ default_alert_offsets: [1, 7, 30] });
   });
 });
