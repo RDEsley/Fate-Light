@@ -3,9 +3,11 @@
 import { useActionState } from "react";
 
 import { PasswordRevealField } from "@/app/(auth)/_components/password-reveal-field";
+import { TurnstileField } from "@/app/(auth)/_components/turnstile-field";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { Icon } from "@/components/ui/icon";
+import { publicEnvironment } from "@/config/env/public";
 import { initialActionState } from "@/lib/forms/action-state";
 
 import { changePassword } from "./actions";
@@ -33,7 +35,7 @@ export function ChangePasswordForm() {
           />
         ) : null}
 
-        <div className="profile-form-grid">
+        <div className="change-password-fields">
           <PasswordRevealField
             autoComplete="current-password"
             id="perfil-current-password"
@@ -54,6 +56,8 @@ export function ChangePasswordForm() {
             name="confirmPassword"
           />
         </div>
+
+        <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
 
         <div className="flex justify-end border-t pt-4">
           <SubmitButton idleLabel="Atualizar senha" pendingLabel="Atualizando…" />
