@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { publicEnvironment } from "@/config/env/public";
 import type { ActionState } from "@/lib/forms/action-state";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -64,10 +65,11 @@ const alertOffsetsSchema = z
   .array(z.coerce.number().int().min(0).max(365))
   .min(1)
   .max(7)
-  .transform((values) => [...new Set(values)].sort((left, right) => right - left));
+  .transform((values) => [...new Set(values)].sort((left, right) => left - right));
 
 const changePasswordSchema = z
   .object({
+    captchaToken: z.string().max(4096).optional(),
     confirmPassword: z.string().min(8).max(72),
     currentPassword: z.string().min(8).max(72),
     password: z.string().min(8).max(72),
@@ -81,14 +83,26 @@ const changePasswordSchema = z
     path: ["password"],
   });
 
+function isCaptchaAuthError(message: string | undefined) {
+  const normalized = message?.toLowerCase() ?? "";
+  return (
+    normalized.includes("captcha") ||
+    normalized.includes("turnstile") ||
+    normalized.includes("verification")
+  );
+}
+
 /**
  * Troca de senha autenticada: confirma a senha atual e atualiza sem encerrar a sessão.
+ * A reconfirmação usa `signInWithPassword`, então o Turnstile do Auth precisa acompanhar
+ * quando estiver ativo no projeto Supabase.
  */
 export async function changePassword(
   _previousState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const parsed = changePasswordSchema.safeParse({
+    captchaToken: formData.get("captchaToken") || undefined,
     confirmPassword: formData.get("confirmPassword"),
     currentPassword: formData.get("currentPassword"),
     password: formData.get("password"),
@@ -98,6 +112,13 @@ export async function changePassword(
     return {
       status: "error",
       message: "Revise a senha atual e a confirmação da nova senha.",
+    };
+  }
+
+  if (publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !parsed.data.captchaToken) {
+    return {
+      status: "error",
+      message: "Conclua a verificação de segurança e tente novamente.",
     };
   }
 
@@ -112,9 +133,16 @@ export async function changePassword(
   const { error: currentPasswordError } = await supabase.auth.signInWithPassword({
     email,
     password: parsed.data.currentPassword,
+    options: { captchaToken: parsed.data.captchaToken },
   });
 
   if (currentPasswordError) {
+    if (isCaptchaAuthError(currentPasswordError.message)) {
+      return {
+        status: "error",
+        message: "Conclua a verificação de segurança e tente novamente.",
+      };
+    }
     return { status: "error", message: "A senha atual está incorreta." };
   }
 
@@ -163,6 +191,6 @@ export async function updateAlertPreferences(
   revalidatePath("/dashboard");
   return {
     status: "success",
-    message: `Alertas configurados para avisar com ${parsed.data.join(", ")} dia(s) de antecedência.`,
+    message: `Antecedências salvas: ${parsed.data.map((days) => (days === 0 ? "no dia" : `${days} ${days === 1 ? "dia" : "dias"} antes`)).join(", ")}.`,
   };
 }
