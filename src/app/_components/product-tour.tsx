@@ -122,6 +122,11 @@ export function ProductTour() {
 
   return (
     <div className="tour" role="presentation">
+      <span
+        aria-hidden="true"
+        className="tour__scrim"
+        data-spotlight={spotlight ? "true" : undefined}
+      />
       {spotlight ? (
         <span
           aria-hidden="true"
@@ -133,9 +138,7 @@ export function ProductTour() {
             width: spotlight.width,
           }}
         />
-      ) : (
-        <span aria-hidden="true" className="tour__scrim" />
-      )}
+      ) : null}
 
       <section
         aria-labelledby="tour-title"
