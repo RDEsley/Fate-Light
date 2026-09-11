@@ -41,6 +41,10 @@ describe("ProductTour", () => {
 
     expect(await screen.findByRole("heading", { name: "Tudo começa aqui" })).toBeVisible();
     expect(screen.getByText(/permanece neste painel/i)).toBeVisible();
+    expect(document.querySelector(".tour__scrim")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector(".tour__spotlight")).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole("button", { name: "Próximo" }));
     expect(await screen.findByRole("heading", { name: "Primeiro o cliente" })).toBeVisible();
