@@ -57,9 +57,11 @@ export function ChangePasswordForm() {
           />
         </div>
 
-        <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
+        <div className="change-password-turnstile">
+          <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
+        </div>
 
-        <div className="flex justify-end border-t pt-4">
+        <div className="change-password-actions">
           <SubmitButton idleLabel="Atualizar senha" pendingLabel="Atualizando…" />
         </div>
       </form>
