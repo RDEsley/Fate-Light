@@ -1,15 +1,11 @@
 "use client";
 
-import type { Route } from "next";
-import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 
 type TourStep = {
   description: string;
-  /** Rota visitada antes de destacar o alvo, para o tour mostrar a tela de que fala. */
-  href?: Route;
   icon: IconName;
   /** Valor de `data-tour` do elemento destacado; sem alvo, o passo é centralizado. */
   target?: string;
@@ -19,32 +15,28 @@ type TourStep = {
 const steps: TourStep[] = [
   {
     description:
-      "Este é o seu painel. Ele reúne o que entrou, o que saiu e o que precisa de ação, sempre no período que você escolher.",
-    href: "/dashboard",
+      "Você permanece neste painel durante o tutorial. Aqui entram o que entrou, o que saiu e o que precisa de ação, no período que você escolher.",
     icon: "dashboard",
     target: "nav-dashboard",
     title: "Tudo começa aqui",
   },
   {
     description:
-      "Cadastre o cliente uma vez. É dele que nascem os serviços, e dos serviços nascem as cobranças — você não lança nada duas vezes.",
-    href: "/clientes",
+      "No menu, a aba Clientes é o ponto de partida: cadastre o cliente uma vez. É dele que nascem os serviços, e dos serviços nascem as cobranças.",
     icon: "users",
     target: "nav-clientes",
     title: "Primeiro o cliente",
   },
   {
     description:
-      "Ao aplicar um serviço no card do cliente, o sistema cria a cobrança e já agenda a próxima do ciclo. Essa é a engrenagem principal.",
-    href: "/servicos",
+      "A aba Serviços é a engrenagem principal: ao aplicar um serviço no card do cliente, o sistema cria a cobrança e já agenda a próxima do ciclo.",
     icon: "briefcase",
     target: "nav-servicos",
     title: "Depois o serviço",
   },
   {
     description:
-      "As cobranças aparecem aqui prontas. As pendentes ficam no topo pela ordem de vencimento; ao receber, elas descem para as resolvidas.",
-    href: "/cobrancas",
+      "Em Cobranças elas aparecem prontas. As pendentes ficam no topo pela ordem de vencimento; ao receber, descem para as resolvidas.",
     icon: "receipt",
     target: "nav-cobrancas",
     title: "As cobranças se cuidam",
@@ -58,15 +50,12 @@ const steps: TourStep[] = [
   },
 ];
 
-const storageKey = "fate-light:tour-complete";
-const stepStorageKey = "fate-light:tour-step";
+export const tourCompleteStorageKey = "fate-light:tour-complete";
 const padding = 8;
 
 type Spotlight = { height: number; left: number; top: number; width: number };
 
 export function ProductTour() {
-  const pathname = usePathname();
-  const router = useRouter();
   const [step, setStep] = useState<number | null>(null);
   const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
 
@@ -74,13 +63,8 @@ export function ProductTour() {
     // Adiado por um tick: ler storage antes da hidratação causaria divergência entre o
     // HTML do servidor e o do cliente.
     const timeout = window.setTimeout(() => {
-      if (window.localStorage.getItem(storageKey) === "yes") return;
-      // Não há layout persistente entre as rotas autenticadas: cada navegação remonta
-      // este componente do zero. Sem isso, "Próximo" navegava e o passo voltava pro 1 —
-      // o sessionStorage guarda em qual passo o usuário estava só para esta aba.
-      const saved = window.sessionStorage.getItem(stepStorageKey);
-      const parsed = saved === null ? NaN : Number(saved);
-      setStep(Number.isInteger(parsed) && parsed >= 0 && parsed < steps.length ? parsed : 0);
+      if (window.localStorage.getItem(tourCompleteStorageKey) === "yes") return;
+      setStep(0);
     }, 0);
     return () => window.clearTimeout(timeout);
   }, []);
@@ -88,8 +72,7 @@ export function ProductTour() {
   const current = step === null ? null : steps[step];
 
   const finish = useCallback(() => {
-    window.localStorage.setItem(storageKey, "yes");
-    window.sessionStorage.removeItem(stepStorageKey);
+    window.localStorage.setItem(tourCompleteStorageKey, "yes");
     setStep(null);
   }, []);
 
@@ -114,7 +97,6 @@ export function ProductTour() {
 
   useEffect(() => {
     if (step === null) return;
-    // Remedir depois da navegação: o alvo do passo pode só existir na tela de destino.
     const frame = window.requestAnimationFrame(measure);
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
@@ -123,7 +105,7 @@ export function ProductTour() {
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [measure, pathname, step]);
+  }, [measure, step]);
 
   useEffect(() => {
     if (step === null) return;
@@ -135,13 +117,6 @@ export function ProductTour() {
   }, [finish, step]);
 
   if (step === null || !current) return null;
-
-  const goTo = (next: number) => {
-    window.sessionStorage.setItem(stepStorageKey, String(next));
-    const destination = steps[next];
-    if (destination?.href && destination.href !== pathname) router.push(destination.href);
-    setStep(next);
-  };
 
   const last = step === steps.length - 1;
 
@@ -199,13 +174,13 @@ export function ProductTour() {
           </button>
           <div className="flex gap-2">
             {step > 0 ? (
-              <button className="modal-cancel" onClick={() => goTo(step - 1)} type="button">
+              <button className="modal-cancel" onClick={() => setStep(step - 1)} type="button">
                 Voltar
               </button>
             ) : null}
             <button
               className="modal-confirm"
-              onClick={() => (last ? finish() : goTo(step + 1))}
+              onClick={() => (last ? finish() : setStep(step + 1))}
               type="button"
             >
               {last ? "Começar a usar" : "Próximo"}
