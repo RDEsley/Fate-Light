@@ -22,10 +22,15 @@ if (generation.status !== 0) {
 }
 
 function normalizeGeneratedTypes(output) {
-  return output.replace(
-    /  \/\/ Allows to automatically instantiate createClient[\s\S]*?  __InternalSupabase: \{\r?\n    PostgrestVersion: "[^"]+"\r?\n  \}\r?\n/,
-    "",
-  );
+  return output
+    .replace(
+      /  \/\/ Allows to automatically instantiate createClient[\s\S]*?  __InternalSupabase: \{\r?\n    PostgrestVersion: "[^"]+"\r?\n  \}\r?\n/,
+      "",
+    )
+    .replace(
+      /(\r?\n  (?:TableName|EnumName|CompositeTypeName) extends) \(([\s\S]*?\r?\n    : never)\) = never,/g,
+      "$1 $2 = never,",
+    );
 }
 
 const generated = [
