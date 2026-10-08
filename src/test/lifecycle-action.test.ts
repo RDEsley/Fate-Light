@@ -15,12 +15,12 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { requestAccountDeletion, requestDataExport } from "@/app/perfil/lifecycle-actions";
+import { accountDeletionPhrase } from "@/features/account/lifecycle";
 import { initialActionState } from "@/lib/forms/action-state";
 
-function deletionForm(confirmation = "EXCLUIR MINHA CONTA", acknowledged = true) {
+function deletionForm(confirmation = accountDeletionPhrase) {
   const formData = new FormData();
   formData.set("confirmation", confirmation);
-  if (acknowledged) formData.set("acknowledged", "on");
   return formData;
 }
 
@@ -61,9 +61,16 @@ describe("account lifecycle actions", () => {
   });
 
   it("rejeita exclusão sem confirmação reforçada", async () => {
-    const result = await requestAccountDeletion(initialActionState, deletionForm("excluir", false));
-
-    expect(result).toMatchObject({ status: "error" });
+    // A frase antiga, uma frase parcial e o formulário sem frase são todos recusados
+    // antes de qualquer consulta: o servidor não confia no bloqueio do diálogo.
+    for (const form of [
+      deletionForm("excluir"),
+      deletionForm("EXCLUIR MINHA CONTA"),
+      new FormData(),
+    ]) {
+      const result = await requestAccountDeletion(initialActionState, form);
+      expect(result).toMatchObject({ status: "error" });
+    }
     expect(lifecycleMocks.claims).not.toHaveBeenCalled();
     expect(lifecycleMocks.rpc).not.toHaveBeenCalled();
   });

@@ -62,7 +62,6 @@ export function TransferClientPanel({
 
       {preview ? (
         <form action={confirmAction} className="grid gap-3">
-          <input name="confirmation" type="hidden" value={transferPhrase} />
           <input name="sourceClientId" type="hidden" value={sourceClientId} />
           <input name="targetClientId" type="hidden" value={preview.target.id} />
           <section className="consolidation-preview" aria-live="polite">
@@ -127,6 +126,7 @@ export function TransferClientPanel({
               holdSeconds={3}
               icon="archive"
               label="Transferir dados"
+              phraseFieldName="confirmation"
               requiredPhrase={transferPhrase}
               title={`Transferir dados de ${preview.source.name}`}
             />

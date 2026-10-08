@@ -98,7 +98,6 @@ export function ConsolidateClientPanel({
 
       {preview ? (
         <form action={confirmAction} className="grid gap-3">
-          <input name="confirmation" type="hidden" value={consolidationPhrase} />
           <input name="displayName" type="hidden" value={displayName || preview.source.name} />
           <input name="entityType" type="hidden" value={entityType} />
           <input name="sourceClientId" type="hidden" value={preview.source.id} />
@@ -152,6 +151,7 @@ export function ConsolidateClientPanel({
               holdSeconds={3}
               icon="archive"
               label="Consolidar cliente"
+              phraseFieldName="confirmation"
               requiredPhrase={consolidationPhrase}
               title={`Consolidar ${preview.source.name}`}
             />

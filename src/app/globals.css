@@ -1704,16 +1704,6 @@ summary::-webkit-details-marker {
   text-transform: uppercase;
 }
 
-/* Neutro de propósito: o box não deve parecer perigoso só por conter uma opção
-   de exclusão fechada — o alerta fica reservado ao botão que de fato apaga algo. */
-.danger-zone {
-  border: 1px solid var(--line);
-  border-radius: 1rem;
-  background: var(--surface);
-  box-shadow: var(--shadow-panel);
-  padding: 1rem;
-}
-
 .danger-action {
   min-height: 2.75rem;
   border: 2px solid color-mix(in srgb, var(--negative) 72%, var(--ink));
@@ -2568,33 +2558,6 @@ summary::-webkit-details-marker {
 .settings-tabs__item[aria-current="page"] .settings-tabs__icon {
   background: var(--surface-raised);
   color: var(--brand-strong);
-}
-
-.danger-zone__items {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.danger-zone__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.85rem;
-}
-
-.danger-zone__row strong {
-  display: block;
-  font-size: 0.88rem;
-  font-weight: 900;
-}
-
-.danger-zone__row p {
-  margin-top: 0.2rem;
-  max-width: 42rem;
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.5;
 }
 
 .lifecycle-request {
