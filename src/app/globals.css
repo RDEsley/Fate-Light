@@ -29,7 +29,7 @@
   --brand-contrast: #ffffff;
   --positive: #087044;
   --positive-soft: #e0f6e8;
-  --negative: #d64f4a;
+  --negative: #bf3833;
   --negative-soft: #fde8e5;
   --warning: #995307;
   --warning-soft: #fff0d2;
@@ -199,7 +199,7 @@ input:disabled {
 
 input:user-invalid,
 textarea:user-invalid {
-  border-color: rgb(214 79 74 / 0.65);
+  border-color: rgb(191 56 51 / 0.65);
 }
 
 ::selection {
@@ -1448,12 +1448,12 @@ summary::-webkit-details-marker {
 .field[data-invalid="true"] :is(input, select, textarea, .select-field__trigger):focus,
 .field[data-invalid="true"] .client-combobox__control:focus-within {
   border-color: var(--negative);
-  box-shadow: 0 0 0 3px rgb(214 79 74 / 0.16);
+  box-shadow: 0 0 0 3px rgb(191 56 51 / 0.16);
 }
 
 /* O anel de foco acompanha o estado: verde num campo recusado contradiz a borda. */
 .field[data-invalid="true"] :is(input, select, textarea, .select-field__trigger):focus-visible {
-  outline-color: rgb(214 79 74 / 0.3);
+  outline-color: rgb(191 56 51 / 0.3);
 }
 
 /* O campo recusado dá uma sacudida curta quando a marca aparece: junto com a borda e a
@@ -2559,7 +2559,7 @@ summary::-webkit-details-marker {
 }
 
 .settings-tabs__item[aria-current="page"] small {
-  color: color-mix(in srgb, var(--brand-strong) 70%, transparent);
+  color: var(--brand-strong);
 }
 
 .settings-tabs__icon {
@@ -3891,11 +3891,12 @@ summary.action-row__head {
   font-weight: 600;
 }
 
-.service-card__facts small {
-  display: block;
+/* Observação do valor: um segundo <dd> do mesmo grupo, para a lista continuar válida. */
+.service-card__facts .service-card__note {
   margin-top: 0.1rem;
   color: var(--muted);
   font-size: 0.72rem;
+  font-weight: 400;
   line-height: 1.35;
 }
 

@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
+import Link from "next/link";
 
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
@@ -13,6 +14,12 @@ import { CatalogServiceCard } from "./catalog-service-card";
 import { ServiceCatalogForm } from "./service-catalog-form";
 
 export const metadata: Metadata = { title: "Serviços" };
+
+const stateFilters = [
+  ["active", "Ativos"],
+  ["inactive", "Inativos"],
+  ["all", "Todos"],
+] as const;
 
 export default async function ServicesPage({
   searchParams,
@@ -55,8 +62,8 @@ export default async function ServicesPage({
       title="Catálogo de serviços"
     >
       <MvpStatusMessage status={parameters.status} />
-      <form className="panel-card mb-4 flex flex-col gap-3 p-3! sm:flex-row" method="get">
-        <label className="relative flex-1">
+      <form className="panel-card mb-4 grid gap-3 p-3! sm:grid-cols-[1fr_auto]" method="get">
+        <label className="relative">
           <span className="sr-only">Buscar serviços</span>
           <Icon
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -69,18 +76,27 @@ export default async function ServicesPage({
             placeholder="Nome ou descrição..."
           />
         </label>
-        <select
-          className="min-h-11 rounded-xl px-3 text-sm sm:w-40"
-          defaultValue={state}
-          name="state"
-        >
-          <option value="active">Ativos</option>
-          <option value="inactive">Inativos</option>
-          <option value="all">Todos</option>
-        </select>
+        {state !== "active" ? <input name="state" type="hidden" value={state} /> : null}
         <button className="button button--primary" type="submit">
           Filtrar
         </button>
+        <nav aria-label="Filtrar serviços" className="client-filter-pills sm:col-span-2">
+          {stateFilters.map(([value, label]) => {
+            const next = new URLSearchParams();
+            if (query) next.set("q", query);
+            if (value !== "active") next.set("state", value);
+            const suffix = next.toString();
+            return (
+              <Link
+                aria-current={state === value ? "page" : undefined}
+                href={`/servicos${suffix ? `?${suffix}` : ""}` as Route}
+                key={value}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
       </form>
 
       <FormPanel
