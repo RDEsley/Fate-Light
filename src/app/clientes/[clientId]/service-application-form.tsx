@@ -361,7 +361,6 @@ export function ServiceApplicationForm({
       <FormMore
         defaultOpen={editing}
         description="Desconto, parcelas, promoção, reajuste e repasses"
-        icon="palette"
         title="Personalizar preço e agenda"
       >
         <FormSection title="Desconto e parcelas">
