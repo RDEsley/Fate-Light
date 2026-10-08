@@ -394,3 +394,12 @@ describe("mensagens das restrições do navegador", () => {
     expect(screen.getByLabelText("Frase de confirmação")).toHaveFocus();
   });
 });
+
+describe("nome acessível dos campos", () => {
+  it("separa o rótulo da marca de opcional", () => {
+    render(<TextField label="E-mail" name="email" optional />);
+
+    // Sem o espaço o leitor de tela anunciava "E-mailopcional" e a busca por rótulo falhava.
+    expect(screen.getByLabelText("E-mail opcional")).toBeInTheDocument();
+  });
+});
