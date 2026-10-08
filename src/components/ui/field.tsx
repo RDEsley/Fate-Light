@@ -50,6 +50,8 @@ export function Field({
       <div className="field__head">
         <label className="field__label" htmlFor={htmlFor}>
           {label}
+          {/* O espaço separa as palavras no nome acessível: "E-mail opcional". */}
+          {optional ? " " : null}
           {optional ? <span className="field__optional">opcional</span> : null}
         </label>
         {hint ? <FieldHint>{hint}</FieldHint> : null}
