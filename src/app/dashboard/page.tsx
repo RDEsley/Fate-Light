@@ -228,7 +228,7 @@ export default async function DashboardPage({
                 <p className="text-xs font-black tracking-[.12em] uppercase">Precisa de atenção</p>
                 <h2 className="mt-1 text-xl font-black" id="attention-title">
                   {attentionTotal
-                    ? `${attentionTotal} item${attentionTotal === 1 ? "" : "s"} no seu radar`
+                    ? `${attentionTotal} ${attentionTotal === 1 ? "item" : "itens"} no seu radar`
                     : "Nenhuma urgência agora"}
                 </h2>
                 <p className="text-muted mt-1 text-sm">
@@ -526,9 +526,7 @@ function QuickAction({
         <Icon className="size-4" name={icon} />
       </span>
       <span>{label}</span>
-      <span aria-hidden="true" className="text-muted ml-auto">
-        →
-      </span>
+      <Icon className="text-muted ml-auto size-4" name="chevron-right" />
     </Link>
   );
 }
@@ -573,7 +571,10 @@ function expenseAlert(expense: ExpenseRow): AlertItem {
     href: `/despesas?state=pending#expense-${expense.id}` as Route,
     id: expense.id,
     meta: `${formatCurrency(expense.amount)} · ${formatDatePtBr(expense.due_date)}`,
-    title: `${ownerLabel(expense.clients?.name, expense.client_entities?.display_name)} — ${expense.description}`,
+    // Despesa da própria empresa não tem cliente: mostrar "Cliente —" inventava um dono.
+    title: expense.clients?.name
+      ? `${ownerLabel(expense.clients.name, expense.client_entities?.display_name)} — ${expense.description}`
+      : expense.description,
   };
 }
 

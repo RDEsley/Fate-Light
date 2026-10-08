@@ -2231,14 +2231,20 @@ summary::-webkit-details-marker {
   font-weight: 700;
 }
 
+.client-detail-grid > div {
+  min-width: 0;
+}
+
 .client-detail-grid dd {
   margin-top: 0.2rem;
   font-size: 0.9rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .client-detail-link {
   display: inline-flex;
+  max-width: 100%;
   align-items: center;
   color: var(--brand-strong);
   gap: 0.3rem;
