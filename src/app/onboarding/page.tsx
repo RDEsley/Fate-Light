@@ -1,13 +1,33 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { signOut } from "@/app/(auth)/actions";
 import { BrandMark } from "@/components/brand-mark";
+import { Icon, type IconName } from "@/components/ui/icon";
 import { requireAccountPage } from "@/lib/auth/page-guard";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 import { OnboardingForm } from "./onboarding-form";
 
-export const metadata: Metadata = { title: "Configurar workspace" };
+export const metadata: Metadata = { title: "Boas-vindas" };
+
+const nextSteps: { icon: IconName; text: string; title: string }[] = [
+  {
+    icon: "users",
+    text: "É dele que nascem os serviços e as cobranças.",
+    title: "Cadastre o primeiro cliente",
+  },
+  {
+    icon: "briefcase",
+    text: "A cobrança é criada na hora e a próxima já fica agendada.",
+    title: "Aplique um serviço",
+  },
+  {
+    icon: "bell",
+    text: "Vencimentos e domínios aparecem antes de virar problema.",
+    title: "Acompanhe os alertas",
+  },
+];
 
 export default async function OnboardingPage() {
   await requireAccountPage("onboarding");
@@ -15,7 +35,7 @@ export default async function OnboardingPage() {
   const [{ data: legalDocuments, error }, { data: authData }] = await Promise.all([
     supabase
       .from("legal_documents")
-      .select("id, document_type, version, content_markdown")
+      .select("id, document_type, version")
       .eq("status", "published")
       .eq("is_required", true)
       .lte("effective_at", new Date().toISOString())
@@ -32,38 +52,47 @@ export default async function OnboardingPage() {
     typeof metadataDisplayName === "string" ? metadataDisplayName.trim().slice(0, 120) : "";
 
   return (
-    <main className="bg-canvas text-foreground min-h-screen">
-      <div className="mx-auto w-full max-w-5xl px-6 py-6 sm:px-10 lg:px-12">
-        <header className="border-line flex items-center justify-between gap-4 border-b pb-5">
+    <main className="onboarding text-foreground">
+      <div className="onboarding__inner">
+        <header className="onboarding__top">
           <BrandMark />
-          <span className="bg-positive-soft text-positive rounded-full px-3 py-1.5 text-xs font-black">
-            Acesso confirmado
-          </span>
+          <form action={signOut}>
+            <button className="button button--ghost button--small" type="submit">
+              <Icon className="size-4" name="logout" /> Sair
+            </button>
+          </form>
         </header>
 
-        <section className="py-10">
-          <p className="text-brand-strong text-sm font-black tracking-[0.14em] uppercase">
-            Primeiros passos · 4 etapas
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-[-0.03em]">
-            Prepare seu workspace com contexto.
-          </h1>
-          <p className="text-muted mt-4 max-w-3xl leading-7">
-            Confirme seus dados, preferências e as versões legais vigentes. O e-mail já foi
-            verificado e não será duplicado no perfil.
-          </p>
-          <p className="border-line bg-surface text-muted mt-5 rounded-xl border px-4 py-3 text-sm">
-            Ambiente local: os documentos atuais são placeholders fictícios e não possuem validade
-            jurídica. A produção exige versões revisadas.
-          </p>
+        <div className="onboarding__layout">
+          <section className="onboarding__intro">
+            <p className="onboarding__badge">
+              <Icon className="size-4" name="check-circle" /> Conta confirmada
+            </p>
+            <h1>Vamos preparar o seu espaço.</h1>
+            <p className="onboarding__lead">
+              Leva menos de um minuto. Só o seu nome e o da empresa são obrigatórios — o resto você
+              ajusta quando quiser.
+            </p>
+            <div className="onboarding__next">
+              <p>Depois daqui</p>
+              <ol>
+                {nextSteps.map((step) => (
+                  <li key={step.title}>
+                    <span>
+                      <Icon className="size-4" name={step.icon} />
+                    </span>
+                    <div>
+                      <strong>{step.title}</strong>
+                      <small>{step.text}</small>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
 
-          <div className="panel-card mt-8">
-            <OnboardingForm
-              initialDisplayName={initialDisplayName}
-              legalDocuments={legalDocuments}
-            />
-          </div>
-        </section>
+          <OnboardingForm initialDisplayName={initialDisplayName} legalDocuments={legalDocuments} />
+        </div>
       </div>
     </main>
   );

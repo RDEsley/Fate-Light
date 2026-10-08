@@ -30,13 +30,11 @@ describe("account forms", () => {
         initialDisplayName="Empresa Exemplo"
         legalDocuments={[
           {
-            content_markdown: "Termos fictícios",
             document_type: "terms_of_use",
             id: "10000000-0000-4000-8000-000000000001",
             version: "dev-1",
           },
           {
-            content_markdown: "Política fictícia",
             document_type: "privacy_policy",
             id: "10000000-0000-4000-8000-000000000002",
             version: "dev-1",
@@ -50,7 +48,41 @@ describe("account forms", () => {
     acceptances.forEach((acceptance) => expect(acceptance).toBeRequired());
     expect(screen.queryByLabelText(/avatar|foto/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/nome completo/i)).toHaveValue("Empresa Exemplo");
-    expect(screen.getByLabelText(/nome do workspace/i)).toHaveValue("Empresa Exemplo");
+    expect(screen.getByLabelText(/nome da empresa/i)).toHaveValue("Empresa Exemplo");
+  });
+
+  it("pede só nome e empresa no onboarding e recolhe o que é opcional", () => {
+    render(
+      <OnboardingForm
+        legalDocuments={[
+          {
+            document_type: "terms_of_use",
+            id: "10000000-0000-4000-8000-000000000001",
+            version: "1.0",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByLabelText(/nome completo/i)).toBeRequired();
+    expect(screen.getByLabelText(/nome da empresa/i)).toBeRequired();
+    for (const label of [/telefone/i, /razão social/i, /nome fantasia/i, /cpf ou cnpj/i]) {
+      expect(screen.getByLabelText(label)).not.toBeRequired();
+    }
+    // Dados fiscais e preferências ficam recolhidos: têm padrão e não travam o cadastro.
+    expect(screen.getByText("Dados fiscais").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("Personalizar preferências").closest("details")).not.toHaveAttribute(
+      "open",
+    );
+    // Moeda, tema e formato de data deixaram de ser campos: o servidor fixa os valores.
+    for (const name of ["currency", "theme", "dateFormat"]) {
+      expect(document.querySelector(`[name="${name}"]`)).toBeNull();
+    }
+    expect(screen.getAllByRole("checkbox", { name: /dia/i })).toHaveLength(4);
+    expect(screen.getByRole("link", { name: /ler os termos de uso/i })).toHaveAttribute(
+      "href",
+      "/termos",
+    );
   });
 
   it("mostra e-mail somente leitura e preferências textuais no perfil", () => {

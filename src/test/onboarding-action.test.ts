@@ -112,7 +112,76 @@ describe("onboarding action", () => {
   it("rejeita documento fiscal inválido sem persistir dados", async () => {
     const result = await bootstrapAccount(initialActionState, onboardingForm({ taxId: "123" }));
 
-    expect(result).toMatchObject({ status: "error", message: expect.stringMatching(/11 ou 14/i) });
+    expect(result).toMatchObject({
+      fieldErrors: { taxId: expect.stringMatching(/11 ou 14/i) },
+      message: expect.stringMatching(/11 ou 14/i),
+      status: "error",
+    });
     expect(onboardingMocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("conclui só com nome, empresa e aceites, aplicando os padrões no servidor", async () => {
+    const formData = new FormData();
+    formData.set("fullName", "Pessoa Responsável");
+    formData.set("workspaceName", "Estúdio Exemplo");
+    onboardingMocks.legalDocuments.forEach(({ id }) => formData.append("legalDocumentIds", id));
+    // Valores fixos não vêm mais do formulário: mesmo enviados, são ignorados.
+    formData.set("currency", "USD");
+    formData.set("theme", "dark");
+    formData.set("dateFormat", "YYYY-MM-DD");
+
+    await expect(bootstrapAccount(initialActionState, formData)).rejects.toThrow(
+      "REDIRECT:/dashboard",
+    );
+
+    expect(onboardingMocks.rpc).toHaveBeenCalledWith("bootstrap_identity_workspace", {
+      p_accepted_legal_document_ids: onboardingMocks.legalDocuments.map(({ id }) => id),
+      p_accounting_basis: "cash",
+      p_currency: "BRL",
+      p_date_format: "DD/MM/YYYY",
+      p_default_alert_offsets: [1, 7, 15, 30],
+      p_full_name: "Pessoa Responsável",
+      p_legal_name: "Estúdio Exemplo",
+      p_locale: "pt-BR",
+      p_phone: undefined,
+      p_tax_id: undefined,
+      p_theme: "light",
+      p_timezone: "America/Sao_Paulo",
+      p_trade_name: undefined,
+      p_workspace_name: "Estúdio Exemplo",
+    });
+  });
+
+  it("aponta o campo exato e devolve o que foi digitado quando algo falta", async () => {
+    const result = await bootstrapAccount(
+      initialActionState,
+      onboardingForm({ fullName: "A", legalDocumentIds: [], phone: "123", workspaceName: "" }),
+    );
+
+    expect(result.status).toBe("error");
+    expect(Object.keys(result.fieldErrors ?? {}).sort()).toEqual([
+      "acceptedLegalDocumentIds",
+      "fullName",
+      "phone",
+      "workspaceName",
+    ]);
+    expect(result.values?.phone).toEqual(["123"]);
+    expect(onboardingMocks.claims).not.toHaveBeenCalled();
+    expect(onboardingMocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("não cria nada sem sessão e preserva o formulário se a RPC falhar", async () => {
+    onboardingMocks.claims.mockResolvedValue({ data: { claims: {} }, error: null });
+    await expect(bootstrapAccount(initialActionState, onboardingForm())).resolves.toMatchObject({
+      message: expect.stringMatching(/sessão expirou/i),
+      status: "error",
+    });
+    expect(onboardingMocks.rpc).not.toHaveBeenCalled();
+
+    onboardingMocks.claims.mockResolvedValue({ data: { claims: { sub: "user-id" } }, error: null });
+    onboardingMocks.rpc.mockResolvedValue({ data: null, error: { message: "falhou" } });
+    const result = await bootstrapAccount(initialActionState, onboardingForm());
+    expect(result).toMatchObject({ status: "error" });
+    expect(result.values?.workspaceName).toEqual(["Empresa Exemplo"]);
   });
 });
