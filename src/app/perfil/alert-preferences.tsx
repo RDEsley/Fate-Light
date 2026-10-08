@@ -3,8 +3,9 @@
 import { useActionState, useState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FormActions } from "@/components/ui/field";
 import { FieldHint } from "@/components/ui/field-hint";
+import { Form } from "@/components/ui/form";
 import { Icon } from "@/components/ui/icon";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -47,13 +48,7 @@ export function AlertPreferences({ offsets }: { offsets: number[] }) {
         </div>
       </div>
 
-      <form action={formAction} className="grid gap-3">
-        {state.message ? (
-          <FeedbackBanner
-            message={state.message}
-            tone={state.status === "error" ? "error" : "success"}
-          />
-        ) : null}
+      <Form action={formAction} className="grid gap-4" state={state}>
         <div className="alert-offsets">
           {options.map((days) => (
             <label className="alert-offsets__option" key={days}>
@@ -76,10 +71,10 @@ export function AlertPreferences({ offsets }: { offsets: number[] }) {
               : `O radar enxerga até ${optionLabel(horizon)} à frente. Nada com vencimento além disso aparece nos alertas.`
             : "Sem nenhuma opção marcada você não recebe aviso nenhum. Escolha ao menos uma."}
         </p>
-        <div className="flex justify-end">
+        <FormActions>
           <SubmitButton idleLabel="Salvar antecedência" pendingLabel="Salvando…" />
-        </div>
-      </form>
+        </FormActions>
+      </Form>
     </section>
   );
 }

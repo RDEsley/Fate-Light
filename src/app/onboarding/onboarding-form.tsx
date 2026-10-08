@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { CheckboxField, Field, FormActions, TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { SelectField } from "@/components/ui/select-field";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -45,33 +46,29 @@ export function OnboardingForm({
   const [state, formAction] = useActionState(bootstrapAccount, initialActionState);
 
   return (
-    <form action={formAction} className="space-y-5">
-      {state.message ? (
-        <FeedbackBanner
-          message={state.message}
-          tone={state.status === "error" ? "error" : "success"}
-        />
-      ) : null}
-
+    <Form action={formAction} className="grid gap-5" state={state}>
       <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">1. Seu perfil</legend>
         <div className="form-grid sm:grid-cols-2">
-          <label className="field sm:col-span-2">
-            <span className="field__label">Nome completo</span>
-            <input
-              autoComplete="name"
-              defaultValue={initialDisplayName}
-              maxLength={120}
-              name="fullName"
-              required
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Telefone <span className="field__optional">opcional</span>
-            </span>
-            <input autoComplete="tel" inputMode="tel" maxLength={32} name="phone" type="tel" />
-          </label>
+          <TextField
+            autoComplete="name"
+            className="sm:col-span-2"
+            defaultValue={initialDisplayName}
+            label="Nome completo"
+            maxLength={120}
+            minLength={2}
+            name="fullName"
+            required
+          />
+          <TextField
+            autoComplete="tel"
+            inputMode="tel"
+            label="Telefone"
+            maxLength={32}
+            name="phone"
+            optional
+            type="tel"
+          />
           <SelectField
             defaultValue="America/Sao_Paulo"
             label="Timezone pessoal"
@@ -85,34 +82,27 @@ export function OnboardingForm({
       <fieldset className="cartoon-card p-5 sm:p-6">
         <legend className="px-2 font-semibold">2. Sua empresa</legend>
         <div className="form-grid sm:grid-cols-2">
-          <label className="field sm:col-span-2">
-            <span className="field__label">Nome do workspace</span>
-            <input
-              defaultValue={initialDisplayName}
-              maxLength={120}
-              name="workspaceName"
-              required
-            />
-          </label>
-          <label className="field sm:col-span-2">
-            <span className="field__label">Razão social</span>
-            <input maxLength={160} name="legalName" />
-          </label>
-          <label className="field">
-            <span className="field__label">Nome fantasia</span>
-            <input maxLength={160} name="tradeName" />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              CPF ou CNPJ <span className="field__optional">opcional</span>
-            </span>
-            <input inputMode="numeric" maxLength={24} name="taxId" />
-          </label>
-          <label className="field">
-            <span className="field__label">Moeda do workspace</span>
-            <input className="text-muted" disabled readOnly value="BRL — Real brasileiro" />
+          <TextField
+            className="sm:col-span-2"
+            defaultValue={initialDisplayName}
+            label="Nome do workspace"
+            maxLength={120}
+            minLength={2}
+            name="workspaceName"
+            required
+          />
+          <TextField
+            className="sm:col-span-2"
+            label="Razão social"
+            maxLength={160}
+            name="legalName"
+          />
+          <TextField label="Nome fantasia" maxLength={160} name="tradeName" />
+          <TextField inputMode="numeric" label="CPF ou CNPJ" maxLength={24} name="taxId" optional />
+          <Field className="sm:col-span-2" htmlFor="onboarding-currency" label="Moeda do workspace">
+            <input disabled id="onboarding-currency" readOnly value="BRL — Real brasileiro" />
             <input name="currency" type="hidden" value="BRL" />
-          </label>
+          </Field>
         </div>
       </fieldset>
 
@@ -175,25 +165,24 @@ export function OnboardingForm({
                 >
                   Abrir documento completo
                 </Link>
-                <label className="mt-4 flex items-start gap-3 text-sm leading-6">
-                  <input
-                    className="mt-1"
-                    name="legalDocumentIds"
-                    required
-                    type="checkbox"
-                    value={document.id}
-                  />
+                <CheckboxField
+                  className="mt-4"
+                  fieldKey={`legalDocumentIds:${document.id}`}
+                  name="legalDocumentIds"
+                  required
+                  value={document.id}
+                >
                   Li e aceito {label} na versão {document.version}.
-                </label>
+                </CheckboxField>
               </div>
             );
           })}
         </div>
       </fieldset>
 
-      <div className="flex justify-end">
+      <FormActions className="form-actions--page">
         <SubmitButton idleLabel="Criar workspace" pendingLabel="Criando workspace…" />
-      </div>
-    </form>
+      </FormActions>
+    </Form>
   );
 }

@@ -6,6 +6,8 @@ import { TurnstileField } from "@/app/(auth)/_components/turnstile-field";
 import { requestPasswordRecovery } from "@/app/(auth)/actions";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { publicEnvironment } from "@/config/env/public";
 
 export const metadata: Metadata = { title: "Recuperar senha" };
@@ -32,30 +34,31 @@ export default async function ForgotPasswordPage({
       {status && messages[status] ? (
         <FeedbackBanner message={messages[status]} tone={status === "sent" ? "success" : "error"} />
       ) : null}
-      <form action={requestPasswordRecovery} className="auth-shell__fields">
+      <Form action={requestPasswordRecovery} className="auth-shell__fields">
         <div className="absolute -left-[10000px]" aria-hidden="true">
           <label htmlFor="recovery-website">Website</label>
           <input autoComplete="off" id="recovery-website" name="website" tabIndex={-1} />
         </div>
-        <label className="field">
-          <span className="field__label">E-mail</span>
-          <input
-            autoComplete="email"
-            inputMode="email"
-            maxLength={254}
-            name="email"
-            required
-            type="email"
-          />
-        </label>
+        <TextField
+          autoComplete="email"
+          inputMode="email"
+          label="E-mail"
+          maxLength={254}
+          name="email"
+          required
+          type="email"
+        />
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
         <SubmitButton
           className="auth-shell__submit w-full"
           idleLabel="Enviar link de recuperação"
           pendingLabel="Enviando…"
         />
-      </form>
-      <Link className="auth-shell__switch text-brand-strong block text-sm font-semibold hover:underline" href="/login">
+      </Form>
+      <Link
+        className="auth-shell__switch text-brand-strong block text-sm font-semibold hover:underline"
+        href="/login"
+      >
         Voltar para o login
       </Link>
     </AuthShell>

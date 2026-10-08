@@ -8,10 +8,7 @@ import { Icon, type IconName } from "@/components/ui/icon";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { SelectField } from "@/components/ui/select-field";
 import { formatDateTimePtBr } from "@/features/mvp/format";
-import {
-  appendIdInFilter,
-  textSearchOrFilter,
-} from "@/features/search/list-query";
+import { appendIdInFilter, textSearchOrFilter } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export const metadata: Metadata = { title: "Histórico" };
@@ -152,7 +149,7 @@ export default async function HistoryPage({
               label="Cliente"
               optional
             />
-            <button className="primary-action history-filters__submit" type="submit">
+            <button className="button button--primary" type="submit">
               Filtrar
             </button>
           </form>

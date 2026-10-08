@@ -122,7 +122,7 @@ export function ImportWorkbook() {
       </label>
       <div className="flex flex-wrap items-center gap-3">
         <button
-          className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 font-black disabled:opacity-60"
+          className="button button--primary"
           disabled={pending !== null}
           onClick={() => void run("preview")}
           type="button"

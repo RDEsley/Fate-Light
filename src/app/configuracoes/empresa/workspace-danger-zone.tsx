@@ -4,8 +4,8 @@ import { useActionState, useState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { DangerAction, DangerZone } from "@/components/ui/danger-zone";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { FieldError } from "@/components/ui/field-error";
+import { Form } from "@/components/ui/form";
 import { initialActionState } from "@/lib/forms/action-state";
 
 import { resetWorkspaceOperationalData } from "./actions";
@@ -24,22 +24,16 @@ export function WorkspaceDangerZone() {
       summary="Apagar os dados do workspace"
       title="Recomeçar do zero"
     >
-      <form action={formAction} className="grid gap-3">
-        {state.message ? (
-          <FeedbackBanner
-            message={state.message}
-            tone={state.status === "error" ? "error" : "success"}
-          />
-        ) : null}
+      <Form action={formAction} className="grid gap-4" state={state}>
         <DangerAction
           description="Exclui clientes, serviços, cobranças, despesas, domínios e importações. Sua conta, a identidade da empresa e as preferências continuam ativas."
           title="Excluir todos os dados operacionais"
           action={
             <SubmitButton
-              className="danger-action"
               disabled={!unlocked}
               idleLabel="Excluir todos os dados"
               pendingLabel="Excluindo…"
+              variant="danger"
             />
           }
         />
@@ -56,7 +50,7 @@ export function WorkspaceDangerZone() {
           />
           {confirmation && !unlocked ? <FieldError message="A frase ainda não confere." /> : null}
         </label>
-      </form>
+      </Form>
     </DangerZone>
   );
 }
