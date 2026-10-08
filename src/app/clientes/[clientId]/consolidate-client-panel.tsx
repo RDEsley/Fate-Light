@@ -4,10 +4,12 @@ import { useActionState, useState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FormActions, TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { ClientCombobox, type ClientOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
+import { useErrorToast } from "@/components/ui/use-error-toast";
 import { clientEntityTypeOptions, consolidationPhrase } from "@/features/clients/entity-schemas";
 import { formatCurrency } from "@/features/mvp/format";
 
@@ -38,14 +40,10 @@ export function ConsolidateClientPanel({
   );
   const [displayName, setDisplayName] = useState("");
   const [entityType, setEntityType] = useState("company");
+  useErrorToast(previewState);
+  useErrorToast(confirmState);
 
   const preview = previewState.status === "preview" ? previewState.preview : undefined;
-  const error =
-    confirmState.status === "error"
-      ? confirmState.message
-      : previewState.status === "error"
-        ? previewState.message
-        : undefined;
 
   if (!clients.length) {
     return (
@@ -57,45 +55,46 @@ export function ConsolidateClientPanel({
   }
 
   return (
-    <div className="grid gap-3">
-      <p className="text-muted max-w-2xl text-sm">
-        <strong className="text-foreground">Consolidar outro cliente</strong> transforma um cadastro
-        antigo em empresa/marca de {targetClientName}. Serviços, cobranças, despesas e domínios
-        mudam de dono; nenhum valor é recalculado e a origem fica arquivada.
-      </p>
-
-      {error ? <FeedbackBanner message={error} tone="error" /> : null}
-
-      <form action={previewAction} className="form-grid sm:grid-cols-2">
+    <>
+      <Form action={previewAction} className="grid gap-4">
         <input name="targetClientId" type="hidden" value={targetClientId} />
-        <ClientCombobox
-          clients={clients}
-          defaultFilter="all"
-          label="Cliente de origem"
-          name="sourceClientId"
-        />
-        <label className="field">
-          <span className="field__label">Nome da empresa/marca resultante</span>
-          <input
+        <div className="form-grid sm:grid-cols-2 lg:grid-cols-12">
+          <ClientCombobox
+            className="sm:col-span-2 lg:col-span-5"
+            clients={clients}
+            defaultFilter="all"
+            hint={`O cadastro antigo vira empresa/marca de ${targetClientName} e fica arquivado. Serviços, cobranças, despesas e domínios mudam de dono; nenhum valor é recalculado.`}
+            label="Cliente de origem"
+            name="sourceClientId"
+            // Sugere o nome do cadastro antigo sem pisar no que já foi digitado.
+            onSelect={(client) => {
+              if (client && !displayName.trim()) setDisplayName(client.name);
+            }}
+          />
+          <TextField
+            className="lg:col-span-4"
+            label="Nome da empresa/marca resultante"
             maxLength={160}
+            minLength={2}
             name="displayName"
-            onChange={(event) => setDisplayName(event.target.value)}
+            onValueChange={setDisplayName}
             placeholder="Ex.: Padaria do Bairro"
             required
             value={displayName}
           />
-        </label>
-        <SelectField
-          label="Tipo"
-          name="entityType"
-          onValueChange={setEntityType}
-          options={clientEntityTypeOptions}
-          value={entityType}
-        />
-        <div className="sm:col-span-2">
-          <SubmitButton idleLabel="Ver prévia" pendingLabel="Calculando…" />
+          <SelectField
+            className="lg:col-span-3"
+            label="Tipo"
+            name="entityType"
+            onValueChange={setEntityType}
+            options={clientEntityTypeOptions}
+            value={entityType}
+          />
         </div>
-      </form>
+        <FormActions>
+          <SubmitButton idleLabel="Ver prévia" pendingLabel="Calculando…" />
+        </FormActions>
+      </Form>
 
       {preview ? (
         <form action={confirmAction} className="grid gap-3">
@@ -145,9 +144,9 @@ export function ConsolidateClientPanel({
               </div>
             </dl>
           </section>
-          <div>
+          <div className="flex justify-end">
             <ConfirmDialog
-              className="danger-action"
+              className="button button--danger"
               confirmLabel="Consolidar cliente"
               confirmation={`${preview.counts.services} serviço(s), ${preview.counts.charges} cobrança(s), ${preview.counts.expenses} despesa(s) e ${preview.counts.domains} domínio(s) passam para ${preview.target.name}. O cliente de origem é arquivado; seus contatos e eventos históricos permanecem preservados. Não há como desfazer.`}
               holdSeconds={3}
@@ -159,6 +158,6 @@ export function ConsolidateClientPanel({
           </div>
         </form>
       ) : null}
-    </div>
+    </>
   );
 }

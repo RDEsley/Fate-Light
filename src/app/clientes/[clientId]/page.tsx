@@ -7,7 +7,9 @@ import { deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { FormPanel } from "@/components/ui/form-panel";
 import { Icon } from "@/components/ui/icon";
+import { OpenPanelLink } from "@/components/ui/open-panel-link";
 import { SelectField } from "@/components/ui/select-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
@@ -22,8 +24,6 @@ import { ClientStatusMessage } from "../status-message";
 import { ChargeForm } from "./charge-form";
 import { ConsolidateClientPanel } from "./consolidate-client-panel";
 import { TransferClientPanel } from "./transfer-client-panel";
-import { ClientEntityCard } from "./entity-card";
-import { ClientEntityForm } from "./entity-form";
 import { ServiceApplicationForm } from "./service-application-form";
 import { ServiceCard } from "./service-card";
 import { ClientStatusSwitcher } from "./status-switcher";
@@ -127,20 +127,18 @@ export default async function ClientDetailsPage({
       .limit(50),
     context.supabase
       .from("client_entities")
-      .select(
-        "id, display_name, entity_type, legal_name, tax_id, website, email, phone, notes, status, archived_at",
-      )
+      .select("id, display_name, entity_type, status, archived_at")
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
       .order("display_name"),
     context.supabase
       .from("domains")
-      .select("id, client_entity_id, status, cost")
+      .select("id, client_entity_id")
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
     context.supabase
       .from("expenses")
-      .select("id, client_entity_id, status, amount")
+      .select("id, client_entity_id, amount")
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId),
     context.supabase
@@ -156,6 +154,7 @@ export default async function ClientDetailsPage({
 
   const statusInfo = clientStatusInfo(client.archived_at ? "archived" : client.commercial_status);
   const archived = Boolean(client.archived_at);
+  const billable = isBillableClientStatus(client.commercial_status) && !archived;
   const today = isoDateInTimeZone(context.workspaceTimezone);
   // O adicional declarado como receita entra aqui; como repasse, não (ADR-0018). Antes
   // ele ficava de fora dos dois casos, e o total do cliente nunca fechava com o painel.
@@ -202,41 +201,18 @@ export default async function ClientDetailsPage({
     .filter((service) => service.status !== "ended")
     .map((service) => ({ id: service.id, name: service.name }));
 
-  // Empresas/marcas do cliente (ADR-0020). Os totais de cada card são derivados das
-  // mesmas listas já carregadas acima; nada aqui pede uma consulta por entidade.
-  const entities = (entityRows ?? []).map((entity) => {
-    const archived = Boolean(entity.archived_at) || entity.status === "archived";
-    const entityCharges = (charges ?? []).filter((charge) => charge.client_entity_id === entity.id);
-    return {
-      activeDomains: (domainRows ?? []).filter(
-        (domain) => domain.client_entity_id === entity.id && domain.status === "active",
-      ).length,
-      activeServices: (services ?? []).filter(
-        (service) => service.client_entity_id === entity.id && service.status === "active",
-      ).length,
-      archived,
-      displayName: entity.display_name,
-      email: entity.email,
-      entityType: entity.entity_type,
-      id: entity.id,
-      legalName: entity.legal_name,
-      notes: entity.notes,
-      paidRevenue: entityCharges
-        .filter((charge) => charge.status === "paid")
-        .reduce((total, charge) => total + ownRevenue(charge), 0),
-      pendingCharges: entityCharges.filter((charge) => charge.status === "pending").length,
-      phone: entity.phone,
-      taxId: entity.tax_id,
-      website: entity.website,
-    };
-  });
-  const activeEntities = entities.filter((entity) => !entity.archived);
-  const entityNames = new Map(entities.map((entity) => [entity.id, entity.displayName]));
+  // Empresas/marcas do cliente (ADR-0020). O cadastro delas mora na edição do cliente;
+  // aqui elas servem para recortar a ficha e para vincular novos lançamentos.
+  const entities = entityRows ?? [];
+  const activeEntities = entities.filter(
+    (entity) => !entity.archived_at && entity.status !== "archived",
+  );
+  const entityNames = new Map(entities.map((entity) => [entity.id, entity.display_name]));
   const entityOptions = activeEntities.map((entity) => ({
     clientId: client.id,
     id: entity.id,
-    name: entity.displayName,
-    typeLabel: clientEntityTypeLabel(entity.entityType),
+    name: entity.display_name,
+    typeLabel: clientEntityTypeLabel(entity.entity_type),
   }));
   // `?entity=` recorta a ficha sem esconder os totais consolidados do topo.
   const focusedEntityId =
@@ -264,29 +240,29 @@ export default async function ClientDetailsPage({
 
   return (
     <AccountShell
-      description="Dados do cliente, serviços contratados e atalhos para a operação financeira."
+      description="Serviços contratados, cobranças e o que este cliente já rendeu."
       title={client.name}
     >
       <ClientStatusMessage status={parameters.status} />
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <Link className="font-semibold hover:underline" href="/clientes">
-          ← Voltar
+      <div className="page-toolbar">
+        <Link className="button button--ghost button--small" href="/clientes">
+          <Icon className="size-4" name="arrow-left" /> Clientes
         </Link>
-        <div className="flex flex-wrap gap-3">
-          {!archived && isBillableClientStatus(client.commercial_status) ? (
-            <Link
-              className="bg-brand text-brand-contrast rounded-xl px-4 py-2 font-semibold"
-              href={`/clientes/${client.id}?action=new-service#servicos`}
-            >
-              Novo serviço
+        <div className="page-toolbar__actions">
+          {archived ? null : (
+            <Link className="button button--secondary" href={`/clientes/${client.id}/editar`}>
+              <Icon className="size-4" name="edit" /> Editar cliente
             </Link>
+          )}
+          {billable ? (
+            <OpenPanelLink
+              className="button button--primary"
+              href={`/clientes/${client.id}?action=new-service#adicionar-servico`}
+              panelId="adicionar-servico"
+            >
+              <Icon className="size-4" name="plus" /> Adicionar serviço
+            </OpenPanelLink>
           ) : null}
-          <Link
-            className="border-line rounded-xl border px-4 py-2 font-semibold"
-            href={`/clientes/${client.id}/editar`}
-          >
-            Editar cliente
-          </Link>
         </div>
       </div>
 
@@ -294,13 +270,11 @@ export default async function ClientDetailsPage({
         <section className="panel-card mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-muted flex flex-wrap items-center gap-2 text-sm">
             <ClientStatusChip status="archived" />
-            <span>
-              O histórico está preservado, mas ele não aparece na operação do dia a dia.
-            </span>
+            <span>O histórico está preservado, mas ele não aparece na operação do dia a dia.</span>
           </p>
           <form action={restoreClient}>
             <input name="clientId" type="hidden" value={client.id} />
-            <button className="primary-action" type="submit">
+            <button className="button button--primary" type="submit">
               Desarquivar cliente
             </button>
           </form>
@@ -326,104 +300,121 @@ export default async function ClientDetailsPage({
             <ClientStatusSwitcher clientId={client.id} status={client.commercial_status} />
           )}
         </div>
-        <dl className="client-detail-grid">
-          {client.trade_name ? (
-            <div>
-              <dt>Empresa</dt>
-              <dd>{client.trade_name}</dd>
-            </div>
-          ) : null}
-          {client.email ? (
-            <div>
-              <dt>E-mail</dt>
-              <dd>
-                <a className="client-detail-link" href={`mailto:${client.email}`}>
-                  {client.email}
-                </a>
-              </dd>
-            </div>
-          ) : null}
-          {client.phone ? (
-            <div>
-              <dt>Telefone</dt>
-              <dd>
-                <a
-                  className="client-detail-link"
-                  href={`tel:${client.phone.replace(/[^+\d]/g, "")}`}
-                >
-                  {client.phone}
-                </a>
-              </dd>
-            </div>
-          ) : null}
-          {client.website ? (
-            <div>
-              <dt>Site</dt>
-              <dd>
-                <a
-                  className="client-detail-link"
-                  href={`https://${client.website}`}
-                  rel="noreferrer noopener"
-                  target="_blank"
-                >
-                  {client.website} <Icon className="size-3.5" name="link" />
-                </a>
-              </dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>Já recebido</dt>
-            <dd className="text-positive font-black">{formatCurrency(earned)}</dd>
-          </div>
-          {pending > 0 ? (
-            <div>
-              <dt>A receber</dt>
-              <dd className="font-black">{formatCurrency(pending)}</dd>
-            </div>
-          ) : null}
-        </dl>
-      </section>
 
-      <section className="panel-card mt-4" id="empresas">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="section-heading">
-            <span className="section-heading__icon bg-violet-soft text-violet">
-              <Icon name="building" />
-            </span>
-            <div>
-              <h2>Empresas e marcas</h2>
-              <p>
-                Separe as frentes deste cliente sem duplicar o cadastro. O vínculo é opcional: o que
-                não tem empresa continua valendo como geral.
-              </p>
+        <div className="client-overview">
+          <dl className="client-kpis">
+            <div className="client-kpi client-kpi--positive">
+              <dt>Já recebido</dt>
+              <dd>{formatCurrency(earned)}</dd>
             </div>
-          </div>
-          {activeEntities.length ? (
-            <span className="entity-chip">
-              {activeEntities.length} {activeEntities.length === 1 ? "ativa" : "ativas"}
-            </span>
-          ) : null}
+            <div className="client-kpi">
+              <dt>A receber</dt>
+              <dd>{formatCurrency(pending)}</dd>
+            </div>
+          </dl>
+          {client.trade_name || client.email || client.phone || client.website ? (
+            <dl className="client-detail-grid">
+              {client.trade_name ? (
+                <div>
+                  <dt>Empresa</dt>
+                  <dd>{client.trade_name}</dd>
+                </div>
+              ) : null}
+              {client.email ? (
+                <div>
+                  <dt>E-mail</dt>
+                  <dd>
+                    <a className="client-detail-link" href={`mailto:${client.email}`}>
+                      {client.email}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+              {client.phone ? (
+                <div>
+                  <dt>Telefone</dt>
+                  <dd>
+                    <a
+                      className="client-detail-link"
+                      href={`tel:${client.phone.replace(/[^+\d]/g, "")}`}
+                    >
+                      {client.phone}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+              {client.website ? (
+                <div>
+                  <dt>Site</dt>
+                  <dd>
+                    <a
+                      className="client-detail-link"
+                      href={`https://${client.website}`}
+                      rel="noreferrer noopener"
+                      target="_blank"
+                    >
+                      {client.website} <Icon className="size-3.5" name="link" />
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : (
+            <p className="text-muted self-center text-sm">
+              Sem contato cadastrado.{" "}
+              {archived ? null : (
+                <Link
+                  className="text-brand-strong font-semibold hover:underline"
+                  href={`/clientes/${client.id}/editar`}
+                >
+                  Completar cadastro
+                </Link>
+              )}
+            </p>
+          )}
         </div>
 
-        {focusedEntityId ? (
-          <aside className="helper-note mt-4" role="status">
-            <Icon className="size-4" name="filter" />
-            <span>
-              Mostrando serviços e cobranças de <strong>{entityNames.get(focusedEntityId)}</strong>.{" "}
-              <Link className="font-semibold hover:underline" href={`/clientes/${client.id}`}>
-                Ver o cliente inteiro
-              </Link>
+        {entities.length ? (
+          <div className="entity-filter" id="empresas">
+            <span className="entity-filter__label">
+              <Icon className="size-4" name="building" /> Empresas e marcas
             </span>
-          </aside>
+            <nav aria-label="Filtrar a ficha por empresa ou marca" className="entity-filter__chips">
+              <Link
+                aria-current={focusedEntityId ? undefined : "true"}
+                href={`/clientes/${client.id}`}
+              >
+                Tudo
+              </Link>
+              {activeEntities.map((entity) => (
+                <Link
+                  aria-current={focusedEntityId === entity.id ? "true" : undefined}
+                  href={`/clientes/${client.id}?entity=${entity.id}`}
+                  key={entity.id}
+                >
+                  {entity.display_name}
+                </Link>
+              ))}
+            </nav>
+            {archived ? null : (
+              <Link
+                className="entity-filter__manage"
+                href={`/clientes/${client.id}/editar#empresas`}
+              >
+                Gerenciar
+              </Link>
+            )}
+          </div>
         ) : null}
 
         {focusedEntityId ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 sm:grid-cols-3" role="status">
             <Link
               className="helper-note"
               href={`/cobrancas?clientId=${client.id}&entity=${focusedEntityId}`}
             >
-              <Icon className="size-4" name="receipt" /> Cobranças desta empresa
+              <Icon className="size-4" name="receipt" /> Cobranças de{" "}
+              {entityNames.get(focusedEntityId)}
             </Link>
             <Link
               className="helper-note"
@@ -441,40 +432,6 @@ export default async function ClientDetailsPage({
               <Icon className="size-4" name="globe" /> {focusedDomains.length} domínio(s)
             </Link>
           </div>
-        ) : null}
-
-        {entities.length ? (
-          <div className="entity-grid mt-4">
-            {entities.map((entity) => (
-              <ClientEntityCard
-                clientId={client.id}
-                entity={entity}
-                key={entity.id}
-                readOnly={archived}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted mt-4 text-sm">
-            Nenhuma empresa ou marca cadastrada. Crie uma quando o cliente tiver mais de um negócio
-            sob o mesmo contrato.
-          </p>
-        )}
-
-        {!archived ? (
-          <details className="form-disclosure border-line mt-5 border-t pt-5">
-            <summary className="flex cursor-pointer items-center justify-between font-semibold">
-              <span className="flex items-center gap-2">
-                <Icon className="size-4" name="plus" /> Nova empresa/marca
-              </span>
-              <span className="text-muted flex items-center gap-1 text-xs">
-                <span className="form-disclosure__closed-label">Abrir formulário</span>
-                <span className="form-disclosure__open-label">Fechar formulário</span>
-                <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-              </span>
-            </summary>
-            <ClientEntityForm clientId={client.id} />
-          </details>
         ) : null}
       </section>
 
@@ -500,15 +457,41 @@ export default async function ClientDetailsPage({
           </span>
           <div>
             <h2>Serviços</h2>
-            <p>
-              Fluxo principal: ao aplicar um serviço, a cobrança correspondente é criada
-              automaticamente.
-            </p>
+            <p>Ao aplicar um serviço, a cobrança correspondente é criada automaticamente.</p>
           </div>
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {visibleServices.length ? (
-            visibleServices.map((service) => (
+
+        {billable ? (
+          <FormPanel
+            defaultOpen={openServiceForm}
+            description="Do catálogo ou personalizado para este cliente"
+            id="adicionar-servico"
+            title="Adicionar serviço"
+          >
+            <ServiceApplicationForm
+              catalog={catalogOptions}
+              clientId={client.id}
+              defaultEntityId={focusedEntityId ?? undefined}
+              entities={entityOptions}
+            />
+          </FormPanel>
+        ) : (
+          <p className="helper-note">
+            <Icon className="size-4" name="info" />
+            {archived ? (
+              "Desarquive o cliente para voltar a aplicar serviços."
+            ) : (
+              <span>
+                Clientes em <ClientStatusChip status={client.commercial_status} /> não recebem novos
+                serviços. Mude a situação comercial para continuar.
+              </span>
+            )}
+          </p>
+        )}
+
+        {visibleServices.length ? (
+          <div className="service-grid mt-4">
+            {visibleServices.map((service) => (
               <ServiceCard
                 catalog={catalogOptions}
                 clientId={client.id}
@@ -546,53 +529,22 @@ export default async function ClientDetailsPage({
                   status: service.status,
                 }}
               />
-            ))
-          ) : (
-            <p className="text-muted text-sm">
-              {focusedEntityId
-                ? "Nenhum serviço nesta empresa/marca."
-                : "Nenhum serviço adicionado. Comece por aqui para gerar cobranças recorrentes."}
-            </p>
-          )}
-        </div>
-
-        {isBillableClientStatus(client.commercial_status) && !archived ? (
-          <details
-            className="form-disclosure border-line mt-6 border-t pt-5"
-            id="adicionar-servico"
-            open={openServiceForm}
-          >
-            <summary className="flex cursor-pointer items-center justify-between font-semibold">
-              <span className="flex items-center gap-2">
-                <Icon className="size-4" name="plus" /> Adicionar serviço
-              </span>
-              <span className="text-muted flex items-center gap-1 text-xs">
-                <span className="form-disclosure__closed-label">Abrir formulário</span>
-                <span className="form-disclosure__open-label">Fechar formulário</span>
-                <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-              </span>
-            </summary>
-            <div className="mt-4">
-              <ServiceApplicationForm
-                catalog={catalogOptions}
-                clientId={client.id}
-                defaultEntityId={focusedEntityId ?? undefined}
-                entities={entityOptions}
-              />
-            </div>
-          </details>
+            ))}
+          </div>
         ) : (
-          <p className="helper-note mt-5">
-            <Icon className="size-4" name="info" />
-            {archived ? (
-              "Desarquive o cliente para voltar a aplicar serviços."
-            ) : (
-              <span>
-                Clientes em <ClientStatusChip status={client.commercial_status} /> não recebem novos
-                serviços. Mude a situação comercial para continuar.
-              </span>
-            )}
-          </p>
+          <div className="empty-state mt-4">
+            <span className="empty-state__icon">
+              <Icon name="briefcase" />
+            </span>
+            <strong>
+              {focusedEntityId ? "Nenhum serviço nesta empresa/marca" : "Nenhum serviço ainda"}
+            </strong>
+            <p>
+              {focusedEntityId
+                ? "Os serviços vinculados a ela aparecem aqui."
+                : "Adicione o primeiro para começar a gerar cobranças."}
+            </p>
+          </div>
         )}
       </section>
 
@@ -685,37 +637,17 @@ export default async function ClientDetailsPage({
       ) : null}
 
       {!archived ? (
-        <section className="panel-card mt-4" id="cobranca-avulsa">
-          <details className="form-disclosure" id="nova-cobranca-avulsa" open={openChargeForm}>
-            <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
-              <span className="flex items-center gap-2">
-                <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-xl">
-                  <Icon className="size-4" name="plus" />
-                </span>
-                Nova cobrança avulsa
-              </span>
-              <span className="text-muted flex items-center gap-1 text-xs">
-                <span className="form-disclosure__closed-label">Abrir formulário</span>
-                <span className="form-disclosure__open-label">Fechar formulário</span>
-                <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-              </span>
-            </summary>
-            <p className="helper-note mt-3">
-              <Icon className="size-4" name="info" /> Use para cobranças fora de um serviço. Para
-              mensalidades, projetos parcelados ou serviços recorrentes, prefira adicionar um
-              serviço.
-            </p>
-            {isBillableClientStatus(client.commercial_status) ? (
-              <p className="mt-2 text-sm">
-                <Link
-                  className="text-brand-strong font-semibold hover:underline"
-                  href={`/clientes/${client.id}?action=new-service#servicos`}
-                >
-                  Adicionar serviço em vez disso →
-                </Link>
-              </p>
-            ) : (
-              <p className="helper-note mt-3">
+        <section className="mt-4" id="cobranca-avulsa">
+          <FormPanel
+            defaultOpen={openChargeForm}
+            description="Para um valor fora dos serviços contratados"
+            icon="receipt"
+            id="nova-cobranca-avulsa"
+            title="Nova cobrança avulsa"
+            tone="warning"
+          >
+            {billable ? null : (
+              <p className="helper-note mb-4">
                 <Icon className="size-4" name="info" />
                 <span>
                   Cliente em <ClientStatusChip status={client.commercial_status} />: a cobrança
@@ -732,75 +664,113 @@ export default async function ClientDetailsPage({
               returnTo={clientReturnTo}
               services={chargeServices}
             />
-          </details>
+          </FormPanel>
         </section>
       ) : null}
 
       {!archived ? (
-        <details className="danger-zone form-disclosure mt-8">
-          <summary className="flex cursor-pointer items-center justify-between gap-3">
-            <span className="text-muted flex items-center gap-2 text-sm font-bold">
-              <Icon className="size-4" name="settings" /> Opções avançadas deste cliente
-            </span>
-            <span className="text-muted flex items-center gap-1 text-xs">
-              <span className="form-disclosure__closed-label">Ver</span>
-              <span className="form-disclosure__open-label">Fechar</span>
-              <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-            </span>
-          </summary>
-          <div className="mt-4 grid gap-4">
-            <TransferClientPanel
-              clients={consolidationClients}
-              sourceClientId={client.id}
-              sourceClientName={client.name}
-            />
-            <div className="border-line border-t pt-4">
-              <ConsolidateClientPanel
-                clients={consolidationClients}
-                targetClientId={client.id}
-                targetClientName={client.name}
-              />
+        <section className="mt-4">
+          <FormPanel
+            description="Transferir, consolidar, arquivar ou excluir este cliente"
+            icon="settings"
+            title="Opções avançadas do cliente"
+          >
+            <div className="action-list">
+              <details className="action-row">
+                <summary className="action-row__head">
+                  <span className="action-row__icon">
+                    <Icon className="size-4" name="swap" />
+                  </span>
+                  <span className="action-row__text">
+                    <strong>Transferir dados para outro cliente</strong>
+                    <small>
+                      Move serviços, cobranças, despesas, domínios, contatos e empresas/marcas.
+                    </small>
+                  </span>
+                  <Icon className="action-row__chevron size-4" name="chevron-down" />
+                </summary>
+                <div className="action-row__body">
+                  <TransferClientPanel
+                    clients={consolidationClients}
+                    sourceClientId={client.id}
+                    sourceClientName={client.name}
+                  />
+                </div>
+              </details>
+              <details className="action-row">
+                <summary className="action-row__head">
+                  <span className="action-row__icon">
+                    <Icon className="size-4" name="merge" />
+                  </span>
+                  <span className="action-row__text">
+                    <strong>Consolidar outro cliente aqui</strong>
+                    <small>Transforma um cadastro antigo em empresa/marca de {client.name}.</small>
+                  </span>
+                  <Icon className="action-row__chevron size-4" name="chevron-down" />
+                </summary>
+                <div className="action-row__body">
+                  <ConsolidateClientPanel
+                    clients={consolidationClients}
+                    targetClientId={client.id}
+                    targetClientName={client.name}
+                  />
+                </div>
+              </details>
+              <div className="action-row">
+                <div className="action-row__head">
+                  <span className="action-row__icon">
+                    <Icon className="size-4" name="archive" />
+                  </span>
+                  <span className="action-row__text">
+                    <strong>Arquivar cliente</strong>
+                    <small>
+                      Sai da operação diária e preserva serviços, cobranças e histórico. É a saída
+                      recomendada quando o relacionamento acabou.
+                    </small>
+                  </span>
+                  <form action={archiveClient}>
+                    <input name="clientId" type="hidden" value={client.id} />
+                    <ConfirmDialog
+                      className="button button--secondary button--small"
+                      confirmLabel="Arquivar cliente"
+                      confirmation="O cliente sai das listas do dia a dia e para de gerar alertas. Você pode desarquivar quando quiser, sem perder nada."
+                      icon="archive"
+                      label="Arquivar"
+                      title={`Arquivar ${client.name}`}
+                      tone="default"
+                    />
+                  </form>
+                </div>
+              </div>
+              <div className="action-row">
+                <div className="action-row__head">
+                  <span className="action-row__icon" data-tone="danger">
+                    <Icon className="size-4" name="trash" />
+                  </span>
+                  <span className="action-row__text">
+                    <strong>Excluir definitivamente</strong>
+                    <small>
+                      Só funciona para clientes sem serviços, cobranças, despesas ou domínios.
+                      Havendo histórico, arquive em vez de excluir.
+                    </small>
+                  </span>
+                  <form action={deleteClient}>
+                    <input name="clientId" type="hidden" value={client.id} />
+                    <ConfirmDialog
+                      className="button button--danger-outline button--small"
+                      confirmLabel="Excluir cliente"
+                      confirmation={`${client.name} sai do sistema para sempre, junto com os contatos cadastrados. Não há como desfazer.`}
+                      icon="trash"
+                      label="Excluir"
+                      requiredPhrase={client.name}
+                      title="Excluir cliente definitivamente"
+                    />
+                  </form>
+                </div>
+              </div>
             </div>
-            <div className="border-line flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-muted max-w-2xl text-sm">
-                <strong className="text-foreground">Arquivar</strong> tira o cliente da operação
-                diária e preserva tudo: serviços, cobranças e histórico. É a saída recomendada
-                quando o relacionamento acabou.
-              </p>
-              <form action={archiveClient}>
-                <input name="clientId" type="hidden" value={client.id} />
-                <ConfirmDialog
-                  className="border-line bg-surface min-h-11 rounded-xl border-2 px-4 font-bold"
-                  confirmLabel="Arquivar cliente"
-                  confirmation="O cliente sai das listas do dia a dia e para de gerar alertas. Você pode desarquivar quando quiser, sem perder nada."
-                  icon="archive"
-                  label="Arquivar cliente"
-                  title={`Arquivar ${client.name}`}
-                  tone="default"
-                />
-              </form>
-            </div>
-            <div className="border-line flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-muted max-w-2xl text-sm">
-                <strong className="text-negative">Excluir</strong> apaga o cadastro para sempre. Só
-                funciona para clientes sem serviços, cobranças, despesas ou domínios. Havendo
-                histórico, arquive em vez de excluir.
-              </p>
-              <form action={deleteClient}>
-                <input name="clientId" type="hidden" value={client.id} />
-                <ConfirmDialog
-                  className="danger-action"
-                  confirmLabel="Excluir cliente"
-                  confirmation={`${client.name} sai do sistema para sempre, junto com os contatos cadastrados. Não há como desfazer.`}
-                  icon="trash"
-                  label="Excluir definitivamente"
-                  requiredPhrase={client.name}
-                  title="Excluir cliente definitivamente"
-                />
-              </form>
-            </div>
-          </div>
-        </details>
+          </FormPanel>
+        </section>
       ) : null}
     </AccountShell>
   );

@@ -23,18 +23,26 @@ export function ClientEntityCard({
   clientId,
   entity,
   readOnly = false,
+  returnTo,
 }: {
   clientId: string;
   entity: ClientEntitySummary;
   readOnly?: boolean;
+  /** `edit` mantém o usuário na edição do cliente depois de cada ação. */
+  returnTo?: "edit";
 }) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
     return (
-      <article className="border-brand/40 entity-card--editing rounded-xl border-2 p-4">
+      <article className="entity-card entity-card--editing">
         <h3 className="font-black">Editar {entity.displayName}</h3>
-        <ClientEntityForm clientId={clientId} entity={entity} onCancel={() => setEditing(false)} />
+        <ClientEntityForm
+          clientId={clientId}
+          entity={entity}
+          onCancel={() => setEditing(false)}
+          returnTo={returnTo}
+        />
       </article>
     );
   }
@@ -68,33 +76,31 @@ export function ClientEntityCard({
       </div>
       <div className="entity-card__actions">
         <Link
-          className="text-brand-strong text-xs font-black"
+          className="text-brand-strong text-xs font-black hover:underline"
           href={`/clientes/${clientId}?entity=${entity.id}`}
         >
-          Abrir empresa/marca →
+          Ver na ficha →
         </Link>
         {readOnly ? null : entity.archived ? (
           <form action={restoreClientEntity}>
             <input name="clientId" type="hidden" value={clientId} />
             <input name="entityId" type="hidden" value={entity.id} />
-            <button className="text-muted hover:text-foreground text-xs font-bold" type="submit">
+            {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
+            <button className="entity-card__action" type="submit">
               Reativar
             </button>
           </form>
         ) : (
           <>
-            <button
-              className="text-muted hover:text-foreground text-xs font-bold"
-              onClick={() => setEditing(true)}
-              type="button"
-            >
+            <button className="entity-card__action" onClick={() => setEditing(true)} type="button">
               Editar
             </button>
             <form action={archiveClientEntity}>
               <input name="clientId" type="hidden" value={clientId} />
               <input name="entityId" type="hidden" value={entity.id} />
+              {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
               <ConfirmDialog
-                className="text-muted hover:text-foreground text-xs font-bold"
+                className="entity-card__action"
                 confirmLabel="Arquivar empresa/marca"
                 confirmation="Ela sai das opções de novos lançamentos. Serviços, cobranças, despesas e domínios já vinculados continuam apontando para ela."
                 icon="archive"

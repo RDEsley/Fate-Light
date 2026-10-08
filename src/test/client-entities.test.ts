@@ -25,7 +25,7 @@ vi.mock("@/lib/auth/workspace-context", () => ({
   })),
 }));
 
-import { consolidateClient } from "@/app/clientes/[clientId]/entity-actions";
+import { consolidateClient, createClientEntity } from "@/app/clientes/[clientId]/entity-actions";
 import { createCharge } from "@/app/_actions/mvp";
 import {
   clientEntityTypeLabel,
@@ -105,6 +105,28 @@ describe("empresas e marcas do cliente", () => {
     const fields = parsed.error.issues.map((issue) => issue.path[0]);
     expect(fields).toContain("displayName");
     expect(fields).toContain("entityType");
+  });
+
+  it("volta para a edição do cliente quando o cadastro parte de lá", async () => {
+    mocks.from.mockReturnValue({ insert: vi.fn(async () => ({ error: null })) });
+    const fromEdit = new FormData();
+    fromEdit.set("clientId", clientId);
+    fromEdit.set("displayName", "Padaria do Bairro");
+    fromEdit.set("returnTo", "edit");
+
+    await expect(createClientEntity(initialActionState, fromEdit)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}/editar?status=entity-created#empresas`,
+    );
+
+    // `returnTo` é um marcador, nunca um caminho: qualquer outro valor cai na ficha.
+    const forged = new FormData();
+    forged.set("clientId", clientId);
+    forged.set("displayName", "Marca Doce");
+    forged.set("returnTo", "https://exemplo.invalid/roubo");
+
+    await expect(createClientEntity(initialActionState, forged)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=entity-created`,
+    );
   });
 
   it("traduz os tipos para português e cai em Empresa quando o valor é desconhecido", () => {

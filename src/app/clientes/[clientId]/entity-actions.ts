@@ -30,9 +30,22 @@ function statusRedirect(path: string, status: string): never {
   redirect(`${path}${path.includes("?") ? "&" : "?"}status=${status}` as Route);
 }
 
+/**
+ * Para onde voltar depois de mexer em uma empresa/marca. O cadastro delas vive na edição
+ * do cliente; o formulário avisa com `returnTo=edit`. É um marcador, não um caminho:
+ * nenhum valor vindo do navegador vira destino de redirecionamento.
+ */
+function entityRedirect(formData: FormData, clientId: string, status: string): never {
+  if (formData.get("returnTo") === "edit") {
+    redirect(`/clientes/${clientId}/editar?status=${status}#empresas` as Route);
+  }
+  statusRedirect(`/clientes/${clientId}`, status);
+}
+
 /** Empresa/marca aparece na ficha, nas listas financeiras e na contagem do dashboard. */
 function revalidateEntitySurfaces(clientId: string) {
   revalidatePath(`/clientes/${clientId}`);
+  revalidatePath(`/clientes/${clientId}/editar`);
   revalidatePath("/clientes");
   revalidatePath("/cobrancas");
   revalidatePath("/despesas");
@@ -63,7 +76,7 @@ export async function createClientEntity(
   if (error) return rejectSubmission(formData, databaseErrorMessage(error));
 
   revalidateEntitySurfaces(clientId.data);
-  statusRedirect(`/clientes/${clientId.data}`, "entity-created");
+  entityRedirect(formData, clientId.data, "entity-created");
 }
 
 export async function updateClientEntity(
@@ -94,7 +107,7 @@ export async function updateClientEntity(
   if (error || !data) return rejectSubmission(formData, databaseErrorMessage(error));
 
   revalidateEntitySurfaces(clientId.data);
-  statusRedirect(`/clientes/${clientId.data}`, "entity-updated");
+  entityRedirect(formData, clientId.data, "entity-updated");
 }
 
 /**
@@ -115,10 +128,9 @@ export async function archiveClientEntity(formData: FormData) {
     .is("archived_at", null)
     .select("id")
     .single();
-  const path = `/clientes/${clientId.data}`;
-  if (error || !data) statusRedirect(path, "entity-error");
+  if (error || !data) entityRedirect(formData, clientId.data, "entity-error");
   revalidateEntitySurfaces(clientId.data);
-  statusRedirect(path, "entity-archived");
+  entityRedirect(formData, clientId.data, "entity-archived");
 }
 
 export async function restoreClientEntity(formData: FormData) {
@@ -135,10 +147,9 @@ export async function restoreClientEntity(formData: FormData) {
     .not("archived_at", "is", null)
     .select("id")
     .single();
-  const path = `/clientes/${clientId.data}`;
-  if (error || !data) statusRedirect(path, "entity-error");
+  if (error || !data) entityRedirect(formData, clientId.data, "entity-error");
   revalidateEntitySurfaces(clientId.data);
-  statusRedirect(path, "entity-restored");
+  entityRedirect(formData, clientId.data, "entity-restored");
 }
 
 function consolidationError(reason: string, fallback?: string): ConsolidationActionState {

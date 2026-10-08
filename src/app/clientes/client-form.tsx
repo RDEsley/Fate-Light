@@ -4,30 +4,28 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { FieldError } from "@/components/ui/field-error";
-import { FieldHint } from "@/components/ui/field-hint";
+import { FormActions, FormSection, TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { DateField } from "@/components/ui/form-controls";
+import { FormMore } from "@/components/ui/form-panel";
 import { Icon } from "@/components/ui/icon";
 import { MoneyField } from "@/components/ui/money-field";
 import { SelectField } from "@/components/ui/select-field";
-import type { ClientLink } from "@/features/clients/schemas";
+import { parseNewClientEntities } from "@/features/clients/entity-schemas";
+import { validateClientLinks, type ClientLink } from "@/features/clients/schemas";
 import { clientStatusOptions } from "@/features/clients/status";
 import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
 import { SubmitButton } from "../_components/submit-button";
+import { ClientEntitiesField } from "./client-entities-field";
 import { ClientLinksField } from "./client-links-field";
-import { PriorRevenueEntries, type PriorRevenueEntry } from "./prior-revenue-entries";
 
 type ClientFormProps = {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   cancelHref: Route;
   clientId?: string;
-  deletePriorRevenueAction?: (formData: FormData) => Promise<void>;
-  priorRevenueEntries?: PriorRevenueEntry[];
   submitLabel: string;
-  updatePriorRevenueAction?: (formData: FormData) => Promise<void>;
   values?: {
     companyName: string | null;
     email: string | null;
@@ -40,19 +38,29 @@ type ClientFormProps = {
   };
 };
 
-export function ClientForm({
-  action,
-  cancelHref,
-  clientId,
-  deletePriorRevenueAction,
-  priorRevenueEntries,
-  submitLabel,
-  updatePriorRevenueAction,
-  values,
-}: ClientFormProps) {
+/**
+ * Regras entre campos, conferidas antes de ir ao servidor: link pela metade, empresa/marca
+ * sem nome e histórico anterior com só o valor ou só a data.
+ */
+function validateClient(formData: FormData) {
+  const errors: Record<string, string> = { ...validateClientLinks(formData) };
+  const entities = parseNewClientEntities(formData);
+  if (!entities.success) Object.assign(errors, entities.fieldErrors);
+
+  const priorRevenue = Number(formData.get("priorRevenue") || 0);
+  const priorRevenueDate = String(formData.get("priorRevenueDate") ?? "");
+  if (priorRevenue > 0 && !priorRevenueDate) {
+    errors.priorRevenueDate = "Informe a data de referência deste valor.";
+  }
+  if (priorRevenueDate && priorRevenue <= 0) {
+    errors.priorRevenue = "Informe o total recebido ou limpe a data.";
+  }
+  return errors;
+}
+
+export function ClientForm({ action, cancelHref, clientId, submitLabel, values }: ClientFormProps) {
   const editing = Boolean(clientId);
   const [state, formAction] = useActionState(action, initialActionState);
-  const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
   const [priorCents, setPriorCents] = useState<number | null>(null);
   const [priorDate, setPriorDate] = useState(sent.text("priorRevenueDate"));
@@ -60,14 +68,11 @@ export function ClientForm({
   const priorPreviewReady = priorAmount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(priorDate);
 
   return (
-    <form action={formAction} className="grid gap-4">
+    <Form action={formAction} className="grid gap-4" state={state} validate={validateClient}>
       {clientId ? <input name="clientId" type="hidden" value={clientId} /> : null}
-      {state.status === "error" && state.message ? (
-        <FeedbackBanner message={state.message} tone="error" />
-      ) : null}
 
       <section className="panel-card">
-        <div className="section-heading mb-4">
+        <div className="section-heading mb-5">
           <span className="section-heading__icon bg-brand-soft text-brand-strong">
             <Icon name="user" />
           </span>
@@ -76,212 +81,176 @@ export function ClientForm({
             <p>Como este cliente aparece nas listas, cobranças e alertas.</p>
           </div>
         </div>
-        <div className="form-grid sm:grid-cols-2">
-          <label className="field">
-            <span className="field__label">Nome</span>
-            <input
-              aria-invalid={Boolean(errors.name)}
-              defaultValue={sent.text("name", values?.name ?? "")}
-              maxLength={160}
-              name="name"
-              placeholder="Ex.: Padaria do João"
-              required
-            />
-            <FieldError message={errors.name} />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Razão social ou nome fantasia <span className="field__optional">opcional</span>
-            </span>
-            <input
-              aria-invalid={Boolean(errors.companyName)}
-              defaultValue={sent.text("companyName", values?.companyName ?? "")}
-              maxLength={160}
-              name="companyName"
-              placeholder="Ex.: João Alimentos LTDA"
-            />
-            <FieldError message={errors.companyName} />
-          </label>
+        <div className="form-grid sm:grid-cols-2 lg:grid-cols-12">
+          <TextField
+            className="lg:col-span-5"
+            defaultValue={sent.text("name", values?.name ?? "")}
+            label="Nome"
+            maxLength={160}
+            minLength={2}
+            name="name"
+            placeholder="Ex.: Padaria do João"
+            required
+          />
+          <TextField
+            className="lg:col-span-4"
+            defaultValue={sent.text("companyName", values?.companyName ?? "")}
+            label="Razão social ou nome fantasia"
+            maxLength={160}
+            name="companyName"
+            optional
+            placeholder="Ex.: João Alimentos LTDA"
+          />
           <SelectField
+            className="sm:col-span-2 lg:col-span-3"
             defaultValue={sent.text("status", values?.status ?? "active")}
+            hint="Define se o cliente recebe novos serviços e aparece na operação do dia a dia."
             label="Situação comercial"
             name="status"
             options={clientStatusOptions}
           />
-          <label className="field">
-            <span className="field__label">
-              Site <span className="field__optional">opcional</span>
-            </span>
-            <input
-              aria-invalid={Boolean(errors.website)}
-              defaultValue={sent.text("website", values?.website ?? "")}
-              maxLength={253}
-              name="website"
-              placeholder="Ex.: padariadojoao.com.br"
-            />
-            <FieldError message={errors.website} />
-          </label>
-        </div>
-        <div className="border-line mt-4 border-t pt-4">
-          <p className="field__label flex items-center">
-            Outros links deste cliente
-            <FieldHint>
-              Painel do registrador, pasta de materiais, rede social — o que você abre com
-              frequência. Aparecem como atalhos no card do cliente.
-            </FieldHint>
-          </p>
-          <ClientLinksField links={values?.links} />
         </div>
       </section>
 
       <section className="panel-card">
-        <div className="section-heading mb-4">
+        <div className="section-heading mb-5">
           <span className="section-heading__icon bg-violet-soft text-violet">
             <Icon name="mail" />
           </span>
           <div>
-            <h2>Contato</h2>
-            <p>Deixe em branco o que você não tiver — o card não mostra campos vazios.</p>
+            <h2>Contato e links</h2>
+            <p>Preencha só o que tiver. O que ficar em branco não aparece na ficha.</p>
           </div>
         </div>
-        <div className="form-grid sm:grid-cols-2">
-          <label className="field">
-            <span className="field__label">
-              E-mail <span className="field__optional">opcional</span>
+        <div className="form-grid sm:grid-cols-2 lg:grid-cols-3">
+          <TextField
+            defaultValue={sent.text("email", values?.email ?? "")}
+            label="E-mail"
+            maxLength={254}
+            name="email"
+            optional
+            placeholder="contato@padariadojoao.com.br"
+            type="email"
+          />
+          <TextField
+            defaultValue={sent.text("phone", values?.phone ?? "")}
+            label="Telefone"
+            maxLength={32}
+            name="phone"
+            optional
+            placeholder="(11) 98888-7777"
+            type="tel"
+          />
+          <TextField
+            className="sm:col-span-2 lg:col-span-1"
+            defaultValue={sent.text("website", values?.website ?? "")}
+            label="Site"
+            maxLength={253}
+            name="website"
+            optional
+            placeholder="padariadojoao.com.br"
+          />
+        </div>
+        <FormSection
+          className="mt-5"
+          description="Painel do registrador, pasta de materiais, rede social. Viram atalhos no card do cliente."
+          title="Outros links"
+        >
+          <ClientLinksField links={values?.links} />
+        </FormSection>
+      </section>
+
+      {editing ? null : (
+        <section className="panel-card">
+          <div className="section-heading mb-5">
+            <span className="section-heading__icon bg-violet-soft text-violet">
+              <Icon name="building" />
             </span>
-            <input
-              aria-invalid={Boolean(errors.email)}
-              defaultValue={sent.text("email", values?.email ?? "")}
-              maxLength={254}
-              name="email"
-              placeholder="Ex.: contato@padariadojoao.com.br"
-              type="email"
-            />
-            <FieldError message={errors.email} />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Telefone <span className="field__optional">opcional</span>
-            </span>
-            <input
-              aria-invalid={Boolean(errors.phone)}
-              defaultValue={sent.text("phone", values?.phone ?? "")}
-              maxLength={32}
-              name="phone"
-              placeholder="Ex.: (11) 98888-7777"
-              type="tel"
-            />
-            <FieldError message={errors.phone} />
-          </label>
-          <label className="field sm:col-span-2">
-            <span className="field__label">
-              Observações <span className="field__optional">opcional</span>
-            </span>
-            <textarea
-              defaultValue={sent.text("notes", values?.notes ?? "")}
-              maxLength={5000}
-              name="notes"
-              placeholder="Combinados, preferências, contexto do relacionamento…"
-            />
-            <span className="field__hint">
-              Aparece em destaque na página do cliente, logo abaixo dos dados.
-            </span>
-          </label>
+            <div>
+              <h2>Empresas e marcas</h2>
+              <p>
+                Opcional. Use quando este cliente tem mais de um negócio: cada serviço, cobrança ou
+                domínio pode ser vinculado a uma delas.
+              </p>
+            </div>
+          </div>
+          <ClientEntitiesField />
+        </section>
+      )}
+
+      <section className="panel-card">
+        <div className="section-heading mb-5">
+          <span className="section-heading__icon bg-warning-soft text-warning">
+            <Icon name="file" />
+          </span>
+          <div>
+            <h2>Observações e histórico</h2>
+            <p>Contexto que ajuda você a lembrar deste cliente depois.</p>
+          </div>
+        </div>
+        <div className="grid gap-4">
+          <TextField
+            defaultValue={sent.text("notes", values?.notes ?? "")}
+            hint="Aparece em destaque na ficha do cliente, logo abaixo dos dados."
+            label="Observações"
+            maxLength={5000}
+            multiline
+            name="notes"
+            optional
+            placeholder="Combinados, preferências, contexto do relacionamento…"
+          />
+          <FormMore
+            description="Use somente se este cliente já pagava você antes de começar a usar o sistema."
+            icon="history"
+            title="Receita anterior ao Fate Light"
+          >
+            <div className="form-grid sm:grid-cols-2">
+              <MoneyField
+                defaultValue={sent.text("priorRevenue")}
+                hint="Vira uma única cobrança histórica já quitada, para o total recebido do cliente ficar correto. Não cria serviço nem recorrência."
+                label="Total já recebido"
+                name="priorRevenue"
+                onCentsChange={setPriorCents}
+                optional
+              />
+              <DateField
+                defaultValue={sent.text("priorRevenueDate")}
+                label="Data de referência"
+                name="priorRevenueDate"
+                onValueChange={setPriorDate}
+                optional
+              />
+              <TextField
+                className="sm:col-span-2"
+                defaultValue={sent.text("priorRevenueLabel")}
+                hint="Identifica o lançamento na lista de cobranças. Sem texto, fica “Histórico anterior ao sistema”."
+                label="Descrição do histórico"
+                maxLength={200}
+                name="priorRevenueLabel"
+                optional
+                placeholder="Ex.: Gestão de tráfego 2023–2025"
+              />
+            </div>
+            {priorPreviewReady ? (
+              <p className="helper-note" role="status">
+                <Icon className="size-4" name="receipt" />
+                <span>
+                  Será criada uma cobrança histórica quitada de{" "}
+                  <strong>{formatCurrency(priorAmount)}</strong> em{" "}
+                  <strong>{formatDatePtBr(priorDate)}</strong>.
+                </span>
+              </p>
+            ) : null}
+          </FormMore>
         </div>
       </section>
 
-      <details className="panel-card form-disclosure" open={Boolean(priorRevenueEntries?.length)}>
-        <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
-          <span className="flex items-center gap-2">
-            <span className="bg-positive-soft text-positive grid size-8 place-items-center rounded-lg">
-              <Icon className="size-4" name="history" />
-            </span>
-            Receita anterior ao Fate Light
-          </span>
-          <span className="text-muted flex items-center gap-1 text-xs">
-            <span className="form-disclosure__closed-label">Abrir</span>
-            <span className="form-disclosure__open-label">Fechar</span>
-            <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-          </span>
-        </summary>
-        <p className="helper-note mt-3">
-          Use somente se este cliente já pagava você antes de começar a usar o sistema. Não cria
-          serviço nem recorrência — apenas uma cobrança histórica quitada para o total recebido
-          ficar correto.
-        </p>
-        {clientId &&
-        priorRevenueEntries?.length &&
-        updatePriorRevenueAction &&
-        deletePriorRevenueAction ? (
-          <PriorRevenueEntries
-            clientId={clientId}
-            deleteAction={deletePriorRevenueAction}
-            entries={priorRevenueEntries}
-            updateAction={updatePriorRevenueAction}
-          />
-        ) : null}
-        <div className="form-grid prior-revenue-fields mt-3 sm:grid-cols-2">
-          <MoneyField
-            defaultValue={sent.text("priorRevenue")}
-            error={errors.priorRevenue}
-            label="Total já recebido"
-            name="priorRevenue"
-            onCentsChange={setPriorCents}
-            optional
-          />
-          <DateField
-            defaultValue={sent.text("priorRevenueDate")}
-            error={errors.priorRevenueDate}
-            label="Data de referência"
-            name="priorRevenueDate"
-            onValueChange={setPriorDate}
-            optional
-          />
-          <label className="field sm:col-span-2">
-            <span className="field__label">
-              Descrição do histórico <span className="field__optional">opcional</span>
-            </span>
-            <input
-              defaultValue={sent.text("priorRevenueLabel")}
-              maxLength={200}
-              name="priorRevenueLabel"
-              placeholder="Ex.: Gestão de tráfego 2023–2025"
-            />
-            <span className="field__hint">
-              Identifica o lançamento nas cobranças. Sem texto, usamos “Histórico anterior ao
-              sistema”.
-            </span>
-          </label>
-          {priorPreviewReady ? (
-            <aside className="helper-note sm:col-span-2" role="status">
-              <Icon className="size-4" name="receipt" />
-              <span>
-                Será criada uma cobrança histórica quitada de{" "}
-                <strong>{formatCurrency(priorAmount)}</strong> em{" "}
-                <strong>{formatDatePtBr(priorDate)}</strong>.
-              </span>
-            </aside>
-          ) : (
-            <p className="field__hint sm:col-span-2">
-              Informe total e data para ver a prévia. Deixe em branco se preferir lançar cada
-              cobrança antiga separadamente na ficha.
-            </p>
-          )}
-        </div>
-        {editing ? (
-          <p className="field__hint mt-2">
-            Ao salvar com um valor aqui, uma nova cobrança quitada é criada. Deixe vazio para não
-            registrar nada.
-          </p>
-        ) : null}
-      </details>
-
-      <div className="flex flex-wrap items-end justify-end gap-3">
-        <Link className="modal-cancel inline-flex items-center justify-center" href={cancelHref}>
+      <FormActions className="form-actions--page">
+        <Link className="button button--secondary" href={cancelHref}>
           Cancelar
         </Link>
         <SubmitButton idleLabel={submitLabel} />
-      </div>
-    </form>
+      </FormActions>
+    </Form>
   );
 }

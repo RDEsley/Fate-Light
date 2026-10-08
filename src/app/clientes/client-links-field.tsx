@@ -2,69 +2,71 @@
 
 import { useState } from "react";
 
+import { TextField } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { maxClientLinks, type ClientLink } from "@/features/clients/schemas";
 
+type LinkRow = ClientLink & { key: number };
+
 /**
- * Endereços extras do cliente. Começa com uma linha vazia para o campo existir mesmo
- * quando não há nada salvo — sem isso o usuário não descobre que a opção está aqui.
+ * Endereços extras do cliente. Nasce vazio, com o botão de adicionar à vista: uma linha
+ * em branco permanente ocupava espaço em todo cadastro que não usa links.
  */
 export function ClientLinksField({ links = [] }: { links?: ClientLink[] }) {
-  const [rows, setRows] = useState<ClientLink[]>(links.length ? links : [{ label: "", url: "" }]);
+  const [rows, setRows] = useState<LinkRow[]>(() =>
+    links.map((link, index) => ({ ...link, key: index })),
+  );
+  const [nextKey, setNextKey] = useState(links.length);
 
-  const update = (index: number, field: keyof ClientLink, value: string) => {
+  const update = (key: number, field: keyof ClientLink, value: string) => {
     setRows((current) =>
-      current.map((row, position) => (position === index ? { ...row, [field]: value } : row)),
+      current.map((row) => (row.key === key ? { ...row, [field]: value } : row)),
     );
   };
 
   return (
-    <div className="client-links">
+    <div className="repeat-list">
       {rows.map((row, index) => (
-        <div className="client-links__row" key={index}>
-          <label className="field">
-            <span className="field__label">
-              Nome do link <span className="field__optional">opcional</span>
-            </span>
-            <input
-              maxLength={40}
-              name="linkLabel"
-              onChange={(event) => update(index, "label", event.target.value)}
-              placeholder="Ex.: Painel do registrador"
-              value={row.label}
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Endereço <span className="field__optional">opcional</span>
-            </span>
-            <input
-              maxLength={253}
-              name="linkUrl"
-              onChange={(event) => update(index, "url", event.target.value)}
-              placeholder="Ex.: painel.registrador.com/cliente"
-              value={row.url}
-            />
-          </label>
-          {rows.length > 1 ? (
-            <button
-              aria-label={`Remover link ${index + 1}`}
-              className="client-links__remove"
-              onClick={() => setRows((current) => current.filter((_, at) => at !== index))}
-              type="button"
-            >
-              <Icon className="size-4" name="trash" />
-            </button>
-          ) : null}
+        <div className="repeat-row repeat-row--wide-last" key={row.key}>
+          <TextField
+            fieldKey={`linkLabel:${index}`}
+            label="Nome do link"
+            maxLength={40}
+            name="linkLabel"
+            onValueChange={(value) => update(row.key, "label", value)}
+            placeholder="Ex.: Painel do registrador"
+            value={row.label}
+          />
+          <TextField
+            fieldKey={`linkUrl:${index}`}
+            label="Endereço"
+            maxLength={253}
+            name="linkUrl"
+            onValueChange={(value) => update(row.key, "url", value)}
+            placeholder="Ex.: painel.registrador.com/cliente"
+            value={row.url}
+          />
+          <button
+            aria-label={`Remover link ${index + 1}`}
+            className="repeat-row__remove"
+            onClick={() => setRows((current) => current.filter((entry) => entry.key !== row.key))}
+            type="button"
+          >
+            <Icon className="size-4" name="trash" />
+          </button>
         </div>
       ))}
       {rows.length < maxClientLinks ? (
         <button
-          className="client-links__add"
-          onClick={() => setRows((current) => [...current, { label: "", url: "" }])}
+          className="repeat-add"
+          onClick={() => {
+            setRows((current) => [...current, { key: nextKey, label: "", url: "" }]);
+            setNextKey((key) => key + 1);
+          }}
           type="button"
         >
-          <Icon className="size-4" name="plus" /> Adicionar outro link
+          <Icon className="size-4" name="plus" />
+          {rows.length ? "Adicionar outro link" : "Adicionar link"}
         </button>
       ) : (
         <p className="field__hint">Limite de {maxClientLinks} links por cliente.</p>

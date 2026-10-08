@@ -142,9 +142,18 @@ test.describe("authenticated MVP journey", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Cliente MVP" })).toBeVisible();
 
     // Empresas/marcas do mesmo cliente (ADR-0020): o vínculo é opcional em todo lançamento.
+    // O cadastro delas vive na edição do cliente; a ficha só as usa para recortar e vincular.
+    await page.getByRole("link", { name: "Editar cliente" }).click();
+    await expect(page.getByRole("heading", { name: "Empresas e marcas" })).toBeVisible();
     await addClientEntity(page, "Padaria do Bairro", "Empresa");
     await addClientEntity(page, "Marca Doce", "Marca");
-    await expect(page.getByRole("heading", { name: "Empresas e marcas" })).toBeVisible();
+    await page.getByRole("link", { name: "Voltar para o cliente" }).click();
+    await expect(
+      page.getByRole("heading", { exact: true, level: 1, name: "Cliente MVP" }),
+    ).toBeVisible();
+    await expect(page.getByRole("navigation", { name: /empresa ou marca/i })).toContainText(
+      "Marca Doce",
+    );
 
     await addService(page, {
       entity: "Padaria do Bairro",
