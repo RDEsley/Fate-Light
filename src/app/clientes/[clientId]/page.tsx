@@ -580,10 +580,11 @@ export default async function ClientDetailsPage({
           </RecordList>
           <p className="text-muted mt-3 text-sm">
             <Link
-              className="font-semibold hover:underline"
+              className="inline-flex items-center gap-1 font-semibold hover:underline"
               href={`/cobrancas?clientId=${client.id}`}
             >
-              Ver todas as cobranças deste cliente →
+              Ver todas as cobranças deste cliente{" "}
+              <Icon className="size-3.5" name="chevron-right" />
             </Link>
           </p>
         </section>

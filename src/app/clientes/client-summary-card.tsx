@@ -203,8 +203,11 @@ export function ClientSummaryCard({
         ) : null}
         <div className="border-line mt-auto flex items-center justify-between gap-3 border-t pt-4">
           <div className="flex flex-wrap items-center gap-3">
-            <Link className="text-brand-strong text-sm font-black" href={detailHref}>
-              Abrir cliente →
+            <Link
+              className="text-brand-strong inline-flex items-center gap-1 text-sm font-black"
+              href={detailHref}
+            >
+              Abrir cliente <Icon className="size-3.5" name="chevron-right" />
             </Link>
             {!showingArchived ? (
               <Link
@@ -218,10 +221,7 @@ export function ClientSummaryCard({
           {showingArchived ? (
             <form action={restoreClient}>
               <input name="clientId" type="hidden" value={clientId} />
-              <button
-                className="text-muted hover:text-foreground text-xs font-bold"
-                type="submit"
-              >
+              <button className="text-muted hover:text-foreground text-xs font-bold" type="submit">
                 Desarquivar
               </button>
             </form>

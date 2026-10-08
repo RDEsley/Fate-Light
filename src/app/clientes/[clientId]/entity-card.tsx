@@ -76,10 +76,10 @@ export function ClientEntityCard({
       </div>
       <div className="entity-card__actions">
         <Link
-          className="text-brand-strong text-xs font-black hover:underline"
+          className="text-brand-strong inline-flex items-center gap-1 text-xs font-black hover:underline"
           href={`/clientes/${clientId}?entity=${entity.id}`}
         >
-          Ver na ficha →
+          Ver na ficha <Icon className="size-3.5" name="chevron-right" />
         </Link>
         {readOnly ? null : entity.archived ? (
           <form action={restoreClientEntity}>
