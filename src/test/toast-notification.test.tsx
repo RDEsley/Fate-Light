@@ -117,4 +117,21 @@ describe("pilha de avisos", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("Serviço aplicado e cobrança criada.");
   });
+
+  it("mostra o próximo passo dentro do aviso e o atualiza quando o aviso se repete", () => {
+    render(<Toaster />);
+
+    act(() =>
+      pushToast({
+        action: { href: "/cadastro", label: "Criar conta" },
+        message: "Faça cadastro ou login.",
+        tone: "info",
+      }),
+    );
+    expect(screen.getByRole("link", { name: "Criar conta" })).toHaveAttribute("href", "/cadastro");
+
+    act(() => pushToast({ message: "Faça cadastro ou login.", tone: "info" }));
+    expect(readToasts()).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
+  });
 });

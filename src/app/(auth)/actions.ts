@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
 import { z } from "zod";
@@ -7,6 +8,7 @@ import { z } from "zod";
 import { publicEnvironment } from "@/config/env/public";
 import { getAccountDestination } from "@/lib/auth/account-gate";
 import { sanitizeNextPath } from "@/lib/auth/redirects";
+import { guestCookieName } from "@/lib/demo/guest";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const magicLinkRequestSchema = z
@@ -265,6 +267,8 @@ export async function signOut() {
   if (typeof data?.claims?.sub === "string") {
     await supabase.auth.signOut({ scope: "local" });
   }
+  // Sair devolve a pessoa ao login de verdade, não aos dados de demonstração.
+  (await cookies()).delete(guestCookieName);
 
   redirect("/login?status=signed-out");
 }

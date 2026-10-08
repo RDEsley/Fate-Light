@@ -19,6 +19,7 @@ export function Toaster() {
 
   return toasts.map((toast) => (
     <ToastNotification
+      action={toast.action}
       // A versão entra na chave: o mesmo aviso repetido reinicia tempo e animação.
       key={`${toast.id}:${toast.version}`}
       message={toast.message}

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import { AuthShell } from "@/app/(auth)/_components/auth-shell";
+import { enterGuestMode } from "@/app/(auth)/guest-actions";
 import { PasswordForm } from "@/app/(auth)/_components/password-form";
+import { Icon } from "@/components/ui/icon";
 import { sanitizeNextPath } from "@/lib/auth/redirects";
 
 export const metadata: Metadata = { title: "Entrar" };
@@ -21,6 +23,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <AuthShell eyebrow="Acesso" title="Bem-vindo de volta.">
       <PasswordForm mode="login" nextPath={nextPath} status={parameters.status} />
+      {/* Discreto de propósito: o caminho principal continua sendo criar a conta. */}
+      <form action={enterGuestMode} className="auth-shell__guest">
+        <span>Só quer conhecer?</span>
+        <button type="submit">
+          <Icon className="size-4" name="eye" /> Explorar como visitante
+        </button>
+      </form>
     </AuthShell>
   );
 }
