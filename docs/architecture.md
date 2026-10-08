@@ -129,6 +129,15 @@ Operações compostas, como pagamento + alocações, importação e geração re
 
 O cliente web usa apenas URL e chave publicável. Chave secreta fica somente no ambiente servidor e não substitui RLS em fluxos de usuário.
 
+### Modo visitante
+
+O login oferece um modo de demonstração somente leitura (ADR-0021). O visitante não tem sessão: um
+cookie próprio faz `requireWorkspaceContext()` devolver um workspace fictício e um cliente em
+memória (`src/lib/demo/`) no lugar do cliente do Supabase. Esse cliente só lê um conjunto de dados
+inventado, montado a cada requisição, e recusa qualquer escrita. A sessão real sempre tem
+prioridade, Server Actions são recusadas antes de qualquer acesso a dados e o onboarding fica fora
+do alcance do visitante.
+
 ## 7. Multi-tenancy e autorização
 
 - Toda entidade de negócio contém `workspace_id uuid not null`.
