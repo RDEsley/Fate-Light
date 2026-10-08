@@ -107,10 +107,11 @@ Tudo fica ligado ao contexto certo, evitando clientes em uma planilha, domínios
 | 💳 **Cobranças**  | Vencimentos, pagamentos, recorrência automática e acompanhamento por cliente           |
 | 🧾 **Despesas**   | Despesas avulsas ou recorrentes, categorias, clientes e comprovantes privados          |
 | 🌐 **Domínios**   | Registro de domínios, registrador, vencimento e vínculo com clientes                   |
-| 🔔 **Alertas**    | Cobranças e despesas atrasadas ou próximas do vencimento                               |
+| 🔔 **Alertas**    | Central com filtros por prazo e tipo, lembretes próprios e adiamento                   |
 | 🕘 **Histórico**  | Linha do tempo pesquisável de pagamentos, atrasos, serviços e alterações               |
 | 📥 **Importação** | Importação de Excel/CSV com prévia, validação e proteção contra duplicidade            |
 | 🔐 **Conta**      | Autenticação, confirmação de e-mail, recuperação de senha, perfil e privacidade        |
+| 👀 **Visitante**  | Demonstração somente leitura com dados fictícios, sem cadastro                         |
 
 ---
 
@@ -386,7 +387,8 @@ Entre as principais proteções estão:
 * scanner de segredos integrado ao fluxo de qualidade;
 * importações processadas em memória;
 * nenhuma chave privilegiada utilizada no navegador;
-* confirmações reforçadas para operações destrutivas.
+* confirmações reforçadas para operações destrutivas;
+* modo visitante sem sessão e sem acesso ao banco: lê apenas dados fictícios em memória.
 
 Para reportar vulnerabilidades, consulte [`SECURITY.md`](SECURITY.md).
 
@@ -410,7 +412,7 @@ As instruções completas estão em:
 
 ## 📍 Status do projeto
 
-**Versão atual:** `0.8.2`
+**Versão atual:** `0.11.0`
 
 O Fate Light está em fase de preparação para a **V1**.
 

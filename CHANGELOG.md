@@ -5,6 +5,46 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-08
+
+### Added
+
+- Modo visitante: o login ganhou "Explorar como visitante", que abre o sistema com dados fictícios e
+  somente leitura. Nada é gravado; qualquer tentativa de alterar mostra "Faça cadastro ou login para
+  usar o sistema" (ADR-0021).
+- Central de alertas com cartões que filtram por prazo (atrasados, esta semana, próximos e total),
+  filtro por tipo e botão para limpar o filtro.
+- Lembretes: atalhos de data na criação e "Adiar" para amanhã, 7 ou 30 dias.
+- Antecedência dos alertas com valor personalizado, além das opções prontas.
+- Domínio cancelado pode voltar a ser acompanhado.
+
+### Changed
+
+- Cobranças, despesas, domínios e alertas em lista compacta: uma linha por registro, a ação principal
+  à vista e o restante nos detalhes ao abrir a linha.
+- Receber uma cobrança confirma a forma de pagamento em um diálogo curto.
+- Despesas: as pendentes sobem pelo vencimento mais próximo e as pagas ficam agrupadas abaixo.
+- Onboarding refeito: só nome, empresa e aceites são obrigatórios; dados fiscais e preferências
+  ficam recolhidos, com padrões definidos no servidor.
+- Excluir a conta e excluir os dados da empresa pedem a frase de confirmação dentro do diálogo, e o
+  servidor confere o que foi digitado.
+- Perfil e configurações: abas em faixa rolável no celular e blocos com o mesmo cabeçalho.
+- "Criar alerta avulso" passou a se chamar "Criar alerta"; em "Próximos" entra só o que vence depois
+  de sete dias, para os cartões somarem o total sem sobreposição.
+- Vermelho de estado um pouco mais escuro, para atingir contraste AA em texto pequeno.
+- Catálogo de serviços filtra por situação com as mesmas pílulas das outras listas.
+
+### Fixed
+
+- Alertas de despesa e de domínio levavam à lista sem destacar o registro citado.
+- O cadastro tratava o limite de envio de e-mails como erro nos dados informados.
+- O link de recuperação de senha podia terminar no onboarding quando o cadastro estava pendente.
+- Formato de data "AAAA-MM-DD" do onboarding era sempre recusado.
+- Aviso de "ambiente local" exibido no onboarding em qualquer ambiente.
+- E-mail longo invadia a coluna do telefone na ficha do cliente.
+- Despesa sem cliente aparecia como "Cliente —" no painel.
+- Filtro de situação do catálogo sem nome acessível e lista de fatos do serviço fora do padrão HTML.
+
 ## [0.10.1] - 2026-10-08
 
 ### Fixed
