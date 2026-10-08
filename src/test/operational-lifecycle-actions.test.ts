@@ -29,9 +29,11 @@ vi.mock("@/lib/auth/workspace-context", () => ({
 }));
 
 import {
+  cancelDomain,
   createExpense,
   deleteClientService,
   deleteOperationalRecord,
+  reactivateDomain,
   setClientServiceState,
   updateClientServiceSchedule,
 } from "@/app/_actions/mvp";
@@ -251,5 +253,50 @@ describe("operational lifecycle actions", () => {
       p_record_id: recordId,
       p_record_type: "charge",
     });
+  });
+
+  it("devolve à ficha do cliente quando a cobrança é excluída por lá", async () => {
+    const formData = new FormData();
+    formData.set("clientId", clientId);
+    formData.set("id", recordId);
+    formData.set("recordType", "charge");
+
+    await expect(deleteOperationalRecord(formData)).rejects.toThrow(
+      `REDIRECT:/clientes/${clientId}?status=deleted`,
+    );
+  });
+
+  it("para e volta a acompanhar um domínio sem apagar o registro", async () => {
+    const formData = new FormData();
+    formData.set("id", recordId);
+
+    await expect(cancelDomain(formData)).rejects.toThrow(
+      "REDIRECT:/dominios?status=domain-cancelled",
+    );
+    expect(lifecycleMocks.chain.update).toHaveBeenLastCalledWith({ status: "cancelled" });
+    expect(lifecycleMocks.chain.eq).toHaveBeenCalledWith("status", "active");
+
+    await expect(reactivateDomain(formData)).rejects.toThrow(
+      "REDIRECT:/dominios?status=domain-reactivated",
+    );
+    expect(lifecycleMocks.chain.update).toHaveBeenLastCalledWith({ status: "active" });
+    // Só reativa o que está cancelado, e sempre dentro do workspace da sessão.
+    expect(lifecycleMocks.chain.eq).toHaveBeenCalledWith("status", "cancelled");
+    expect(lifecycleMocks.chain.eq).toHaveBeenCalledWith(
+      "workspace_id",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    );
+  });
+
+  it("avisa quando o domínio a reativar não existe ou não está cancelado", async () => {
+    lifecycleMocks.chain.single.mockResolvedValue({ data: null, error: null });
+    const formData = new FormData();
+    formData.set("id", recordId);
+
+    await expect(reactivateDomain(formData)).rejects.toThrow("REDIRECT:/dominios?status=error");
+
+    const invalid = new FormData();
+    invalid.set("id", "não-é-uuid");
+    await expect(reactivateDomain(invalid)).rejects.toThrow("REDIRECT:/dominios?status=error");
   });
 });

@@ -36,7 +36,7 @@ export function CancelChargeForm({
 
   return (
     <>
-      <button className="charge-action" onClick={() => setOpen(true)} type="button">
+      <button className="service-action" onClick={() => setOpen(true)} type="button">
         <Icon className="size-4" name="x" /> Cancelar
       </button>
       <Modal

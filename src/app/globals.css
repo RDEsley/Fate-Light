@@ -2436,34 +2436,6 @@ summary::-webkit-details-marker {
   gap: 0.4rem;
 }
 
-.charge-list {
-  display: grid;
-  gap: 0.85rem;
-}
-
-.charge-card {
-  display: grid;
-  border: 1.25px solid var(--line-strong);
-  border-radius: var(--radius-2xl);
-  background: var(--surface);
-  padding: 1.15rem;
-  box-shadow: var(--shadow-cartoon);
-  gap: 1rem;
-  scroll-margin-block: 6rem;
-  transition:
-    border-color 220ms ease,
-    box-shadow 220ms ease;
-}
-
-/* Destaque temporário quando um alerta guia o usuário até esta cobrança. */
-.charge-card[data-focused="true"] {
-  border-color: var(--brand);
-  box-shadow:
-    0 0 0 4px var(--brand-soft),
-    var(--shadow-cartoon);
-  animation: charge-focus-pulse 1.4s ease-in-out 2;
-}
-
 @keyframes charge-focus-pulse {
   0%,
   100% {
@@ -2476,26 +2448,6 @@ summary::-webkit-details-marker {
       0 0 0 9px color-mix(in srgb, var(--brand-soft) 55%, transparent),
       var(--shadow-cartoon);
   }
-}
-
-.charge-card__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.charge-card__head h2 {
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
-.charge-card__head p {
-  margin-top: 0.2rem;
-  color: var(--muted);
-  font-size: 0.82rem;
 }
 
 .charge-status {
@@ -2524,85 +2476,6 @@ summary::-webkit-details-marker {
 .charge-status--cancelled {
   background: var(--canvas);
   color: var(--muted);
-}
-
-.charge-card__values {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (min-width: 640px) {
-  .charge-card__values {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.charge-card__values dt {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.charge-card__values dd {
-  margin-top: 0.15rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.charge-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  border-top: 1px solid var(--line);
-  padding-top: 0.9rem;
-  gap: 0.85rem;
-}
-
-.charge-settle {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0.6rem;
-}
-
-.charge-settle .select-field {
-  min-width: 11rem;
-}
-
-.charge-card__secondary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.charge-action {
-  display: inline-flex;
-  min-height: 2.4rem;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 0.7rem;
-  background: var(--surface);
-  padding: 0.35rem 0.7rem;
-  font-size: 0.78rem;
-  font-weight: 800;
-  gap: 0.35rem;
-}
-
-.charge-action:hover {
-  border-color: var(--line-strong);
-  background: var(--canvas);
-}
-
-.charge-action--danger {
-  color: var(--negative);
-}
-
-.charge-action--danger:hover {
-  border-color: var(--negative);
-  background: var(--negative-soft);
 }
 
 .client-status-switcher {
@@ -2733,16 +2606,6 @@ summary::-webkit-details-marker {
   border-radius: 0.85rem;
   padding: 0.7rem 0.9rem;
   gap: 0.5rem;
-}
-
-.charge-card__footnote {
-  display: flex;
-  align-items: center;
-  border-top: 1px solid var(--line);
-  padding-top: 0.85rem;
-  color: var(--muted);
-  font-size: 0.82rem;
-  gap: 0.4rem;
 }
 
 .fiscal-documents {
@@ -4114,6 +3977,494 @@ summary.action-row__head {
   color: var(--brand-strong);
 }
 
+/* Lista densa de registros (cobranças, despesas, domínios): uma linha por registro, com
+   os detalhes sob demanda. A largura que troca o layout é a do bloco, não a da janela. */
+.record-list {
+  border: 1.25px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+  container-type: inline-size;
+}
+
+.record-list__head {
+  display: none;
+}
+
+.record-list__group {
+  display: flex;
+  align-items: center;
+  background: #f3f5f1;
+  padding: 0.45rem 0.85rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.record-list__editor {
+  margin: 0.75rem;
+}
+
+.record-row {
+  position: relative;
+  scroll-margin-block: 6rem;
+}
+
+.record-row + .record-row,
+.record-row + .record-list__group,
+.record-list__group + .record-row,
+.record-list__editor + .record-row,
+.record-row + .record-list__editor {
+  border-top: 1px solid var(--line);
+}
+
+.record-row__bar {
+  position: relative;
+  display: grid;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  gap: 0.4rem 0.75rem;
+  grid-template-areas:
+    "main amount chevron"
+    "meta quick quick";
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  transition: background-color 140ms ease;
+}
+
+.record-row__bar:hover {
+  background: color-mix(in srgb, var(--brand-soft) 30%, transparent);
+}
+
+.record-row[data-tone="danger"] > .record-row__bar {
+  background: color-mix(in srgb, var(--negative-soft) 36%, transparent);
+}
+
+.record-row[data-tone="danger"] > .record-row__bar:hover {
+  background: color-mix(in srgb, var(--negative-soft) 56%, transparent);
+}
+
+.record-row[data-open="true"] > .record-row__bar {
+  background: color-mix(in srgb, var(--brand-soft) 42%, transparent);
+}
+
+/* Destaque temporário quando um alerta guia o usuário até este registro. */
+.record-row[data-focused="true"] {
+  z-index: 1;
+  border-radius: 0.8rem;
+  box-shadow: 0 0 0 3px var(--brand);
+  animation: charge-focus-pulse 1.4s ease-in-out 2;
+}
+
+.record-row__main {
+  min-width: 0;
+  grid-area: main;
+}
+
+.record-row__title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.record-row[data-tone="muted"] .record-row__title,
+.record-row[data-tone="muted"] .record-row__amount strong {
+  color: var(--muted);
+}
+
+/* O título é o botão; a área clicável dele cobre a linha inteira. */
+.record-row__toggle {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-row__toggle::after {
+  position: absolute;
+  cursor: pointer;
+  content: "";
+  inset: 0;
+}
+
+/* Sem o "afundar" dos botões: a transformação tiraria a área clicável do lugar. */
+.record-row .record-row__toggle:active {
+  transform: none;
+}
+
+.record-row__toggle:focus-visible {
+  outline: none;
+}
+
+.record-row__toggle:focus-visible::after {
+  border-radius: 0.8rem;
+  outline: 3px solid rgb(22 155 136 / 0.34);
+  outline-offset: -3px;
+}
+
+.record-row__subtitle {
+  margin-top: 0.1rem;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-row__meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.65rem;
+  grid-area: meta;
+}
+
+.record-cell {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  font-size: 0.78rem;
+  gap: 0.3rem;
+}
+
+.record-cell__label {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.record-cell__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.record-cell__note {
+  color: var(--negative);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.record-row__status {
+  display: inline-flex;
+}
+
+.record-row__amount {
+  grid-area: amount;
+  text-align: right;
+}
+
+.record-row__amount strong {
+  display: block;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.record-row__amount small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.record-row__quick {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  grid-area: quick;
+}
+
+.record-row__icon-action {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.record-row__icon-action:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.record-row__chevron {
+  color: var(--muted);
+  grid-area: chevron;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.record-row[data-open="true"] .record-row__chevron {
+  transform: rotate(180deg);
+}
+
+.record-row__panel {
+  display: grid;
+  border-top: 1px dashed var(--line);
+  background: color-mix(in srgb, var(--canvas) 50%, var(--surface));
+  padding: 0.9rem 0.85rem 1rem;
+  gap: 0.9rem;
+  animation: disclosure-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.record-row__panel > * {
+  margin-top: 0;
+}
+
+.record-list > .record-row:last-child > :last-child {
+  border-radius: 0 0 calc(1rem - 2px) calc(1rem - 2px);
+}
+
+.record-facts {
+  display: grid;
+  gap: 0.75rem 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+}
+
+.record-facts dt {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.record-facts dd {
+  margin-top: 0.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+@container (max-width: 45.99rem) {
+  .record-list > .record-row:nth-child(2) > .record-row__bar {
+    border-radius: calc(1rem - 2px) calc(1rem - 2px) 0 0;
+  }
+}
+
+@container (min-width: 46rem) {
+  .record-list__head {
+    display: grid;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    border-radius: calc(1rem - 2px) calc(1rem - 2px) 0 0;
+    background: #f6f8f4;
+    padding: 0.5rem 1rem 0.5rem 1.15rem;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 800;
+    gap: 0 1rem;
+    grid-template-columns: var(--record-columns);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* A coluna de valor é a antepenúltima: valor, ação rápida e seta. */
+  .record-list__head > :nth-last-child(3) {
+    text-align: right;
+  }
+
+  .record-list__group {
+    padding-inline: 1.15rem 1rem;
+  }
+
+  .record-row__bar {
+    min-height: 3.5rem;
+    padding: 0.55rem 1rem 0.55rem 1.15rem;
+    gap: 0 1rem;
+    grid-template-areas: none;
+    grid-template-columns: var(--record-columns);
+  }
+
+  .record-row__main,
+  .record-row__amount,
+  .record-row__quick,
+  .record-row__chevron {
+    grid-area: auto;
+  }
+
+  /* As células e a situação passam a ocupar colunas próprias da grade da linha. */
+  .record-row__meta {
+    display: contents;
+  }
+
+  .record-cell {
+    display: grid;
+    font-size: 0.84rem;
+    gap: 0;
+  }
+
+  .record-cell__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .record-row__panel {
+    padding: 1rem 1rem 1.1rem 1.15rem;
+  }
+}
+
+/* Faixa de números de resumo acima de uma lista. */
+.stat-strip {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .stat-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.stat-strip__item {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  padding: 0.55rem 0.85rem;
+  gap: 0.5rem;
+}
+
+.stat-strip__item span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stat-strip__item strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.stat-strip__item[data-tone="negative"] strong {
+  color: var(--negative);
+}
+
+.stat-strip__item[data-tone="warning"] strong {
+  color: var(--warning);
+}
+
+.stat-strip__item[data-tone="brand"] strong {
+  color: var(--brand-strong);
+}
+
+@media (max-width: 767px) {
+  .stat-strip__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+}
+
+/* Zero não é alerta: o número só ganha cor quando há algo para olhar. */
+.stat-strip__item[data-zero="true"] strong {
+  color: var(--muted);
+}
+
+/* Opções em pílulas: escolha única (rádio) ou múltipla (caixa), todas à vista. */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.4rem;
+  cursor: pointer;
+  align-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fbfcf9;
+  padding: 0 0.95rem 0 0.7rem;
+  color: var(--foreground);
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 0.45rem;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+  user-select: none;
+}
+
+/* A marca existe sempre, vazia ou preenchida: marcar não muda a largura da pílula. */
+.chip::before {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface-raised) center / 0.6rem no-repeat;
+  content: "";
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.chip input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+  inset: 0;
+}
+
+.chip:hover {
+  border-color: var(--line-strong);
+}
+
+.chip:has(input:checked) {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.chip:has(input:checked)::before {
+  border-color: var(--brand-strong);
+  background-color: var(--brand);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E");
+}
+
+.chip:has(input:focus-visible) {
+  outline: 3px solid rgb(22 155 136 / 0.34);
+  outline-offset: 2px;
+}
+
 /* O escurecimento vem do box-shadow gigante do recorte: assim a área destacada fica
    nítida sem precisar recortar máscara nem empilhar quatro divs de cobertura. */
 .tour {
@@ -4241,20 +4592,6 @@ summary.action-row__head {
   color: var(--foreground);
 }
 
-.charge-list__divider {
-  display: flex;
-  align-items: center;
-  border-top: 1px dashed var(--line-strong);
-  margin-top: 0.6rem;
-  padding-top: 0.9rem;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 900;
-  gap: 0.4rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .prior-revenue-list {
   display: grid;
   gap: 0.5rem;
@@ -4327,17 +4664,6 @@ summary.action-row__head {
   color: var(--brand-strong);
   font-size: 0.72rem;
   line-height: 1.35;
-}
-
-.critical-card {
-  border-color: color-mix(in srgb, var(--negative) 28%, var(--line));
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--negative-soft) 42%, transparent),
-    var(--shadow-panel);
-}
-
-.critical-card > div:first-child .bg-negative-soft {
-  animation: critical-soft-pulse 1.8s ease-in-out 2;
 }
 
 .delay-reason-disclosure {
@@ -4817,13 +5143,6 @@ summary.action-row__head {
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 700;
-}
-
-@keyframes critical-soft-pulse {
-  50% {
-    transform: scale(1.035);
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--negative-soft) 55%, transparent);
-  }
 }
 
 @media (min-width: 768px) {

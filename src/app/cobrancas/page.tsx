@@ -3,22 +3,13 @@ import Link from "next/link";
 import { Fragment } from "react";
 import { z } from "zod";
 
-import {
-  deleteOperationalRecord,
-  deletePaidFinancialRecord,
-  markChargePaid,
-} from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
-import { SubmitButton } from "@/app/_components/submit-button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
 import { Icon } from "@/components/ui/icon";
+import { RecordGroup, RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
-import { SelectField } from "@/components/ui/select-field";
 import { newestResolvedFirst } from "@/features/charges/resolution-order";
-import { formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
-import { cancellationReasons } from "@/features/mvp/schemas";
+import { isoDateInTimeZone } from "@/features/mvp/format";
 import {
   appendIdInFilter,
   escapeIlikePattern,
@@ -26,23 +17,17 @@ import {
 } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
-import { CancelChargeForm } from "./cancel-charge-form";
-import { DelayReasonForm } from "./delay-reason-form";
+import { ChargeRow, chargeListColumns, chargeListLabels } from "./charge-row";
 import { FocusCharge } from "./focus-charge";
 
 export const metadata: Metadata = { title: "Cobranças" };
 
-const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro", "Outro"];
-const paymentOptions = paymentMethods.map((method) => ({ label: method, value: method }));
-
-const cancellationLabels = new Map<string, string>(cancellationReasons.map(([v, l]) => [v, l]));
-
-const statusLabels: Record<string, string> = {
-  cancelled: "Cancelada",
-  overdue: "Vencida",
-  paid: "Paga",
-  pending: "Pendente",
-};
+const stateFilters = [
+  ["all", "Todas"],
+  ["pending", "Pendentes"],
+  ["paid", "Pagas"],
+  ["cancelled", "Canceladas"],
+] as const;
 const pageSize = 50;
 
 export default async function ChargesPage({
@@ -152,10 +137,10 @@ export default async function ChargesPage({
   const { data: charges, error, count, hidden } = await chargesRequest;
   const today = isoDateInTimeZone(context.workspaceTimezone);
   const totalPages = state === "all" ? 1 : Math.max(1, Math.ceil((count ?? 0) / pageSize));
-  const chargeHref = (targetPage: number) => {
+  const chargeHref = (targetPage: number, targetState = state) => {
     const next = new URLSearchParams();
     if (query) next.set("q", query);
-    if (state !== "all") next.set("state", state);
+    if (targetState !== "all") next.set("state", targetState);
     if (filteredClientId) next.set("clientId", filteredClientId);
     if (filteredEntityId) next.set("entity", filteredEntityId);
     if (targetPage > 1) next.set("page", String(targetPage));
@@ -171,8 +156,8 @@ export default async function ChargesPage({
       <MvpStatusMessage status={parameters.status} />
       <FocusCharge chargeId={parameters.focus} />
 
-      <form className="panel-card mb-4 flex flex-col gap-3 p-3! sm:flex-row" method="get">
-        <label className="relative flex-1">
+      <form className="panel-card mb-4 grid gap-3 p-3! sm:grid-cols-[1fr_auto]" method="get">
+        <label className="relative">
           <span className="sr-only">Buscar cobranças</span>
           <Icon
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -187,22 +172,21 @@ export default async function ChargesPage({
         </label>
         {filteredClientId ? <input name="clientId" type="hidden" value={filteredClientId} /> : null}
         {filteredEntityId ? <input name="entity" type="hidden" value={filteredEntityId} /> : null}
-        <label>
-          <span className="sr-only">Filtrar por status</span>
-          <select
-            className="min-h-11 w-full rounded-xl px-3 text-sm sm:w-40"
-            defaultValue={state}
-            name="state"
-          >
-            <option value="all">Todos os status</option>
-            <option value="pending">Pendentes</option>
-            <option value="paid">Pagas</option>
-            <option value="cancelled">Canceladas</option>
-          </select>
-        </label>
+        {state !== "all" ? <input name="state" type="hidden" value={state} /> : null}
         <button className="button button--primary" type="submit">
           Filtrar
         </button>
+        <nav aria-label="Filtrar por situação" className="client-filter-pills sm:col-span-2">
+          {stateFilters.map(([value, label]) => (
+            <Link
+              aria-current={state === value ? "page" : undefined}
+              href={chargeHref(1, value)}
+              key={value}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
       </form>
 
       {filteredClientId ? (
@@ -239,12 +223,12 @@ export default async function ChargesPage({
       ) : null}
 
       {error ? (
-        <p role="alert">Não foi possível carregar as cobranças.</p>
+        <p className="panel-card" role="alert">
+          Não foi possível carregar as cobranças.
+        </p>
       ) : charges?.length ? (
-        <div className="charge-list">
+        <RecordList columns={chargeListColumns} head={chargeListLabels}>
           {charges.map((charge, index) => {
-            const effectiveStatus =
-              charge.status === "pending" && charge.due_date < today ? "overdue" : charge.status;
             // A primeira cobrança já resolvida marca a fronteira entre "a fazer" e
             // "feito" — é o que mostra para onde a cobrança recém-paga foi.
             const startsResolved =
@@ -252,173 +236,55 @@ export default async function ChargesPage({
             return (
               <Fragment key={charge.id}>
                 {startsResolved ? (
-                  <p className="charge-list__divider">
+                  <RecordGroup>
                     <Icon className="size-4" name="check" /> Resolvidas
-                  </p>
+                  </RecordGroup>
                 ) : null}
-                <article
-                  className={`charge-card ${effectiveStatus === "overdue" ? "critical-card" : ""}`}
-                  id={`charge-${charge.id}`}
-                >
-                  <div className="charge-card__head">
-                    <div className="min-w-0">
-                      <h2>{charge.description}</h2>
-                      <p>
-                        {/* Com entidade, ela vem antes do prazo e o cliente fica como
-                            contexto: é o nome da empresa que a pessoa reconhece. */}
-                        {charge.client_entities?.display_name
-                          ? `${charge.clients?.name ?? "Cliente"} · ${charge.client_entities.display_name}`
-                          : (charge.clients?.name ?? "Cliente")}{" "}
-                        · vencimento {formatDatePtBr(charge.due_date)}
-                      </p>
-                    </div>
-                    <span className={`charge-status charge-status--${effectiveStatus}`}>
-                      {statusLabels[effectiveStatus]}
-                    </span>
-                  </div>
-
-                  <dl className="charge-card__values">
-                    <div>
-                      <dt>Receita própria</dt>
-                      <dd>{formatCurrency(charge.company_revenue)}</dd>
-                    </div>
-                    <div>
-                      <dt>Mídia</dt>
-                      <dd>{formatCurrency(charge.media_budget)}</dd>
-                    </div>
-                    <div>
-                      <dt>
-                        Adicional
-                        {Number(charge.additional_fee) > 0 && !charge.additional_fee_is_revenue
-                          ? " (repasse)"
-                          : ""}
-                      </dt>
-                      <dd>{formatCurrency(charge.additional_fee)}</dd>
-                    </div>
-                    <div>
-                      <dt>Total bruto</dt>
-                      <dd className="font-black">
-                        {Number(charge.gross_total) === 0
-                          ? "Cortesia"
-                          : formatCurrency(charge.gross_total)}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  {effectiveStatus === "overdue" ? (
-                    charge.delay_reason ? (
-                      <div className="delay-reason-note">
-                        <Icon className="size-4" name="history" />
-                        <span>
-                          <strong>Motivo registrado:</strong> {charge.delay_reason}
-                        </span>
-                      </div>
-                    ) : (
-                      <DelayReasonForm chargeId={charge.id} />
-                    )
-                  ) : null}
-
-                  {charge.status === "cancelled" && charge.cancel_reason ? (
-                    <div className="delay-reason-note">
-                      <Icon className="size-4" name="x" />
-                      <span>
-                        <strong>
-                          {cancellationLabels.get(charge.cancel_reason_code ?? "") ?? "Cancelada"}:
-                        </strong>{" "}
-                        {charge.cancel_reason}
-                      </span>
-                    </div>
-                  ) : null}
-
-                  {charge.status === "pending" ? (
-                    <div className="charge-card__actions">
-                      <form action={markChargePaid} className="charge-settle">
-                        <input name="id" type="hidden" value={charge.id} />
-                        <input name="returnTo" type="hidden" value="/cobrancas" />
-                        <SelectField
-                          defaultValue="Pix"
-                          label="Forma de pagamento"
-                          name="paymentMethod"
-                          options={paymentOptions}
-                        />
-                        <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
-                      </form>
-                      <div className="charge-card__secondary">
-                        <CancelChargeForm chargeId={charge.id} description={charge.description} />
-                        <form action={deleteOperationalRecord}>
-                          <input name="clientId" type="hidden" value="" />
-                          <input name="id" type="hidden" value={charge.id} />
-                          <input name="recordType" type="hidden" value="charge" />
-                          <ConfirmDialog
-                            className="charge-action charge-action--danger"
-                            confirmLabel="Excluir cobrança"
-                            confirmation="A cobrança some do sistema sem deixar registro. Se ela existiu de verdade, prefira cancelar para manter o histórico."
-                            icon="trash"
-                            label="Excluir"
-                            title={charge.description}
-                          />
-                        </form>
-                      </div>
-                    </div>
-                  ) : charge.paid_at ? (
-                    <>
-                      <p className="charge-card__footnote">
-                        <Icon className="size-4" name="check" /> Pago em{" "}
-                        {new Date(charge.paid_at).toLocaleString("pt-BR")} via{" "}
-                        {charge.payment_method}
-                      </p>
-                      <FiscalDocumentPanel
-                        documents={(charge.fiscal_documents ?? []).map((document) => ({
-                          createdAt: document.created_at,
-                          id: document.id,
-                          mimeType: document.mime_type,
-                          sizeBytes: document.size_bytes,
-                        }))}
-                        entityId={charge.id}
-                        entityType="charge"
-                      />
-                      <form action={deletePaidFinancialRecord} className="mt-3">
-                        <input name="id" type="hidden" value={charge.id} />
-                        <input name="recordType" type="hidden" value="charge" />
-                        <input name="returnTo" type="hidden" value="/cobrancas" />
-                        <ConfirmDialog
-                          className="charge-action charge-action--danger"
-                          confirmLabel="Excluir cobrança paga"
-                          confirmation="A receita sai do dashboard e do histórico. Notas fiscais anexadas são removidas. Esta ação é irreversível."
-                          holdSeconds={3}
-                          icon="trash"
-                          label="Excluir paga"
-                          title={charge.description}
-                        />
-                      </form>
-                    </>
-                  ) : charge.status === "cancelled" ? (
-                    <div className="charge-card__actions">
-                      <form action={deleteOperationalRecord}>
-                        <input name="clientId" type="hidden" value="" />
-                        <input name="id" type="hidden" value={charge.id} />
-                        <input name="recordType" type="hidden" value="charge" />
-                        <ConfirmDialog
-                          className="charge-action charge-action--danger"
-                          confirmLabel="Excluir cobrança"
-                          confirmation="A cobrança cancelada some do sistema sem deixar registro."
-                          icon="trash"
-                          label="Excluir cobrança"
-                          title={charge.description}
-                        />
-                      </form>
-                    </div>
-                  ) : null}
-                </article>
+                <ChargeRow
+                  charge={{
+                    additionalFee: charge.additional_fee,
+                    additionalFeeIsRevenue: charge.additional_fee_is_revenue,
+                    cancelReason: charge.cancel_reason,
+                    cancelReasonCode: charge.cancel_reason_code,
+                    clientId: charge.client_id,
+                    clientName: charge.clients?.name,
+                    companyRevenue: charge.company_revenue,
+                    delayReason: charge.delay_reason,
+                    description: charge.description,
+                    documents: (charge.fiscal_documents ?? []).map((document) => ({
+                      createdAt: document.created_at,
+                      id: document.id,
+                      mimeType: document.mime_type,
+                      sizeBytes: document.size_bytes,
+                    })),
+                    dueDate: charge.due_date,
+                    entityName: charge.client_entities?.display_name,
+                    grossTotal: charge.gross_total,
+                    id: charge.id,
+                    mediaBudget: charge.media_budget,
+                    paidAt: charge.paid_at,
+                    paymentMethod: charge.payment_method,
+                    status: charge.status,
+                  }}
+                  // O alerta leva até a cobrança: ela já chega aberta, com os detalhes à vista.
+                  defaultOpen={parameters.focus === charge.id}
+                  returnTo="/cobrancas"
+                  today={today}
+                />
               </Fragment>
             );
           })}
-        </div>
+        </RecordList>
       ) : (
-        <section className="border-line bg-surface rounded-2xl border p-8 text-center">
-          <h2 className="text-xl font-semibold">Nenhuma cobrança</h2>
-          <p className="text-muted mt-2">
-            Aplique um serviço no card de um cliente ou abra a ficha dele para criar uma cobrança.
+        <section className="empty-state">
+          <span className="empty-state__icon">
+            <Icon name="receipt" />
+          </span>
+          <strong>Nenhuma cobrança por aqui</strong>
+          <p>
+            {query || state !== "all"
+              ? "Nenhuma cobrança corresponde ao filtro atual."
+              : "Aplique um serviço na ficha de um cliente ou crie uma cobrança avulsa por lá."}
           </p>
         </section>
       )}

@@ -3,18 +3,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
-import { deleteOperationalRecord, markChargePaid } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
-import { SubmitButton } from "@/app/_components/submit-button";
+import { ChargeRow, chargeListColumns, chargeListLabels } from "@/app/cobrancas/charge-row";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormPanel } from "@/components/ui/form-panel";
 import { Icon } from "@/components/ui/icon";
 import { OpenPanelLink } from "@/components/ui/open-panel-link";
-import { SelectField } from "@/components/ui/select-field";
+import { RecordList } from "@/components/ui/record-row";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
 import { ClientStatusChip } from "@/features/clients/status-chip";
-import { formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
+import { formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
 import { ownRevenue } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
@@ -29,12 +28,6 @@ import { ServiceCard } from "./service-card";
 import { ClientStatusSwitcher } from "./status-switcher";
 
 export const metadata: Metadata = { title: "Detalhes do cliente" };
-
-const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro", "Outro"];
-const paymentOptions = paymentMethods.map((method) => ({
-  label: method,
-  value: method,
-}));
 
 function serviceDuration(startDate: string, endedAt: string | null) {
   const start = new Date(`${startDate}T00:00:00.000Z`);
@@ -559,72 +552,32 @@ export default async function ClientDetailsPage({
               <p>Receba aqui sem sair da ficha do cliente.</p>
             </div>
           </div>
-          <div className="charge-list">
-            {visiblePendingCharges.map((charge) => {
-              const overdue = charge.due_date < today;
-              const chargeEntity = charge.client_entity_id
-                ? entityNames.get(charge.client_entity_id)
-                : null;
-              return (
-                <article
-                  className={`charge-card ${overdue ? "critical-card" : ""}`}
-                  key={charge.id}
-                >
-                  <div className="charge-card__head">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold">{charge.description}</h3>
-                      <p className="text-muted text-sm">
-                        {chargeEntity ? `${chargeEntity} · ` : ""}
-                        Vencimento {formatDatePtBr(charge.due_date)}
-                        {overdue ? " · vencida" : ""}
-                      </p>
-                    </div>
-                    <span
-                      className={`charge-status charge-status--${overdue ? "overdue" : "pending"}`}
-                    >
-                      {overdue ? "Vencida" : "Pendente"}
-                    </span>
-                  </div>
-                  <dl className="charge-card__values">
-                    <div>
-                      <dt>Receita própria</dt>
-                      <dd>{formatCurrency(charge.company_revenue)}</dd>
-                    </div>
-                    <div>
-                      <dt>Total bruto</dt>
-                      <dd className="font-black">{formatCurrency(charge.gross_total)}</dd>
-                    </div>
-                  </dl>
-                  <div className="charge-card__actions">
-                    <form action={markChargePaid} className="charge-settle">
-                      <input name="id" type="hidden" value={charge.id} />
-                      <input name="returnTo" type="hidden" value={clientReturnTo} />
-                      <SelectField
-                        defaultValue="Pix"
-                        label="Forma de pagamento"
-                        name="paymentMethod"
-                        options={paymentOptions}
-                      />
-                      <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
-                    </form>
-                    <form action={deleteOperationalRecord}>
-                      <input name="clientId" type="hidden" value={client.id} />
-                      <input name="id" type="hidden" value={charge.id} />
-                      <input name="recordType" type="hidden" value="charge" />
-                      <ConfirmDialog
-                        className="charge-action charge-action--danger"
-                        confirmLabel="Excluir cobrança"
-                        confirmation="A cobrança some do sistema sem deixar registro. Se ela existiu de verdade, prefira cancelar na página de cobranças."
-                        icon="trash"
-                        label="Excluir"
-                        title={charge.description}
-                      />
-                    </form>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          <RecordList columns={chargeListColumns} head={chargeListLabels}>
+            {visiblePendingCharges.map((charge) => (
+              <ChargeRow
+                charge={{
+                  additionalFee: charge.additional_fee,
+                  additionalFeeIsRevenue: charge.additional_fee_is_revenue,
+                  clientId: client.id,
+                  companyRevenue: charge.company_revenue,
+                  description: charge.description,
+                  dueDate: charge.due_date,
+                  entityName: charge.client_entity_id
+                    ? entityNames.get(charge.client_entity_id)
+                    : null,
+                  grossTotal: charge.gross_total,
+                  id: charge.id,
+                  mediaBudget: charge.media_budget,
+                  status: charge.status,
+                }}
+                context="client"
+                headingLevel={3}
+                key={charge.id}
+                returnTo={clientReturnTo}
+                today={today}
+              />
+            ))}
+          </RecordList>
           <p className="text-muted mt-3 text-sm">
             <Link
               className="font-semibold hover:underline"

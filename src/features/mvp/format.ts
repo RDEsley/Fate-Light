@@ -70,6 +70,13 @@ export function addDays(date: string, days: number) {
   return value.toISOString().slice(0, 10);
 }
 
+/** Dias corridos entre duas datas civis `YYYY-MM-DD` (positivo quando `to` vem depois). */
+export function daysBetween(from: string, to: string) {
+  const start = Date.parse(`${from}T00:00:00.000Z`);
+  const end = Date.parse(`${to}T00:00:00.000Z`);
+  return Math.round((end - start) / 86_400_000);
+}
+
 const hostPattern = /^[a-z0-9]([a-z0-9.-]{1,251}[a-z0-9])?\.[a-z]{2,}$/i;
 
 /** Verdadeiro quando o texto parece um domínio (tem ponto, sem espaço), não só um nome. */
