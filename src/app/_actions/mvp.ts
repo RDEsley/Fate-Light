@@ -188,7 +188,9 @@ export async function deleteOperationalRecord(formData: FormData) {
     values.data.recordType === "service"
       ? `/clientes/${values.data.clientId}`
       : values.data.recordType === "charge"
-        ? "/cobrancas"
+        ? values.data.clientId
+          ? `/clientes/${values.data.clientId}`
+          : "/cobrancas"
         : values.data.recordType === "expense"
           ? "/despesas"
           : "/dominios";
@@ -606,6 +608,25 @@ export async function deleteDomain(formData: FormData) {
   statusRedirect("/dominios", "domain-deleted");
 }
 
+/** Volta a acompanhar um domínio cancelado, sem precisar excluí-lo e cadastrá-lo de novo. */
+export async function reactivateDomain(formData: FormData) {
+  const id = identifierSchema.safeParse(formData.get("id"));
+  if (!id.success) statusRedirect("/dominios", "error");
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("domains")
+    .update({ status: "active" })
+    .eq("id", id.data)
+    .eq("workspace_id", workspaceId)
+    .eq("status", "cancelled")
+    .select("id")
+    .single();
+  if (error || !data) statusRedirect("/dominios", "error");
+  revalidatePath("/dominios");
+  revalidatePath("/dashboard");
+  statusRedirect("/dominios", "domain-reactivated");
+}
+
 export async function cancelDomain(formData: FormData) {
   const id = identifierSchema.safeParse(formData.get("id"));
   if (!id.success) statusRedirect("/dominios", "error");
@@ -621,5 +642,5 @@ export async function cancelDomain(formData: FormData) {
   if (error || !data) statusRedirect("/dominios", "error");
   revalidatePath("/dominios");
   revalidatePath("/dashboard");
-  statusRedirect("/dominios", "cancelled");
+  statusRedirect("/dominios", "domain-cancelled");
 }

@@ -4,8 +4,10 @@ import Link from "next/link";
 import { createDomain } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
+import { FocusRecord } from "@/components/ui/focus-record";
 import { FormPanel } from "@/components/ui/form-panel";
 import { Icon } from "@/components/ui/icon";
+import { RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { addDays, formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
@@ -16,7 +18,7 @@ import {
 } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
-import { DomainCard } from "./domain-card";
+import { DomainCard, domainColumnLabels, domainColumns } from "./domain-card";
 import { DomainForm } from "./domain-form";
 
 export const metadata: Metadata = { title: "Domínios" };
@@ -35,6 +37,7 @@ export default async function DomainsPage({
   searchParams: Promise<{
     clientId?: string;
     entity?: string;
+    focus?: string;
     page?: string;
     q?: string;
     state?: string;
@@ -147,13 +150,14 @@ export default async function DomainsPage({
       title="Domínios"
     >
       <MvpStatusMessage status={parameters.status} />
+      <FocusRecord targetId={parameters.focus ? `domain-${parameters.focus}` : undefined} />
 
       {summaryError ? (
         <p className="panel-card mb-4" role="alert">
           Não foi possível calcular o resumo completo dos domínios.
         </p>
       ) : null}
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="stat-strip mb-4">
         <SummaryCard label="Vencidos" tone="negative" value={String(overdue)} />
         <SummaryCard label="Vencem hoje" tone="warning" value={String(dueToday)} />
         <SummaryCard label="Nesta semana" tone="warning" value={String(dueThisWeek)} />
@@ -208,12 +212,14 @@ export default async function DomainsPage({
           Não foi possível carregar os domínios.
         </p>
       ) : rows.length ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <RecordList columns={domainColumns} head={domainColumnLabels}>
           {rows.map((domain) => (
             <DomainCard
               cancelled={domain.status === "cancelled"}
               clientName={domain.clients?.name ?? "Cliente"}
               clients={clientOptions}
+              // O alerta leva até o domínio: ele já chega aberto, com os detalhes à vista.
+              defaultOpen={parameters.focus === domain.id}
               entities={entityOptions}
               entityName={domain.client_entities?.display_name ?? null}
               key={domain.id}
@@ -232,12 +238,14 @@ export default async function DomainsPage({
               }}
             />
           ))}
-        </div>
+        </RecordList>
       ) : (
-        <section className="panel-card py-10 text-center">
-          <Icon className="text-brand mx-auto size-7" name="globe" />
-          <h2 className="mt-3 text-lg font-black">Nenhum domínio por aqui</h2>
-          <p className="text-muted mt-1 text-sm">
+        <section className="empty-state">
+          <span className="empty-state__icon">
+            <Icon name="globe" />
+          </span>
+          <strong>Nenhum domínio por aqui</strong>
+          <p>
             {query || state !== "all"
               ? "Nenhum domínio corresponde ao filtro atual."
               : "Cadastre o primeiro domínio para ser avisado antes de qualquer expiração."}
@@ -269,15 +277,14 @@ function SummaryCard({
   tone: "brand" | "negative" | "warning";
   value: string;
 }) {
-  const tones = {
-    brand: "bg-brand-soft text-brand-strong border-brand/25",
-    negative: "bg-negative-soft text-negative border-negative/25",
-    warning: "bg-warning-soft text-warning border-warning/25",
-  };
   return (
-    <article className={`cartoon-card flex items-center justify-between p-4 ${tones[tone]}`}>
-      <span className="text-sm font-bold">{label}</span>
-      <strong className="text-xl font-black tabular-nums">{value}</strong>
-    </article>
+    <div
+      className="stat-strip__item"
+      data-tone={tone}
+      data-zero={value === "0" ? "true" : undefined}
+    >
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }

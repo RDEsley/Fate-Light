@@ -1,6 +1,7 @@
 import {
   addDays,
   dashboardPeriodBounds,
+  daysBetween,
   expiryLabel,
   formatCurrency,
   formatDatePtBr,
@@ -206,6 +207,13 @@ describe("MVP financial boundaries", () => {
     const instant = new Date("2026-08-28T01:30:00.000Z");
     expect(isoDateInTimeZone("America/Sao_Paulo", instant)).toBe("2026-08-27");
     expect(isoDateInTimeZone("Asia/Tokyo", instant)).toBe("2026-08-28");
+  });
+
+  it("conta dias corridos entre datas civis, nos dois sentidos", () => {
+    expect(daysBetween("2026-10-04", "2026-10-08")).toBe(4);
+    expect(daysBetween("2026-10-08", "2026-10-04")).toBe(-4);
+    expect(daysBetween("2026-02-28", "2026-03-01")).toBe(1);
+    expect(daysBetween("2026-10-08", "2026-10-08")).toBe(0);
   });
 
   it("reconhece hosts e traduz falhas conhecidas do banco", () => {

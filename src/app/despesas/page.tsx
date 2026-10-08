@@ -1,29 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 
-import {
-  deleteOperationalRecord,
-  deletePaidFinancialRecord,
-  markExpensePaid,
-  stopExpenseRecurrence,
-} from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
-import { SubmitButton } from "@/app/_components/submit-button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
+import { FocusRecord } from "@/components/ui/focus-record";
 import { FormPanel } from "@/components/ui/form-panel";
 import { Icon } from "@/components/ui/icon";
+import { RecordGroup, RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
-import { addDays, formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
-import { appendIdInFilter, textSearchOrFilter } from "@/features/search/list-query";
+import { addDays, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
+import {
+  appendIdInFilter,
+  idsMatchingText,
+  textSearchOrFilter,
+} from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { ExpenseForm } from "./expense-form";
+import { ExpenseRow, expenseColumnLabels, expenseColumns } from "./expense-row";
 
 export const metadata: Metadata = { title: "Despesas" };
 const pageSize = 40;
+const pendingLimit = 200;
+const paidLimit = 100;
 
 const categories = [
   ["tools", "Ferramentas"],
@@ -38,6 +39,13 @@ const categories = [
 ] as const;
 
 const categoryOptions = categories.map(([value, label]) => ({ label, value }));
+const categoryLabels = new Map<string, string>(categories);
+
+const stateFilters = [
+  ["all", "Todas"],
+  ["pending", "Pendentes"],
+  ["paid", "Pagas"],
+] as const;
 
 export default async function ExpensesPage({
   searchParams,
@@ -46,6 +54,7 @@ export default async function ExpensesPage({
     clientId?: string;
     due?: string;
     entity?: string;
+    focus?: string;
     page?: string;
     q?: string;
     state?: string;
@@ -80,55 +89,76 @@ export default async function ExpensesPage({
       .limit(2000),
   ]);
 
-  let expensesRequest = context.supabase
-    .from("expenses")
-    .select(
-      "id, description, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)",
-      { count: "exact" },
-    )
-    .eq("workspace_id", context.workspaceId)
-    .order("due_date", { ascending: dueWindow === "next7" })
-    .range(firstRow, firstRow + pageSize - 1);
-  if (parameters.clientId) expensesRequest = expensesRequest.eq("client_id", parameters.clientId);
-  if (parameters.entity)
-    expensesRequest = expensesRequest.eq("client_entity_id", parameters.entity);
+  const searchParts = query
+    ? textSearchOrFilter(["description", "category", "notes"], query).split(",")
+    : [];
   if (query) {
-    const parts = textSearchOrFilter(["description", "category", "notes"], query).split(",");
     appendIdInFilter(
-      parts,
+      searchParts,
       "client_id",
-      (clients ?? [])
-        .filter((client) => {
-          const needle = query.toLocaleLowerCase("pt-BR");
-          return (
-            client.name.toLocaleLowerCase("pt-BR").includes(needle) ||
-            (client.trade_name ?? "").toLocaleLowerCase("pt-BR").includes(needle)
-          );
-        })
-        .map((client) => client.id),
+      idsMatchingText(clients, query, ["name", "trade_name"]),
     );
     appendIdInFilter(
-      parts,
+      searchParts,
       "client_entity_id",
-      (entityRows ?? [])
-        .filter((entity) =>
-          entity.display_name.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")),
-        )
-        .map((entity) => entity.id),
+      idsMatchingText(entityRows, query, ["display_name"]),
     );
-    expensesRequest = expensesRequest.or(parts.join(","));
   }
-  if (state !== "all") expensesRequest = expensesRequest.eq("status", state);
-  if (dueWindow === "next7") {
-    expensesRequest = expensesRequest.gte("due_date", today).lte("due_date", nextWeek);
-  }
-  const { data: expenses, error, count } = await expensesRequest;
-  const totalPages = Math.max(1, Math.ceil((count ?? 0) / pageSize));
-  const expenseHref = (targetPage: number) => {
+
+  // Em "Todas", duas consultas de propósito: o que falta pagar sobe pelo vencimento mais
+  // próximo (as vencidas ficam no topo) e o que já foi pago desce pelo pagamento mais
+  // recente. Uma ordenação só deixava a despesa vencida perdida no meio das pagas.
+  const buildRequest = (status: "paid" | "pending" | null, paginated: boolean) => {
+    let request = context.supabase
+      .from("expenses")
+      .select(
+        "id, description, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)",
+        { count: "exact" },
+      )
+      .eq("workspace_id", context.workspaceId)
+      .order(status === "paid" ? "paid_at" : "due_date", {
+        ascending: status !== "paid",
+        nullsFirst: false,
+      });
+    if (status) request = request.eq("status", status);
+    if (parameters.clientId) request = request.eq("client_id", parameters.clientId);
+    if (parameters.entity) request = request.eq("client_entity_id", parameters.entity);
+    if (searchParts.length) request = request.or(searchParts.join(","));
+    if (dueWindow === "next7") {
+      request = request.gte("due_date", today).lte("due_date", nextWeek);
+    }
+    return paginated
+      ? request.range(firstRow, firstRow + pageSize - 1)
+      : request.limit(status === "pending" ? pendingLimit : paidLimit);
+  };
+
+  const grouped = state === "all" && dueWindow === "all";
+  const {
+    data: expenses,
+    error,
+    count,
+    hidden,
+  } = await (grouped
+    ? Promise.all([buildRequest("pending", false), buildRequest("paid", false)]).then(
+        ([open, paid]) => ({
+          count: (open.count ?? 0) + (paid.count ?? 0),
+          data: [...(open.data ?? []), ...(paid.data ?? [])],
+          error: open.error ?? paid.error,
+          hidden:
+            Math.max(0, (open.count ?? 0) - pendingLimit) +
+            Math.max(0, (paid.count ?? 0) - paidLimit),
+        }),
+      )
+    : buildRequest(state === "all" ? null : (state as "paid" | "pending"), true).then((result) => ({
+        ...result,
+        hidden: 0,
+      })));
+  const totalPages = grouped ? 1 : Math.max(1, Math.ceil((count ?? 0) / pageSize));
+  const expenseHref = (targetPage: number, targetState = state, targetDue = dueWindow) => {
     const next = new URLSearchParams();
     if (query) next.set("q", query);
-    if (state !== "all") next.set("state", state);
-    if (dueWindow !== "all") next.set("due", dueWindow);
+    if (targetState !== "all") next.set("state", targetState);
+    if (targetDue !== "all") next.set("due", targetDue);
     if (parameters.clientId) next.set("clientId", parameters.clientId);
     if (parameters.entity) next.set("entity", parameters.entity);
     if (targetPage > 1) next.set("page", String(targetPage));
@@ -141,8 +171,9 @@ export default async function ExpensesPage({
       title="Despesas"
     >
       <MvpStatusMessage status={parameters.status} />
-      <form className="panel-card mb-4 flex flex-col gap-3 p-3! sm:flex-row" method="get">
-        <label className="relative flex-1">
+      <FocusRecord targetId={parameters.focus ? `expense-${parameters.focus}` : undefined} />
+      <form className="panel-card mb-4 grid gap-3 p-3! sm:grid-cols-[1fr_auto]" method="get">
+        <label className="relative">
           <span className="sr-only">Buscar despesas</span>
           <Icon
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -155,32 +186,32 @@ export default async function ExpensesPage({
             placeholder="Descrição, cliente, empresa, categoria..."
           />
         </label>
-        <label>
-          <span className="sr-only">Filtrar por status</span>
-          <select
-            className="min-h-11 w-full rounded-xl px-3 text-sm sm:w-40"
-            defaultValue={state}
-            name="state"
-          >
-            <option value="all">Todos os status</option>
-            <option value="pending">Pendentes</option>
-            <option value="paid">Pagas</option>
-          </select>
-        </label>
-        <label>
-          <span className="sr-only">Filtrar por vencimento</span>
-          <select
-            className="min-h-11 w-full rounded-xl px-3 text-sm sm:w-44"
-            defaultValue={dueWindow}
-            name="due"
-          >
-            <option value="all">Qualquer vencimento</option>
-            <option value="next7">Próximos 7 dias</option>
-          </select>
-        </label>
+        {state !== "all" ? <input name="state" type="hidden" value={state} /> : null}
+        {dueWindow !== "all" ? <input name="due" type="hidden" value={dueWindow} /> : null}
+        {parameters.clientId ? (
+          <input name="clientId" type="hidden" value={parameters.clientId} />
+        ) : null}
+        {parameters.entity ? <input name="entity" type="hidden" value={parameters.entity} /> : null}
         <button className="button button--primary" type="submit">
           Filtrar
         </button>
+        <nav aria-label="Filtrar despesas" className="client-filter-pills sm:col-span-2">
+          {stateFilters.map(([value, label]) => (
+            <Link
+              aria-current={state === value ? "page" : undefined}
+              href={expenseHref(1, value)}
+              key={value}
+            >
+              {label}
+            </Link>
+          ))}
+          <Link
+            aria-current={dueWindow === "next7" ? "page" : undefined}
+            href={expenseHref(1, state, dueWindow === "next7" ? "all" : "next7")}
+          >
+            Próximos 7 dias
+          </Link>
+        </nav>
       </form>
       {dueWindow === "next7" ? (
         <aside className="helper-note mb-4" role="status">
@@ -213,162 +244,72 @@ export default async function ExpensesPage({
           }))}
         />
       </FormPanel>
+      {hidden ? (
+        <aside className="helper-note mb-4" role="status">
+          <Icon className="size-4" name="info" />
+          <span>
+            Esta visão resume as {pendingLimit} pendentes mais próximas e as {paidLimit} pagas mais
+            recentes. Para navegar por tudo, use os filtros de{" "}
+            <Link href="/despesas?state=pending">pendentes</Link> ou{" "}
+            <Link href="/despesas?state=paid">pagas</Link>.
+          </span>
+        </aside>
+      ) : null}
       {error ? (
-        <p role="alert">Não foi possível carregar as despesas.</p>
+        <p className="panel-card" role="alert">
+          Não foi possível carregar as despesas.
+        </p>
       ) : expenses?.length ? (
-        <div className="charge-list">
-          {expenses.map((expense) => {
-            const monthly =
-              expense.expense_type === "fixed" &&
-              Boolean(expense.recurrence_group_id) &&
-              expense.recurrence_frequency === "monthly";
-            return (
-              <article className="charge-card" id={`expense-${expense.id}`} key={expense.id}>
-                <div className="charge-card__head">
-                  <div className="min-w-0">
-                    <h2>{expense.description}</h2>
-                    <p>
-                      {categories.find(([value]) => value === expense.category)?.[1]} ·{" "}
-                      {expense.clients?.name ?? "Sem cliente"}
-                      {expense.client_entities?.display_name
-                        ? ` · ${expense.client_entities.display_name}`
-                        : ""}{" "}
-                      · {formatDatePtBr(expense.due_date)}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <span
-                      className={`charge-status ${monthly ? "charge-status--pending" : "charge-status--cancelled"}`}
-                    >
-                      {monthly ? "Mensal" : "Avulsa"}
-                    </span>
-                    <span
-                      className={`charge-status charge-status--${expense.status === "paid" ? "paid" : "pending"}`}
-                    >
-                      {expense.status === "paid" ? "Paga" : "Pendente"}
-                    </span>
-                  </div>
-                </div>
-                <dl className="charge-card__values">
-                  <div>
-                    <dt>Valor</dt>
-                    <dd
-                      className={`font-black ${expense.status === "paid" ? "text-positive" : "text-negative"}`}
-                    >
-                      {formatCurrency(expense.amount)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Tipo</dt>
-                    <dd>{expense.expense_type === "fixed" ? "Fixa" : "Variável"}</dd>
-                  </div>
-                </dl>
-                {expense.status === "pending" ? (
-                  <div className="charge-card__actions">
-                    <form action={markExpensePaid} className="charge-settle">
-                      <input name="id" type="hidden" value={expense.id} />
-                      <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
-                    </form>
-                    <div className="charge-card__secondary">
-                      {monthly && expense.recurrence_active ? (
-                        <form action={stopExpenseRecurrence}>
-                          <input name="id" type="hidden" value={expense.id} />
-                          <ConfirmDialog
-                            className="charge-action"
-                            confirmLabel="Parar recorrência"
-                            confirmation="As próximas ocorrências deixam de ser criadas automaticamente. O histórico já lançado permanece."
-                            icon="pause"
-                            label="Parar mensal"
-                            title={expense.description}
-                            tone="default"
-                          />
-                        </form>
-                      ) : null}
-                      <form action={deleteOperationalRecord}>
-                        <input name="clientId" type="hidden" value="" />
-                        <input name="id" type="hidden" value={expense.id} />
-                        <input name="recordType" type="hidden" value="expense" />
-                        <ConfirmDialog
-                          className="charge-action charge-action--danger"
-                          confirmLabel="Excluir despesa"
-                          confirmation={
-                            monthly && expense.recurrence_active
-                              ? "Esta ocorrência some e a recorrência mensal para. O histórico já pago permanece."
-                              : "A despesa ainda não paga some do sistema sem deixar registro."
-                          }
-                          icon="trash"
-                          label="Excluir"
-                          title={expense.description}
-                        />
-                      </form>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="charge-card__footnote">
-                      <Icon className="size-4" name="check" />{" "}
-                      {expense.paid_at
-                        ? `Paga em ${new Date(expense.paid_at).toLocaleString("pt-BR")}`
-                        : "Paga"}
-                      {monthly && expense.recurrence_active
-                        ? " · série mensal ativa"
-                        : monthly
-                          ? " · série mensal encerrada"
-                          : ""}
-                    </p>
-                    <FiscalDocumentPanel
-                      documents={(expense.fiscal_documents ?? []).map((document) => ({
-                        createdAt: document.created_at,
-                        id: document.id,
-                        mimeType: document.mime_type,
-                        sizeBytes: document.size_bytes,
-                      }))}
-                      entityId={expense.id}
-                      entityType="expense"
-                    />
-                    <div className="charge-card__actions mt-3">
-                      {monthly && expense.recurrence_active ? (
-                        <form action={stopExpenseRecurrence}>
-                          <input name="id" type="hidden" value={expense.id} />
-                          <ConfirmDialog
-                            className="charge-action"
-                            confirmLabel="Parar recorrência"
-                            confirmation="As próximas ocorrências deixam de ser criadas automaticamente. O histórico já lançado permanece."
-                            icon="pause"
-                            label="Parar mensal"
-                            title={expense.description}
-                            tone="default"
-                          />
-                        </form>
-                      ) : null}
-                      <form action={deletePaidFinancialRecord}>
-                        <input name="id" type="hidden" value={expense.id} />
-                        <input name="recordType" type="hidden" value="expense" />
-                        <input name="returnTo" type="hidden" value="/despesas" />
-                        <ConfirmDialog
-                          className="charge-action charge-action--danger"
-                          confirmLabel="Excluir despesa paga"
-                          confirmation="O valor sai do dashboard e do histórico. Notas fiscais anexadas são removidas. Esta ação é irreversível."
-                          holdSeconds={3}
-                          icon="trash"
-                          label="Excluir paga"
-                          title={expense.description}
-                        />
-                      </form>
-                    </div>
-                  </>
-                )}
-              </article>
-            );
-          })}
-        </div>
+        <RecordList columns={expenseColumns} head={expenseColumnLabels}>
+          {expenses.map((expense, index) => (
+            <Fragment key={expense.id}>
+              {/* A primeira paga depois das pendentes marca a fronteira entre "a pagar" e "feito". */}
+              {expense.status === "paid" && expenses[index - 1]?.status === "pending" ? (
+                <RecordGroup>
+                  <Icon className="size-4" name="check" /> Pagas
+                </RecordGroup>
+              ) : null}
+              <ExpenseRow
+                // O alerta leva até a despesa: ela já chega aberta, com os detalhes à vista.
+                defaultOpen={parameters.focus === expense.id}
+                expense={{
+                  amount: expense.amount,
+                  categoryLabel: categoryLabels.get(expense.category) ?? "Outros",
+                  clientName: expense.clients?.name,
+                  description: expense.description,
+                  documents: (expense.fiscal_documents ?? []).map((document) => ({
+                    createdAt: document.created_at,
+                    id: document.id,
+                    mimeType: document.mime_type,
+                    sizeBytes: document.size_bytes,
+                  })),
+                  dueDate: expense.due_date,
+                  entityName: expense.client_entities?.display_name,
+                  expenseType: expense.expense_type,
+                  id: expense.id,
+                  monthly:
+                    expense.expense_type === "fixed" &&
+                    Boolean(expense.recurrence_group_id) &&
+                    expense.recurrence_frequency === "monthly",
+                  paidAt: expense.paid_at,
+                  recurrenceActive: Boolean(expense.recurrence_active),
+                  status: expense.status,
+                }}
+                today={today}
+              />
+            </Fragment>
+          ))}
+        </RecordList>
       ) : (
-        <section className="border-line bg-surface rounded-2xl border p-8 text-center">
-          <h2 className="text-xl font-semibold">Nenhuma despesa</h2>
-          <p className="text-muted mt-2">
+        <section className="empty-state">
+          <span className="empty-state__icon">
+            <Icon name="wallet" />
+          </span>
+          <strong>Nenhuma despesa por aqui</strong>
+          <p>
             {dueWindow === "next7"
               ? "Nenhuma despesa vence nos próximos 7 dias com os filtros atuais."
-              : "Lance custos fixos ou avulsos pelo formulário acima. Despesas mensais criam a próxima ocorrência ao serem marcadas como pagas."}
+              : "Lance custos fixos ou avulsos pelo painel acima. Despesas mensais criam a próxima ocorrência ao serem pagas."}
           </p>
         </section>
       )}

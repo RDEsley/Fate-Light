@@ -106,4 +106,35 @@ describe("confirm dialog", () => {
 
     expect(trigger).toHaveFocus();
   });
+
+  it("envia a frase digitada para o servidor conferir e nomeia o gatilho repetido", () => {
+    const onSubmit = vi.fn((event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      return new FormData(event.currentTarget).get("confirmation");
+    });
+    render(
+      <form onSubmit={onSubmit}>
+        <ConfirmDialog
+          confirmation="Isso não pode ser desfeito."
+          label="Excluir dados"
+          phraseFieldName="confirmation"
+          requiredPhrase="EXCLUIR TUDO"
+          triggerIcon="trash"
+          triggerLabel="Excluir dados da empresa"
+        />
+      </form>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Excluir dados da empresa" }));
+    const confirm = screen.getByRole("button", { name: "Excluir dados" });
+    expect(confirm).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("EXCLUIR TUDO"), {
+      target: { value: "  EXCLUIR TUDO " },
+    });
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+
+    expect(onSubmit).toHaveReturnedWith("EXCLUIR TUDO");
+  });
 });

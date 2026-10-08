@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 
 import { FieldError } from "./field-error";
-import { type IconName } from "./icon";
+import { Icon, type IconName } from "./icon";
 import { Modal, type ModalTone } from "./modal";
 
 /**
@@ -21,9 +22,12 @@ export function ConfirmDialog({
   holdSeconds = 0,
   icon,
   label,
+  phraseFieldName,
   requiredPhrase,
   title,
   tone = "danger",
+  triggerIcon,
+  triggerLabel,
 }: {
   cancelLabel?: string;
   children?: ReactNode;
@@ -33,15 +37,38 @@ export function ConfirmDialog({
   holdSeconds?: number;
   icon?: IconName;
   label: string;
+  /**
+   * Envia o que foi digitado com este nome, para o servidor conferir a frase de verdade.
+   * Sem isto a frase só é checada na tela.
+   */
+  phraseFieldName?: string;
   requiredPhrase?: string;
   title?: string;
   tone?: ModalTone;
+  /** Ícone ao lado do texto do gatilho. */
+  triggerIcon?: IconName;
+  /** Nome acessível do gatilho quando várias linhas repetem o mesmo texto. */
+  triggerLabel?: string;
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const { pending } = useFormStatus();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [sawPending, setSawPending] = useState(false);
   const [typed, setTyped] = useState("");
   const [remaining, setRemaining] = useState(holdSeconds);
+
+  // Action que termina na própria tela (sem navegar) precisa devolver o controle: sem
+  // isto o diálogo ficava aberto em "Confirmando…" para sempre depois da resposta.
+  if (pending && !sawPending) setSawPending(true);
+  if (!pending && sawPending) {
+    setSawPending(false);
+    if (submitting) {
+      setSubmitting(false);
+      setOpen(false);
+      setTyped("");
+    }
+  }
 
   useEffect(() => {
     if (!open || !holdSeconds) return;
@@ -66,6 +93,7 @@ export function ConfirmDialog({
 
   const close = () => {
     setOpen(false);
+    setSubmitting(false);
     setTyped("");
   };
   const phraseOk = !requiredPhrase || typed.trim() === requiredPhrase;
@@ -73,15 +101,31 @@ export function ConfirmDialog({
 
   const confirm = () => {
     if (!unlocked) return;
+    const form = triggerRef.current?.form;
+    // Com campo inválido o envio seria barrado e o aviso apareceria atrás do diálogo:
+    // fecha primeiro, para o formulário mostrar o que falta.
+    if (form && !form.checkValidity()) {
+      setOpen(false);
+      form.requestSubmit();
+      return;
+    }
     setSubmitting(true);
     // O envio real acontece no formulário que contém o gatilho, preservando os campos
     // ocultos já montados pela página. A navegação seguinte desmonta o diálogo.
-    triggerRef.current?.form?.requestSubmit();
+    form?.requestSubmit();
   };
 
   return (
     <>
-      <button className={className} onClick={start} ref={triggerRef} type="button">
+      {phraseFieldName ? <input name={phraseFieldName} type="hidden" value={typed.trim()} /> : null}
+      <button
+        aria-label={triggerLabel}
+        className={className}
+        onClick={start}
+        ref={triggerRef}
+        type="button"
+      >
+        {triggerIcon ? <Icon className="size-4" name={triggerIcon} /> : null}
         {label}
       </button>
       <Modal
@@ -125,7 +169,7 @@ export function ConfirmDialog({
               placeholder={requiredPhrase}
               value={typed}
             />
-            {typed && !unlocked ? <FieldError message="A frase ainda não confere." /> : null}
+            {typed && !phraseOk ? <FieldError message="A frase ainda não confere." /> : null}
           </label>
         ) : null}
       </Modal>

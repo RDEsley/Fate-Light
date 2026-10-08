@@ -2,6 +2,7 @@ import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 import { FocusCharge } from "@/app/cobrancas/focus-charge";
+import { FocusRecord } from "@/components/ui/focus-record";
 
 const chargeId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
@@ -59,5 +60,20 @@ describe("focus charge", () => {
       render(<FocusCharge chargeId="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" />),
     ).not.toThrow();
     expect(() => render(<FocusCharge />)).not.toThrow();
+  });
+
+  it("destaca despesas e domínios pelo id do elemento e limpa ao desmontar", () => {
+    const row = document.createElement("article");
+    row.id = "domain-1";
+    document.body.append(row);
+
+    const { rerender, unmount } = render(<FocusRecord targetId="expense-inexistente" />);
+    expect(row).not.toHaveAttribute("data-focused");
+
+    rerender(<FocusRecord targetId="domain-1" />);
+    expect(row).toHaveAttribute("data-focused", "true");
+
+    unmount();
+    expect(row).not.toHaveAttribute("data-focused");
   });
 });
