@@ -1,15 +1,9 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
+import { classNames, Field } from "./field";
+import { useFieldFeedback } from "./form-context";
 import { Icon } from "./icon";
 import { scrollPopoverIntoView } from "./disclosure-auto-scroll";
 
@@ -27,7 +21,9 @@ const popoverMaxHeight = 272;
  * ele mede o espaço disponível e abre para cima quando não cabe abaixo do gatilho.
  */
 export function SelectField({
+  className,
   defaultValue,
+  error,
   hint,
   label,
   name,
@@ -37,8 +33,10 @@ export function SelectField({
   placeholder = "Selecione…",
   value: controlledValue,
 }: {
+  className?: string;
   defaultValue?: string;
-  hint?: ReactNode;
+  error?: string;
+  hint?: string;
   label: string;
   name: string;
   onValueChange?: (value: string) => void;
@@ -49,9 +47,11 @@ export function SelectField({
 }) {
   const listId = useId();
   const triggerId = useId();
+  const errorId = `${triggerId}-error`;
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const feedback = useFieldFeedback(name, error);
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "");
   const [placement, setPlacement] = useState<"bottom" | "top">("bottom");
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -98,13 +98,12 @@ export function SelectField({
 
   useEffect(() => {
     if (!open) return;
-    scrollPopoverIntoView(
-      rootRef.current?.querySelector<HTMLElement>(".select-field__popover") ?? null,
-    );
+    scrollPopoverIntoView(listRef.current);
   }, [open]);
 
   const commit = (next: string) => {
     if (controlledValue === undefined) setUncontrolledValue(next);
+    feedback.clear();
     onValueChange?.(next);
     setOpen(false);
     triggerRef.current?.focus();
@@ -146,62 +145,72 @@ export function SelectField({
   };
 
   return (
-    <div className="field select-field" ref={rootRef}>
-      <label className="field__label" htmlFor={triggerId}>
-        {label} {optional ? <span className="field__optional">opcional</span> : null}
-        {hint}
-      </label>
+    <Field
+      className={classNames("select-field", className)}
+      error={feedback.error}
+      errorId={errorId}
+      hint={hint}
+      htmlFor={triggerId}
+      label={label}
+      optional={optional}
+      ref={rootRef}
+    >
       {/* Sem `required`: campo oculto não participa da validação de restrições do HTML,
           então a marca só daria a impressão de proteger. Todo select do sistema abre com
           um valor default e a garantia real fica com o schema no servidor. */}
       <input name={name} type="hidden" value={value} />
-      <button
-        aria-controls={open ? listId : undefined}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        className="select-field__trigger"
-        data-placeholder={selected ? undefined : "true"}
-        id={triggerId}
-        onClick={() => (open ? setOpen(false) : openList(selectedIndex >= 0 ? selectedIndex : 0))}
-        onKeyDown={onKeyDown}
-        ref={triggerRef}
-        role="combobox"
-        type="button"
-      >
-        <span className="truncate">{selected?.label ?? placeholder}</span>
-        <Icon className="size-4 flex-none" name={open ? "chevron-up" : "chevron-down"} />
-      </button>
-      {open ? (
-        <div
-          aria-labelledby={triggerId}
-          className="select-field__popover"
-          data-placement={placement}
-          id={listId}
-          ref={listRef}
-          role="listbox"
+      <div className="select-field__control">
+        <button
+          aria-controls={open ? listId : undefined}
+          aria-describedby={feedback.error ? errorId : undefined}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-invalid={feedback.error ? true : undefined}
+          className="select-field__trigger"
+          data-field={name}
+          data-placeholder={selected ? undefined : "true"}
+          id={triggerId}
+          onClick={() => (open ? setOpen(false) : openList(selectedIndex >= 0 ? selectedIndex : 0))}
+          onKeyDown={onKeyDown}
+          ref={triggerRef}
+          role="combobox"
+          type="button"
         >
-          {options.map((option, index) => (
-            <button
-              aria-selected={option.value === value}
-              className="select-field__option"
-              data-active={index === activeIndex ? "true" : undefined}
-              key={option.value}
-              onClick={() => commit(option.value)}
-              onPointerEnter={() => setActiveIndex(index)}
-              role="option"
-              type="button"
-            >
-              <span className="min-w-0 flex-1 text-left">
-                <strong className="block truncate">{option.label}</strong>
-                {option.description ? <small>{option.description}</small> : null}
-              </span>
-              {option.value === value ? (
-                <Icon className="text-brand-strong size-4 flex-none" name="check" />
-              ) : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+          <span className="truncate">{selected?.label ?? placeholder}</span>
+          <Icon className="select-field__chevron size-4 flex-none" name="chevron-down" />
+        </button>
+        {open ? (
+          <div
+            aria-labelledby={triggerId}
+            className="select-field__popover"
+            data-placement={placement}
+            id={listId}
+            ref={listRef}
+            role="listbox"
+          >
+            {options.map((option, index) => (
+              <button
+                aria-selected={option.value === value}
+                className="select-field__option"
+                data-active={index === activeIndex ? "true" : undefined}
+                key={option.value}
+                onClick={() => commit(option.value)}
+                onPointerEnter={() => setActiveIndex(index)}
+                role="option"
+                type="button"
+              >
+                <span className="min-w-0 flex-1 text-left">
+                  <strong className="block truncate">{option.label}</strong>
+                  {option.description ? <small>{option.description}</small> : null}
+                </span>
+                {option.value === value ? (
+                  <Icon className="text-brand-strong size-4 flex-none" name="check" />
+                ) : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </Field>
   );
 }

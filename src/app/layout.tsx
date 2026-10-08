@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { AccessibilityMenu } from "@/components/accessibility-menu";
 import { MotionExperience } from "@/components/motion-experience";
+import { Toaster } from "@/components/ui/toaster";
 import { publicEnvironment } from "@/config/env/public";
 
 import "./globals.css";
@@ -38,6 +39,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         {children}
         <div id="portal-root" />
+        <div className="toast-viewport" id="toast-viewport" />
+        <Toaster />
         <MotionExperience />
         <AccessibilityMenu />
       </body>

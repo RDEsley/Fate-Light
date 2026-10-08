@@ -2,11 +2,14 @@
 
 import { useId, useState } from "react";
 
-import { FieldError } from "./field-error";
+import { Field } from "./field";
+import { useFieldFeedback } from "./form-context";
 
 type IntegerFieldProps = {
+  className?: string;
   defaultValue?: number | string | null;
   error?: string;
+  hint?: string;
   label: string;
   max?: number;
   min?: number;
@@ -19,8 +22,10 @@ type IntegerFieldProps = {
 
 /** Inteiro digit-only: rejeita notação científica e letras. */
 export function IntegerField({
+  className,
   defaultValue = null,
   error,
+  hint,
   label,
   max,
   min = 0,
@@ -33,6 +38,7 @@ export function IntegerField({
   const id = useId();
   const inputId = `${id}-${name}`;
   const errorId = `${inputId}-error`;
+  const feedback = useFieldFeedback(name, error);
   const initial =
     defaultValue === null || defaultValue === undefined || defaultValue === ""
       ? ""
@@ -41,24 +47,27 @@ export function IntegerField({
 
   const update = (next: string) => {
     setValue(next);
+    feedback.clear();
     onValueChange?.(next);
   };
 
   return (
-    <label className="field">
-      <span className="field__label">
-        {label}
-        {optional ? <span className="field__optional">opcional</span> : null}
-      </span>
+    <Field
+      className={className}
+      error={feedback.error}
+      errorId={errorId}
+      hint={hint}
+      htmlFor={inputId}
+      label={label}
+      optional={optional}
+    >
       <input
-        aria-describedby={error ? errorId : undefined}
-        aria-invalid={Boolean(error)}
+        aria-describedby={feedback.error ? errorId : undefined}
+        aria-invalid={feedback.error ? true : undefined}
         aria-label={label}
         autoComplete="off"
         id={inputId}
         inputMode="numeric"
-        max={max}
-        min={min}
         name={name}
         onChange={(event) => {
           const digits = event.target.value.replace(/\D/g, "");
@@ -76,7 +85,6 @@ export function IntegerField({
         type="text"
         value={value}
       />
-      <FieldError id={errorId} message={error} />
-    </label>
+    </Field>
   );
 }

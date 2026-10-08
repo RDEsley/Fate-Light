@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
-import { Icon } from "./icon";
+import { Icon, type IconName } from "./icon";
+import type { ToastTone } from "./toast-store";
 
 const duration = 6500;
+/** Espelha a duração de `status-toast-leave` no globals.css. */
+const exitDuration = 180;
 
 const noopSubscribe = () => () => {};
 
@@ -19,41 +22,78 @@ function useMounted() {
   );
 }
 
+const titles: Record<ToastTone, string> = {
+  error: "Não deu certo",
+  info: "Para você saber",
+  success: "Tudo certo",
+  warning: "Atenção",
+};
+
+const icons: Record<ToastTone, IconName> = {
+  error: "alert-circle",
+  info: "info",
+  success: "check",
+  warning: "alert",
+};
+
 export function ToastNotification({
   message,
+  onDismiss,
+  title,
   tone = "success",
 }: {
   message: string;
-  tone?: "error" | "success" | "warning";
+  /** Chamado quando o cartão termina de sair, por tempo ou pelo botão de fechar. */
+  onDismiss?: () => void;
+  title?: string;
+  tone?: ToastTone;
 }) {
+  const [leaving, setLeaving] = useState(false);
   const [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(true);
-  // O toast é fixo à viewport, mas o card que o chama sempre vive dentro do wrapper
-  // animado de entrada da página (`data-animate="enter"`). Enquanto esse wrapper anima
-  // seu transform, ele vira containing block e o toast passa a ancorar nele em vez da
-  // tela — daí aparecer deslocado logo que a página carrega. Um portal para fora dessa
-  // árvore resolve isso de vez, não importa o que anime ao redor de quem o chamou. Só
-  // pode existir depois da hidratação, porque o portal precisa do DOM real.
+  // O toast é fixo à viewport, mas quem o chama costuma viver dentro do wrapper animado
+  // de entrada da página (`data-animate="enter"`). Enquanto esse wrapper anima seu
+  // transform, ele vira containing block e o toast passa a ancorar nele em vez da tela.
+  // Um portal para a pilha de avisos resolve isso de vez, não importa o que anime ao
+  // redor. Só pode existir depois da hidratação, porque o portal precisa do DOM real.
   const mounted = useMounted();
   const remaining = useRef(duration);
   const startedAt = useRef(0);
   const timer = useRef<number | undefined>(undefined);
-
-  const startTimer = () => {
-    startedAt.current = performance.now();
-    timer.current = window.setTimeout(() => setVisible(false), remaining.current);
-  };
+  const exitTimer = useRef<number | undefined>(undefined);
+  const dismissRef = useRef(onDismiss);
 
   useEffect(() => {
-    startedAt.current = performance.now();
-    timer.current = window.setTimeout(() => setVisible(false), remaining.current);
-    return () => window.clearTimeout(timer.current);
+    dismissRef.current = onDismiss;
+  }, [onDismiss]);
+
+  // Sai em dois tempos: primeiro a animação de saída, depois a remoção de fato.
+  const leave = useCallback(() => {
+    window.clearTimeout(timer.current);
+    setLeaving(true);
+    exitTimer.current = window.setTimeout(() => {
+      setVisible(false);
+      dismissRef.current?.();
+    }, exitDuration);
   }, []);
+
+  const startTimer = useCallback(() => {
+    startedAt.current = performance.now();
+    timer.current = window.setTimeout(leave, remaining.current);
+  }, [leave]);
+
+  useEffect(() => {
+    startTimer();
+    return () => {
+      window.clearTimeout(timer.current);
+      window.clearTimeout(exitTimer.current);
+    };
+  }, [startTimer]);
 
   if (!visible || !mounted) return null;
 
   const pause = () => {
-    if (paused) return;
+    if (paused || leaving) return;
     window.clearTimeout(timer.current);
     remaining.current = Math.max(0, remaining.current - (performance.now() - startedAt.current));
     setPaused(true);
@@ -65,12 +105,10 @@ export function ToastNotification({
     startTimer();
   };
 
-  const title = tone === "error" ? "Não deu certo" : tone === "warning" ? "Atenção" : "Tudo certo";
-  const icon = tone === "success" ? "check" : "alert";
-
   return createPortal(
-    <aside
+    <div
       className="status-toast"
+      data-leaving={leaving ? "true" : undefined}
       data-paused={paused}
       data-tone={tone}
       onMouseEnter={pause}
@@ -85,17 +123,19 @@ export function ToastNotification({
         </span>
       ) : null}
       <span className="status-toast__icon">
-        <Icon className="size-4" name={icon} />
+        <Icon className="size-4" name={icons[tone]} />
       </span>
       <span className="min-w-0 flex-1">
-        <strong className="block text-sm font-black">{title}</strong>
-        <span className="text-muted mt-0.5 block text-xs leading-5">{message}</span>
+        <strong className="status-toast__title">{title ?? titles[tone]}</strong>
+        <span className="status-toast__message">{message}</span>
       </span>
-      <button aria-label="Fechar notificação" onClick={() => setVisible(false)} type="button">
+      <button aria-label="Fechar notificação" onClick={leave} type="button">
         <Icon className="size-4" name="x" />
       </button>
       <span className="status-toast__progress" style={{ animationDuration: `${duration}ms` }} />
-    </aside>,
-    document.getElementById("portal-root") ?? document.body,
+    </div>,
+    document.getElementById("toast-viewport") ??
+      document.getElementById("portal-root") ??
+      document.body,
   );
 }

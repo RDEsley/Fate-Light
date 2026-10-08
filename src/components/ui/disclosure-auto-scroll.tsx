@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const disclosureSelector = ".form-disclosure, .advanced-form, .danger-zone";
+const disclosureSelector = ".form-disclosure, .form-panel, .form-more, .danger-zone";
 
 function prefersReducedMotion() {
   return (
@@ -21,9 +21,14 @@ export function DisclosureAutoScroll() {
     const onToggle = (event: Event) => {
       const details = event.target;
       if (!(details instanceof HTMLDetailsElement) || !details.open) return;
+      // Aberto pelo formulário para revelar um campo com erro: quem rola é o foco no campo.
+      if (details.dataset.skipAutoScroll) {
+        delete details.dataset.skipAutoScroll;
+        return;
+      }
       if (!details.matches(disclosureSelector)) return;
 
-      // Nested advanced-form inside an already-open disclosure: still scroll if needed.
+      // Bloco opcional dentro de um painel já aberto: ainda rola se o conteúdo extrapolar.
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
           const rect = details.getBoundingClientRect();
@@ -35,8 +40,7 @@ export function DisclosureAutoScroll() {
           details.scrollIntoView({
             behavior: prefersReducedMotion() ? "auto" : "smooth",
             // Painéis altos (opções avançadas): ancora o topo; aberturas curtas: traz o fim.
-            block:
-              overflowsTop || rect.height > window.innerHeight * 0.72 ? "start" : "nearest",
+            block: overflowsTop || rect.height > window.innerHeight * 0.72 ? "start" : "nearest",
           });
         });
       });

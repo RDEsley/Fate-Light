@@ -3,14 +3,17 @@ import type { ReactNode, SVGProps } from "react";
 export type IconName =
   | "accessibility"
   | "alert"
+  | "alert-circle"
   | "archive"
   | "arrow-down"
+  | "arrow-left"
   | "arrow-up"
   | "bell"
   | "briefcase"
   | "building"
   | "calendar"
   | "check"
+  | "check-circle"
   | "chevron-down"
   | "chevron-right"
   | "chevron-up"
@@ -30,7 +33,9 @@ export type IconName =
   | "mail"
   | "maximize"
   | "menu"
+  | "merge"
   | "minimize"
+  | "palette"
   | "pause"
   | "paperclip"
   | "phone"
@@ -42,6 +47,8 @@ export type IconName =
   | "settings"
   | "sliders"
   | "sparkles"
+  | "swap"
+  | "tag"
   | "user"
   | "users"
   | "upload"
@@ -62,8 +69,10 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     alert: (
       <path d="M12 9v4m0 4h.01M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" />
     ),
+    "alert-circle": <path d="M12 8v4m0 4h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />,
     archive: <path d="M3 7h18v3H3V7Zm2 3v10h14V10M9.5 14h5" />,
     "arrow-down": <path d="m6 9 6 6 6-6" />,
+    "arrow-left": <path d="M19 12H5m0 0 6 6m-6-6 6-6" />,
     "arrow-up": <path d="m18 15-6-6-6 6" />,
     bell: <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" />,
     briefcase: <path d="M9 6V4h6v2m-11 0h16v14H4V6Zm0 5h16M9 11v2h6v-2" />,
@@ -72,6 +81,7 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     ),
     calendar: <path d="M6 2v3m12-3v3M3 9h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z" />,
     check: <path d="m5 12 4 4L19 6" />,
+    "check-circle": <path d="m8 12.5 3 3 5-6M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />,
     "chevron-down": <path d="m7 10 5 5 5-5" />,
     "chevron-right": <path d="m10 7 5 5-5 5" />,
     "chevron-up": <path d="m7 14 5-5 5 5" />,
@@ -109,7 +119,11 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     ),
     maximize: <path d="M9 3H3v6m12-6h6v6M9 21H3v-6m18 0v6h-6" />,
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+    merge: <path d="M4 6h5l4 6-4 6H4m9-6h7m0 0-3-3m3 3-3 3" />,
     minimize: <path d="M9 9H3V3m18 0v6h-6M9 15H3v6m18 0v-6h-6" />,
+    palette: (
+      <path d="M12 2a10 10 0 1 0 0 20c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.5-.7-.5-1.2 0-.9.8-1.6 1.7-1.6h2A5.6 5.6 0 0 0 22 10.9C22 6 17.5 2 12 2ZM13.5 6.5h.01M17.5 10.5h.01M8.5 7.5h.01M6.5 12.5h.01" />
+    ),
     pause: <path d="M9 5v14M15 5v14" />,
     paperclip: (
       <path d="m20.5 11.5-8.7 8.7a5.3 5.3 0 0 1-7.5-7.5l9.1-9.1a3.6 3.6 0 0 1 5.1 5.1l-9.1 9.1a1.9 1.9 0 0 1-2.7-2.7l8.4-8.4" />
@@ -133,6 +147,10 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     sliders: <path d="M4 6h6m4 0h6M4 12h10m4 0h2M4 18h4m4 0h8M12 3.5v5M16 9.5v5M10 15.5v5" />,
     sparkles: (
       <path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Zm6 10 .8 2.2L21 16l-2.2.8L18 19l-.8-2.2L15 16l2.2-.8L18 13ZM5 15l.7 2.3L8 18l-2.3.7L5 21l-.7-2.3L2 18l2.3-.7L5 15Z" />
+    ),
+    swap: <path d="M4 8h14m0 0-4-4m4 4-4 4M20 16H6m0 0 4-4m-4 4 4 4" />,
+    tag: (
+      <path d="M3 12.6V4h8.6l9 9a1.4 1.4 0 0 1 0 2l-6.6 6.6a1.4 1.4 0 0 1-2 0l-9-9ZM7.5 8.5h.01" />
     ),
     user: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 9a7 7 0 0 0-14 0" />,
     users: (

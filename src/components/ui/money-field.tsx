@@ -11,11 +11,14 @@ import {
   removeLastDigit,
 } from "@/features/mvp/money";
 
-import { FieldError } from "./field-error";
+import { Field } from "./field";
+import { useFieldFeedback } from "./form-context";
 
 type MoneyFieldProps = {
+  className?: string;
   defaultValue?: number | string | null;
   error?: string;
+  help?: string;
   hint?: string;
   label: string;
   name: string;
@@ -30,8 +33,10 @@ type MoneyFieldProps = {
  * O campo visível é mascarado; o hidden envia decimal canônico ("1234.56").
  */
 export function MoneyField({
+  className,
   defaultValue = null,
   error,
+  help,
   hint,
   label,
   name,
@@ -43,27 +48,32 @@ export function MoneyField({
   const generatedId = useId();
   const inputId = `${generatedId}-${name}`;
   const errorId = `${inputId}-error`;
-  const hintId = `${inputId}-hint`;
+  const feedback = useFieldFeedback(name, error);
   const [cents, setCents] = useState<number | null>(() => persistedToCents(defaultValue));
 
   const setValue = (next: number | null) => {
     setCents(next);
+    feedback.clear();
     onCentsChange?.(next);
   };
 
-  const describedBy = [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined;
-
   return (
-    <label className="field">
-      <span className="field__label">
-        {label}
-        {optional ? <span className="field__optional">opcional</span> : null}
-      </span>
+    <Field
+      className={className}
+      error={feedback.error}
+      errorId={errorId}
+      help={help}
+      hint={hint}
+      htmlFor={inputId}
+      label={label}
+      optional={optional}
+    >
       <input
-        aria-describedby={describedBy}
-        aria-invalid={Boolean(error)}
+        aria-describedby={feedback.error ? errorId : undefined}
+        aria-invalid={feedback.error ? true : undefined}
         aria-label={label}
         autoComplete="off"
+        data-field={name}
         id={inputId}
         inputMode="numeric"
         onChange={(event) => {
@@ -97,12 +107,6 @@ export function MoneyField({
         value={centsToDisplay(cents)}
       />
       <input name={name} type="hidden" value={centsToCanonical(cents)} />
-      {hint ? (
-        <span className="field__hint" id={hintId}>
-          {hint}
-        </span>
-      ) : null}
-      <FieldError id={errorId} message={error} />
-    </label>
+    </Field>
   );
 }
