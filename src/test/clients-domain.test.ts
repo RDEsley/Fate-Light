@@ -1,9 +1,11 @@
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
+import { maxNewClientEntities, parseNewClientEntities } from "@/features/clients/entity-schemas";
 import {
   parseClientForm,
   parseClientLinks,
   parsePriorRevenue,
   readClientLinks,
+  validateClientLinks,
 } from "@/features/clients/schemas";
 
 function clientForm(overrides: Record<string, string> = {}) {
@@ -67,6 +69,83 @@ describe("client domain boundaries", () => {
     expect(parseClientLinks(formData)).toEqual([
       { label: "Painel", url: "painel.exemplo.com.br/cliente" },
     ]);
+  });
+
+  it("aponta o link preenchido pela metade em vez de descartá-lo calado", () => {
+    const formData = new FormData();
+    const rows = [
+      ["Painel", "painel.exemplo.com/cliente"],
+      ["", ""],
+      ["Drive", ""],
+      ["", "drive.exemplo.com"],
+      ["Rede", "isto não é um endereço"],
+    ] as const;
+    for (const [label, url] of rows) {
+      formData.append("linkLabel", label);
+      formData.append("linkUrl", url);
+    }
+
+    // Linha em branco é só uma linha a mais; a incompleta é engano que precisa de aviso.
+    expect(validateClientLinks(formData)).toEqual({
+      "linkLabel:3": "Dê um nome a este link.",
+      "linkUrl:2": "Informe o endereço deste link.",
+      "linkUrl:4": "Endereço inválido. Use algo como painel.exemplo.com/cliente.",
+    });
+    expect(validateClientLinks(new FormData())).toEqual({});
+  });
+
+  it("lê as empresas e marcas informadas junto com o cliente", () => {
+    const formData = new FormData();
+    const rows = [
+      [" Padaria do Bairro ", "company"],
+      ["Marca Doce", "brand"],
+      ["Frente nova", "holding"],
+    ] as const;
+    for (const [name, type] of rows) {
+      formData.append("entityName", name);
+      formData.append("entityType", type);
+    }
+
+    const parsed = parseNewClientEntities(formData);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data).toEqual([
+      { display_name: "Padaria do Bairro", entity_type: "company" },
+      { display_name: "Marca Doce", entity_type: "brand" },
+      // Tipo desconhecido cai no padrão, como no restante do cadastro.
+      { display_name: "Frente nova", entity_type: "company" },
+    ]);
+    expect(parseNewClientEntities(new FormData())).toEqual({ data: [], success: true });
+  });
+
+  it("recusa empresa sem nome ou repetida apontando a linha", () => {
+    const formData = new FormData();
+    for (const name of ["Padaria do Bairro", "P", "padaria do bairro"]) {
+      formData.append("entityName", name);
+      formData.append("entityType", "company");
+    }
+
+    const parsed = parseNewClientEntities(formData);
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(parsed.fieldErrors).toEqual({
+      "entityName:1": "Use de 2 a 160 caracteres ou remova esta linha.",
+      "entityName:2": "Este nome já está na lista.",
+    });
+  });
+
+  it("limita as empresas criadas junto com o cliente", () => {
+    const formData = new FormData();
+    for (let index = 0; index < maxNewClientEntities + 3; index += 1) {
+      formData.append("entityName", `Empresa ${index}`);
+      formData.append("entityType", "company");
+    }
+
+    const parsed = parseNewClientEntities(formData);
+
+    expect(parsed.success && parsed.data).toHaveLength(maxNewClientEntities);
   });
 
   it("limita os links extras a três", () => {

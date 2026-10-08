@@ -74,7 +74,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     request = request.eq("commercial_status", query.state);
   }
   if (query.q) {
-    request = request.or(textSearchOrFilter(["name", "trade_name", "email", "phone", "notes"], query.q));
+    request = request.or(
+      textSearchOrFilter(["name", "trade_name", "email", "phone", "notes"], query.q),
+    );
   }
   if (showingEntities) request = request.in("id", [...entityCounts.keys()]);
   const { data: clients, error, count } = await request;
@@ -116,10 +118,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             placeholder="Nome, empresa, e-mail, telefone..."
           />
         </label>
-        <button
-          className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 font-black"
-          type="submit"
-        >
+        <button className="button button--primary" type="submit">
           Filtrar
         </button>
         {showingEntities ? <input name="view" type="hidden" value="entities" /> : null}

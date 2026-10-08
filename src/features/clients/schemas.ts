@@ -50,6 +50,33 @@ export function parseClientLinks(formData: FormData): ClientLink[] {
   return links;
 }
 
+/**
+ * Aponta a linha de link preenchida pela metade ou com endereço inválido, na chave que o
+ * formulário usa para destacar o campo. `parseClientLinks` simplesmente ignora essas
+ * linhas; sem este aviso o link digitado sumia ao salvar, sem explicação.
+ */
+export function validateClientLinks(formData: FormData) {
+  const labels = formData.getAll("linkLabel").map((value) => String(value).trim());
+  const urls = formData.getAll("linkUrl").map((value) => String(value).trim());
+  const fieldErrors: Record<string, string> = {};
+
+  for (let index = 0; index < Math.max(labels.length, urls.length); index += 1) {
+    const label = labels[index] ?? "";
+    const url = urls[index] ?? "";
+    // Linha adicionada e deixada em branco não é erro: só não vira link.
+    if (!label && !url) continue;
+    if (!label) fieldErrors[`linkLabel:${index}`] = "Dê um nome a este link.";
+    if (!url) {
+      fieldErrors[`linkUrl:${index}`] = "Informe o endereço deste link.";
+    } else if (!linkUrlSchema.safeParse(url).success) {
+      fieldErrors[`linkUrl:${index}`] =
+        "Endereço inválido. Use algo como painel.exemplo.com/cliente.";
+    }
+  }
+
+  return fieldErrors;
+}
+
 /** Lê os links vindos do banco descartando o que não couber no formato esperado. */
 export function readClientLinks(value: unknown): ClientLink[] {
   if (!Array.isArray(value)) return [];

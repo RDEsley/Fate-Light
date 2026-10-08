@@ -119,6 +119,42 @@ export function parseClientEntityForm(formData: FormData) {
   };
 }
 
+/** Teto de empresas/marcas criadas junto com o cliente; as demais entram pela edição. */
+export const maxNewClientEntities = 6;
+
+/**
+ * Empresas/marcas informadas já no cadastro do cliente, como pares repetidos
+ * `entityName`/`entityType`. Devolve as linhas prontas para o insert ou o erro de cada
+ * linha na chave que o formulário usa para destacar o campo.
+ */
+export function parseNewClientEntities(formData: FormData) {
+  const names = formData.getAll("entityName").map((value) => String(value).trim());
+  const types = formData.getAll("entityType").map((value) => String(value));
+  const fieldErrors: Record<string, string> = {};
+  const seen = new Set<string>();
+  const rows: { display_name: string; entity_type: ClientEntityType }[] = [];
+
+  names.slice(0, maxNewClientEntities).forEach((name, index) => {
+    const key = `entityName:${index}`;
+    if (name.length < 2 || name.length > 160) {
+      fieldErrors[key] = "Use de 2 a 160 caracteres ou remova esta linha.";
+      return;
+    }
+    // O banco recusa dois nomes ativos iguais no mesmo cliente, sem diferenciar maiúsculas.
+    const normalized = name.toLocaleLowerCase("pt-BR");
+    if (seen.has(normalized)) {
+      fieldErrors[key] = "Este nome já está na lista.";
+      return;
+    }
+    seen.add(normalized);
+    const type = z.enum(clientEntityTypeValues).safeParse(types[index] || "company");
+    rows.push({ display_name: name, entity_type: type.success ? type.data : "company" });
+  });
+
+  if (Object.keys(fieldErrors).length) return { fieldErrors, success: false as const };
+  return { data: rows, success: true as const };
+}
+
 /**
  * Consolidação de um cliente legado em uma entidade de outro cliente. A frase de
  * confirmação é validada aqui e reenviada à RPC, que exige a mesma palavra.

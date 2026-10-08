@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { parseClientForm, parsePriorRevenue } from "@/features/clients/schemas";
+import { parseNewClientEntities } from "@/features/clients/entity-schemas";
+import {
+  parseClientForm,
+  parsePriorRevenue,
+  validateClientLinks,
+} from "@/features/clients/schemas";
 import { clientStatusValues } from "@/features/clients/status";
 import { formErrors } from "@/features/mvp/messages";
 import { rejectSubmission, type ActionState } from "@/lib/forms/action-state";
@@ -60,11 +65,24 @@ async function recordPriorRevenue(
   return "recorded";
 }
 
+/** Link pela metade ou inválido volta marcado, em vez de sumir calado ao salvar. */
+function rejectInvalidLinks(formData: FormData): ActionState | null {
+  const linkErrors = validateClientLinks(formData);
+  if (!Object.keys(linkErrors).length) return null;
+  return rejectSubmission(formData, "Revise os links do cliente.", linkErrors);
+}
+
 export async function createClient(_state: ActionState, formData: FormData): Promise<ActionState> {
   const values = parseClientForm(formData);
   if (!values.success) {
     const { fieldErrors, message } = formErrors(values.error, clientLabels);
     return rejectSubmission(formData, message, fieldErrors);
+  }
+  const invalidLinks = rejectInvalidLinks(formData);
+  if (invalidLinks) return invalidLinks;
+  const entities = parseNewClientEntities(formData);
+  if (!entities.success) {
+    return rejectSubmission(formData, "Revise as empresas e marcas.", entities.fieldErrors);
   }
   const prior = parsePriorRevenue(formData);
   if (!prior.success) {
@@ -80,12 +98,29 @@ export async function createClient(_state: ActionState, formData: FormData): Pro
   if (error || !data) {
     return rejectSubmission(formData, "Não foi possível salvar o cliente. Tente de novo.");
   }
+  // O cliente já existe a partir daqui: falha nos complementos vira aviso na ficha, não
+  // recusa do formulário — reenviar criaria um segundo cliente com o mesmo nome.
+  let entitiesFailed = false;
+  if (entities.data.length) {
+    const { error: entitiesError } = await supabase.from("client_entities").insert(
+      entities.data.map((entity) => ({
+        ...entity,
+        client_id: data.id,
+        workspace_id: workspaceId,
+      })),
+    );
+    entitiesFailed = Boolean(entitiesError);
+  }
   const priorResult = await recordPriorRevenue(supabase, workspaceId, data.id, prior.data);
   revalidatePath("/clientes");
   revalidatePath("/dashboard");
   statusRedirect(
     `/clientes/${data.id}`,
-    priorResult === "failed" ? "prior-revenue-error" : "created",
+    entitiesFailed
+      ? "entities-error"
+      : priorResult === "failed"
+        ? "prior-revenue-error"
+        : "created",
   );
 }
 
@@ -97,6 +132,8 @@ export async function updateClient(_state: ActionState, formData: FormData): Pro
     const { fieldErrors, message } = formErrors(values.error, clientLabels);
     return rejectSubmission(formData, message, fieldErrors);
   }
+  const invalidLinks = rejectInvalidLinks(formData);
+  if (invalidLinks) return invalidLinks;
   const prior = parsePriorRevenue(formData);
   if (!prior.success) {
     const { fieldErrors, message } = formErrors(prior.error, priorRevenueLabels);
@@ -206,7 +243,8 @@ export async function setClientStatus(formData: FormData) {
     .is("archived_at", null)
     .select("id")
     .single();
-  if (error || !data) statusRedirect(returnTo.startsWith("/clientes?") ? "/clientes" : returnTo, "error");
+  if (error || !data)
+    statusRedirect(returnTo.startsWith("/clientes?") ? "/clientes" : returnTo, "error");
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${clientId.data}`);
   revalidatePath("/dashboard");

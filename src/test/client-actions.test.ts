@@ -109,6 +109,60 @@ describe("client actions", () => {
     );
   });
 
+  it("cria as empresas e marcas informadas junto com o cliente", async () => {
+    clientActionMocks.insert
+      .mockReturnValueOnce({ select: clientActionMocks.select })
+      .mockReturnValueOnce(Promise.resolve({ error: null }));
+    const formData = validClientForm();
+    formData.append("entityName", "Padaria do Bairro");
+    formData.append("entityType", "brand");
+
+    await expect(createClient(initialActionState, formData)).rejects.toThrow(
+      "REDIRECT:/clientes/client-id?status=created",
+    );
+
+    expect(clientActionMocks.from).toHaveBeenCalledWith("client_entities");
+    expect(clientActionMocks.insert).toHaveBeenLastCalledWith([
+      {
+        client_id: "client-id",
+        display_name: "Padaria do Bairro",
+        entity_type: "brand",
+        workspace_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      },
+    ]);
+  });
+
+  it("avisa na ficha quando as empresas não puderam ser salvas", async () => {
+    clientActionMocks.insert
+      .mockReturnValueOnce({ select: clientActionMocks.select })
+      .mockReturnValueOnce(Promise.resolve({ error: { message: "insert denied" } }));
+    const formData = validClientForm();
+    formData.append("entityName", "Padaria do Bairro");
+    formData.append("entityType", "company");
+
+    // O cliente já existe: recusar o formulário aqui criaria um segundo no reenvio.
+    await expect(createClient(initialActionState, formData)).rejects.toThrow(
+      "REDIRECT:/clientes/client-id?status=entities-error",
+    );
+  });
+
+  it("não cria o cliente com empresa sem nome ou link pela metade", async () => {
+    const withEntity = validClientForm();
+    withEntity.append("entityName", "P");
+    withEntity.append("entityType", "company");
+    const entityResult = await createClient(initialActionState, withEntity);
+    expect(entityResult.fieldErrors).toHaveProperty(["entityName:0"]);
+
+    const withLink = validClientForm();
+    withLink.append("linkLabel", "Painel");
+    withLink.append("linkUrl", "");
+    const linkResult = await createClient(initialActionState, withLink);
+    expect(linkResult.fieldErrors).toHaveProperty(["linkUrl:0"]);
+
+    expect(clientActionMocks.insert).not.toHaveBeenCalled();
+    expect(clientActionMocks.redirect).not.toHaveBeenCalled();
+  });
+
   it("não cria o cliente quando a receita anterior não tem data", async () => {
     const formData = validClientForm();
     formData.set("priorRevenue", "24000");

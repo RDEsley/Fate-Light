@@ -3,10 +3,9 @@
 import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { FieldError } from "@/components/ui/field-error";
-import { FieldHint } from "@/components/ui/field-hint";
-import { Icon } from "@/components/ui/icon";
+import { FormActions, TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
+import { FormMore } from "@/components/ui/form-panel";
 import { SelectField } from "@/components/ui/select-field";
 import { clientEntityTypeOptions } from "@/features/clients/entity-schemas";
 import { initialActionState, submittedValues } from "@/lib/forms/action-state";
@@ -33,140 +32,112 @@ export function ClientEntityForm({
   clientId,
   entity,
   onCancel,
+  returnTo,
 }: {
   clientId: string;
   entity?: ClientEntityValues;
   onCancel?: () => void;
+  /** `edit` devolve o usuário à edição do cliente, onde este cadastro vive. */
+  returnTo?: "edit";
 }) {
   const editing = Boolean(entity);
   const [state, formAction] = useActionState(
     editing ? updateClientEntity : createClientEntity,
     initialActionState,
   );
-  const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
-  const detailsError = Boolean(
-    errors.legalName || errors.taxId || errors.website || errors.email || errors.phone,
-  );
 
   return (
-    <form action={formAction} className="form-grid mt-4 sm:grid-cols-2">
+    <Form action={formAction} className="grid gap-4" state={state}>
       <input name="clientId" type="hidden" value={clientId} />
       {entity ? <input name="entityId" type="hidden" value={entity.id} /> : null}
-      {state.status === "error" && state.message ? (
-        <div className="sm:col-span-2">
-          <FeedbackBanner message={state.message} tone="error" />
-        </div>
-      ) : null}
-      <label className="field">
-        <span className="field__label">
-          Nome da empresa ou marca
-          <FieldHint>
-            É este nome que aparece nos serviços, cobranças, despesas e domínios ligados a ela.
-          </FieldHint>
-        </span>
-        <input
-          aria-invalid={Boolean(errors.displayName)}
+      {returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null}
+
+      <div className="form-grid sm:grid-cols-2 lg:grid-cols-3">
+        <TextField
+          className="lg:col-span-2"
           defaultValue={sent.text("displayName", entity?.displayName ?? "")}
+          hint="É este nome que aparece nos serviços, cobranças, despesas e domínios ligados a ela."
+          label="Nome da empresa ou marca"
           maxLength={160}
+          minLength={2}
           name="displayName"
           placeholder="Ex.: Padaria do Bairro"
           required
         />
-        <FieldError message={errors.displayName} />
-      </label>
-      <SelectField
-        defaultValue={sent.text("entityType", entity?.entityType ?? "company")}
-        label="Tipo"
-        name="entityType"
-        options={clientEntityTypeOptions}
-      />
+        <SelectField
+          defaultValue={sent.text("entityType", entity?.entityType ?? "company")}
+          label="Tipo"
+          name="entityType"
+          options={clientEntityTypeOptions}
+        />
+      </div>
 
-      <details className="form-disclosure sm:col-span-2" open={detailsError}>
-        <summary className="flex cursor-pointer items-center gap-1 text-sm font-semibold">
-          Dados fiscais e de contato <span className="field__optional">opcional</span>
-          <Icon className="form-disclosure__chevron ml-auto size-4" name="chevron-down" />
-        </summary>
-        <div className="form-grid mt-3 sm:grid-cols-2">
-          <label className="field">
-            <span className="field__label">
-              Razão social <span className="field__optional">opcional</span>
-            </span>
-            <input
-              defaultValue={sent.text("legalName", entity?.legalName ?? "")}
-              maxLength={200}
-              name="legalName"
-            />
-            <FieldError message={errors.legalName} />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              CNPJ ou CPF <span className="field__optional">opcional</span>
-            </span>
-            <input
-              defaultValue={sent.text("taxId", entity?.taxId ?? "")}
-              maxLength={32}
-              name="taxId"
-            />
-            <FieldError message={errors.taxId} />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Site <span className="field__optional">opcional</span>
-            </span>
-            <input
-              defaultValue={sent.text("website", entity?.website ?? "")}
-              maxLength={255}
-              name="website"
-              placeholder="exemplo.com.br"
-            />
-            <FieldError message={errors.website} />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              E-mail <span className="field__optional">opcional</span>
-            </span>
-            <input
-              defaultValue={sent.text("email", entity?.email ?? "")}
-              maxLength={254}
-              name="email"
-              type="email"
-            />
-            <FieldError message={errors.email} />
-          </label>
-          <label className="field">
-            <span className="field__label">
-              Telefone <span className="field__optional">opcional</span>
-            </span>
-            <input
-              defaultValue={sent.text("phone", entity?.phone ?? "")}
-              maxLength={32}
-              name="phone"
-            />
-            <FieldError message={errors.phone} />
-          </label>
-          <label className="field sm:col-span-2">
-            <span className="field__label">
-              Observações <span className="field__optional">opcional</span>
-            </span>
-            <textarea
-              defaultValue={sent.text("notes", entity?.notes ?? "")}
-              maxLength={5000}
-              name="notes"
-            />
-            <FieldError message={errors.notes} />
-          </label>
+      <FormMore
+        description="Razão social, documento, site, e-mail e telefone"
+        icon="file"
+        title="Dados fiscais e de contato"
+      >
+        <div className="form-grid sm:grid-cols-2 lg:grid-cols-3">
+          <TextField
+            className="sm:col-span-2"
+            defaultValue={sent.text("legalName", entity?.legalName ?? "")}
+            label="Razão social"
+            maxLength={200}
+            name="legalName"
+            optional
+          />
+          <TextField
+            defaultValue={sent.text("taxId", entity?.taxId ?? "")}
+            label="CNPJ ou CPF"
+            maxLength={32}
+            name="taxId"
+            optional
+          />
+          <TextField
+            defaultValue={sent.text("website", entity?.website ?? "")}
+            label="Site"
+            maxLength={255}
+            name="website"
+            optional
+            placeholder="exemplo.com.br"
+          />
+          <TextField
+            defaultValue={sent.text("email", entity?.email ?? "")}
+            label="E-mail"
+            maxLength={254}
+            name="email"
+            optional
+            type="email"
+          />
+          <TextField
+            defaultValue={sent.text("phone", entity?.phone ?? "")}
+            label="Telefone"
+            maxLength={32}
+            name="phone"
+            optional
+            type="tel"
+          />
+          <TextField
+            className="sm:col-span-2 lg:col-span-3"
+            defaultValue={sent.text("notes", entity?.notes ?? "")}
+            label="Observações"
+            maxLength={5000}
+            multiline
+            name="notes"
+            optional
+          />
         </div>
-      </details>
+      </FormMore>
 
-      <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+      <FormActions>
         {onCancel ? (
-          <button className="modal-cancel" onClick={onCancel} type="button">
+          <button className="button button--secondary" onClick={onCancel} type="button">
             Cancelar
           </button>
         ) : null}
         <SubmitButton idleLabel={editing ? "Salvar empresa/marca" : "Criar empresa/marca"} />
-      </div>
-    </form>
+      </FormActions>
+    </Form>
   );
 }

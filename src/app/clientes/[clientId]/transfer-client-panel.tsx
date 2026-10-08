@@ -4,9 +4,10 @@ import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { Form } from "@/components/ui/form";
 import { ClientCombobox, type ClientOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
+import { useErrorToast } from "@/components/ui/use-error-toast";
 import { transferPhrase } from "@/features/clients/entity-schemas";
 import { formatCurrency } from "@/features/mvp/format";
 
@@ -30,18 +31,11 @@ export function TransferClientPanel({
     previewTransferClientData,
     initialTransferState,
   );
-  const [confirmState, confirmAction] = useActionState(
-    transferClientData,
-    initialTransferState,
-  );
+  const [confirmState, confirmAction] = useActionState(transferClientData, initialTransferState);
+  useErrorToast(previewState);
+  useErrorToast(confirmState);
 
   const preview = previewState.status === "preview" ? previewState.preview : undefined;
-  const error =
-    confirmState.status === "error"
-      ? confirmState.message
-      : previewState.status === "error"
-        ? previewState.message
-        : undefined;
 
   if (!clients.length) {
     return (
@@ -53,27 +47,18 @@ export function TransferClientPanel({
   }
 
   return (
-    <div className="grid gap-3">
-      <p className="text-muted max-w-2xl text-sm">
-        <strong className="text-foreground">Transferir dados deste cliente para…</strong> move
-        empresas/marcas, contatos, serviços, cobranças, despesas e domínios de {sourceClientName}{" "}
-        para outro cadastro. Nenhum valor é recalculado; o histórico de eventos permanece na origem.
-      </p>
-
-      {error ? <FeedbackBanner message={error} tone="error" /> : null}
-
-      <form action={previewAction} className="form-grid sm:grid-cols-2">
+    <>
+      <Form action={previewAction} className="inline-form">
         <input name="sourceClientId" type="hidden" value={sourceClientId} />
         <ClientCombobox
           clients={clients}
           defaultFilter="all"
+          hint={`Tudo de ${sourceClientName} passa para o cliente escolhido. Nenhum valor é recalculado e o histórico de eventos permanece na origem.`}
           label="Cliente de destino"
           name="targetClientId"
         />
-        <div className="sm:col-span-2">
-          <SubmitButton idleLabel="Ver prévia" pendingLabel="Calculando…" />
-        </div>
-      </form>
+        <SubmitButton idleLabel="Ver prévia" pendingLabel="Calculando…" />
+      </Form>
 
       {preview ? (
         <form action={confirmAction} className="grid gap-3">
@@ -134,9 +119,9 @@ export function TransferClientPanel({
               </p>
             ) : null}
           </section>
-          <div>
+          <div className="flex justify-end">
             <ConfirmDialog
-              className="danger-action"
+              className="button button--danger"
               confirmLabel="Transferir dados"
               confirmation={`${preview.counts.entities} empresa(s)/marca(s), ${preview.counts.services} serviço(s), ${preview.counts.charges} cobrança(s), ${preview.counts.expenses} despesa(s), ${preview.counts.domains} domínio(s) e ${preview.counts.contacts} contato(s) passam para ${preview.target.name}. A origem fica arquivada se ficar vazia. Não há como desfazer.`}
               holdSeconds={3}
@@ -148,6 +133,6 @@ export function TransferClientPanel({
           </div>
         </form>
       ) : null}
-    </div>
+    </>
   );
 }
