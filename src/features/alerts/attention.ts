@@ -13,8 +13,14 @@ export type AttentionItem = {
   href: Route;
   id: string;
   meta: string;
+  /** Observação do lembrete avulso. */
+  notes?: string | null;
+  /** "Cliente · Empresa" de quem é o registro; ausente em lembrete e despesa da própria empresa. */
+  owner?: string | null;
   severity: "danger" | "warning";
   source: "adjustment" | "charge" | "domain" | "expense" | "manual";
+  /** O registro em si, sem o prefixo de situação que `title` carrega. */
+  subject: string;
   title: string;
 };
 
@@ -68,7 +74,9 @@ export const getAttentionItems = cache(async function getAttentionItems(
       .limit(50),
     context.supabase
       .from("expenses")
-      .select("id, description, due_date, client_entities(display_name)", { count: "exact" })
+      .select("id, description, due_date, clients(name), client_entities(display_name)", {
+        count: "exact",
+      })
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .lte("due_date", limit)
@@ -109,8 +117,10 @@ export const getAttentionItems = cache(async function getAttentionItems(
       href: `/alertas#manual-${alert.id}` as Route,
       id: `manual-${alert.id}`,
       meta: `${alert.notes ? `${alert.notes} · ` : ""}${formatDatePtBr(alert.due_on)}`,
+      notes: alert.notes,
       severity: alert.severity as "danger" | "warning",
       source: "manual" as const,
+      subject: alert.title,
       title: alert.title,
     })),
     // O alerta funciona como guia: leva direto à cobrança citada, não à lista genérica.
@@ -119,8 +129,10 @@ export const getAttentionItems = cache(async function getAttentionItems(
       href: `/cobrancas?focus=${charge.id}` as Route,
       id: `charge-${charge.id}`,
       meta: `${ownerLabel(charge.clients?.name, charge.client_entities?.display_name)} · ${formatDatePtBr(charge.due_date)}`,
+      owner: ownerLabel(charge.clients?.name, charge.client_entities?.display_name),
       severity: charge.due_date <= today ? ("danger" as const) : ("warning" as const),
       source: "charge" as const,
+      subject: charge.description,
       title:
         charge.due_date < today
           ? `Cobrança vencida: ${charge.description}`
@@ -135,8 +147,13 @@ export const getAttentionItems = cache(async function getAttentionItems(
       meta: expense.client_entities?.display_name
         ? `${expense.client_entities.display_name} · vencimento ${formatDatePtBr(expense.due_date)}`
         : `Vencimento ${formatDatePtBr(expense.due_date)}`,
+      // Despesa da própria empresa não tem dono: nada de "Cliente" inventado.
+      owner: expense.clients?.name
+        ? ownerLabel(expense.clients.name, expense.client_entities?.display_name)
+        : (expense.client_entities?.display_name ?? null),
       severity: expense.due_date <= today ? ("danger" as const) : ("warning" as const),
       source: "expense" as const,
+      subject: expense.description,
       title:
         expense.due_date < today
           ? `Despesa vencida: ${expense.description}`
@@ -149,8 +166,10 @@ export const getAttentionItems = cache(async function getAttentionItems(
       href: `/dominios?focus=${domain.id}` as Route,
       id: `domain-${domain.id}`,
       meta: `${ownerLabel(domain.clients?.name, domain.client_entities?.display_name)} · ${formatDatePtBr(domain.expires_on)}`,
+      owner: ownerLabel(domain.clients?.name, domain.client_entities?.display_name),
       severity: domain.expires_on <= today ? ("danger" as const) : ("warning" as const),
       source: "domain" as const,
+      subject: domain.domain,
       title:
         domain.expires_on < today
           ? `Domínio expirado: ${domain.domain}`
@@ -164,7 +183,9 @@ export const getAttentionItems = cache(async function getAttentionItems(
       id: `adjustment-${service.id}`,
       meta: `${service.clients?.name ?? "Cliente"} · ${formatDatePtBr(service.next_adjustment_date)}`,
       severity: service.next_adjustment_date! < today ? ("danger" as const) : ("warning" as const),
+      owner: service.clients?.name ?? null,
       source: "adjustment" as const,
+      subject: `Reajuste de ${service.name}`,
       title:
         service.next_adjustment_date! < today
           ? `Reajuste pendente: ${service.name}`
