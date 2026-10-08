@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AccountShell } from "@/app/_components/account-shell";
@@ -70,18 +69,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       <div className="settings-layout">
         <aside className="settings-layout__nav">
           <SettingsTabs />
-          <Link className="profile-company-link" href="/configuracoes/empresa">
-            <span className="bg-warning-soft text-warning grid size-9 place-items-center rounded-lg">
-              <Icon className="size-4" name="building" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <strong className="block text-sm">Ir para a empresa</strong>
-              <span className="text-muted mt-0.5 block text-xs">Identidade, datas e alertas</span>
-            </span>
-            <span aria-hidden="true" className="text-muted">
-              →
-            </span>
-          </Link>
         </aside>
 
         <div className="settings-layout__content">

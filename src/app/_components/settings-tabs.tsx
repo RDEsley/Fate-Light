@@ -65,7 +65,7 @@ const tabs: SettingsTab[] = [
     section: "/perfil",
   },
   {
-    description: "Identidade, datas e alertas",
+    description: "Identidade e preferências",
     href: "/configuracoes/empresa",
     icon: "building",
     label: "Empresa",

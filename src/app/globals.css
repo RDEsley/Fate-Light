@@ -1242,23 +1242,6 @@ summary::-webkit-details-marker {
   line-height: 1.5;
 }
 
-.profile-company-link {
-  display: flex;
-  min-height: 4.1rem;
-  align-items: center;
-  gap: 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 0.9rem;
-  background: var(--surface);
-  padding: 0.75rem;
-  box-shadow: var(--shadow-panel);
-}
-
-.profile-company-link:hover {
-  border-color: color-mix(in srgb, var(--brand) 24%, var(--line));
-  transform: translateY(-1px);
-}
-
 .profile-request-card {
   border: 1px solid var(--line);
   border-radius: 0.85rem;
@@ -2558,6 +2541,34 @@ summary::-webkit-details-marker {
 .settings-tabs__item[aria-current="page"] .settings-tabs__icon {
   background: var(--surface-raised);
   color: var(--brand-strong);
+}
+
+@media (max-width: 1023px) {
+  .settings-tabs {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-tabs__item {
+    flex: none;
+    padding: 0.4rem 0.75rem 0.4rem 0.45rem;
+    scroll-snap-align: start;
+  }
+
+  .settings-tabs__item small {
+    display: none;
+  }
+
+  .settings-tabs__icon {
+    width: 1.65rem;
+    height: 1.65rem;
+  }
 }
 
 .lifecycle-request {
