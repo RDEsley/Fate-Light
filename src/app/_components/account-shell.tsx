@@ -23,6 +23,7 @@ export async function AccountShell({ actions, children, description, title }: Ac
       attentionTotal={attention.total}
       description={description}
       fullName={context.fullName}
+      guest={context.guest}
       title={title}
       workspaceName={context.workspaceName}
     >

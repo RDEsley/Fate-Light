@@ -5,11 +5,15 @@ const authMocks = vi.hoisted(() => ({
     throw new Error(`REDIRECT:${path}`);
   }),
   getClaims: vi.fn(),
+  deleteCookie: vi.fn(),
   signOut: vi.fn(),
   signInWithOtp: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ redirect: authMocks.redirect }));
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({ delete: authMocks.deleteCookie })),
+}));
 vi.mock("@/lib/auth/account-gate", () => ({
   getAccountDestination: vi.fn(),
 }));
@@ -133,5 +137,7 @@ describe("magic link action", () => {
     authMocks.getClaims.mockResolvedValue({ data: { claims: {} } });
     await expect(signOut()).rejects.toThrow("REDIRECT:/login?status=signed-out");
     expect(authMocks.signOut).not.toHaveBeenCalled();
+    // Sair sempre encerra o modo visitante, com ou sem sessão real.
+    expect(authMocks.deleteCookie).toHaveBeenCalledWith("fate-light-guest");
   });
 });

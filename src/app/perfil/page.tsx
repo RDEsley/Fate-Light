@@ -7,9 +7,8 @@ import { MotionSettings } from "@/components/motion-settings";
 import { StatusToast } from "@/components/ui/toaster";
 import { Icon } from "@/components/ui/icon";
 import { fallbackAlertOffsets } from "@/features/alerts/offsets";
-import { requireAccountPage } from "@/lib/auth/page-guard";
+import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { getInitials } from "@/lib/profile/initials";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 import { AlertPreferences } from "./alert-preferences";
 import { ChangePasswordForm } from "./change-password-form";
@@ -24,8 +23,7 @@ type ProfilePageProps = {
 };
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
-  const userId = await requireAccountPage("active");
-  const supabase = await createServerSupabaseClient();
+  const { supabase, userId } = await requireWorkspaceContext();
   const [
     { data: claimsData },
     { data: profile, error },

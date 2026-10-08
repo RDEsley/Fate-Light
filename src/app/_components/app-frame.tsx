@@ -6,7 +6,9 @@ import type { Route } from "next";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { signOut } from "@/app/(auth)/actions";
+import { leaveGuestMode } from "@/app/(auth)/guest-actions";
 import { BrandMark } from "@/components/brand-mark";
+import { GuestGuard } from "@/components/guest-guard";
 import { DisclosureAutoScroll } from "@/components/ui/disclosure-auto-scroll";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { AttentionItem } from "@/features/alerts/attention";
@@ -33,6 +35,7 @@ export function AppFrame({
   children,
   description,
   fullName,
+  guest = false,
   title,
   workspaceName,
 }: {
@@ -42,6 +45,8 @@ export function AppFrame({
   children: ReactNode;
   description: string;
   fullName: string;
+  /** Modo visitante: dados fictícios, nenhuma ação é enviada. */
+  guest?: boolean;
   title: string;
   workspaceName: string;
 }) {
@@ -84,6 +89,7 @@ export function AppFrame({
   return (
     <main className="app-frame text-foreground min-h-screen">
       <DisclosureAutoScroll />
+      {guest ? <GuestGuard /> : null}
       <a
         className="sr-only focus:not-sr-only focus:fixed focus:z-[90] focus:m-3 focus:rounded-lg focus:bg-white focus:p-3"
         href="#conteudo"
@@ -282,12 +288,17 @@ export function AppFrame({
                   icon="building"
                   label="Configurações da empresa"
                 />
-                <form action={signOut} className="border-t pt-1">
+                <form
+                  action={guest ? leaveGuestMode : signOut}
+                  className="border-t pt-1"
+                  data-guest-allowed=""
+                >
                   <button
                     className="text-negative hover:bg-negative-soft flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold"
                     type="submit"
                   >
-                    <Icon className="size-4" name="logout" /> Sair
+                    <Icon className="size-4" name="logout" />{" "}
+                    {guest ? "Sair do modo visitante" : "Sair"}
                   </button>
                 </form>
               </div>
@@ -299,6 +310,25 @@ export function AppFrame({
           className="mx-auto w-full max-w-[92rem] px-4 pt-6 pb-24 sm:px-6 lg:px-8 lg:pt-8 lg:pb-10"
           id="conteudo"
         >
+          {guest ? (
+            <aside aria-label="Modo visitante" className="guest-banner">
+              <span className="guest-banner__icon">
+                <Icon className="size-4" name="eye" />
+              </span>
+              <p>
+                <strong>Você está no modo visitante.</strong> Os dados são fictícios e nada pode ser
+                alterado.
+              </p>
+              <span className="guest-banner__actions">
+                <Link className="button button--primary button--small" href="/cadastro">
+                  Criar conta
+                </Link>
+                <Link className="button button--ghost button--small" href="/login">
+                  Entrar
+                </Link>
+              </span>
+            </aside>
+          ) : null}
           <div
             className="mb-6 flex flex-wrap items-start justify-between gap-4"
             data-animate="enter"

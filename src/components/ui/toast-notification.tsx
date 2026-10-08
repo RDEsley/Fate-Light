@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { createPortal } from "react-dom";
 
 import { Icon, type IconName } from "./icon";
-import type { ToastTone } from "./toast-store";
+import type { ToastAction, ToastTone } from "./toast-store";
 
 const duration = 6500;
 /** Espelha a duração de `status-toast-leave` no globals.css. */
@@ -37,11 +37,13 @@ const icons: Record<ToastTone, IconName> = {
 };
 
 export function ToastNotification({
+  action,
   message,
   onDismiss,
   title,
   tone = "success",
 }: {
+  action?: ToastAction;
   message: string;
   /** Chamado quando o cartão termina de sair, por tempo ou pelo botão de fechar. */
   onDismiss?: () => void;
@@ -128,6 +130,11 @@ export function ToastNotification({
       <span className="min-w-0 flex-1">
         <strong className="status-toast__title">{title ?? titles[tone]}</strong>
         <span className="status-toast__message">{message}</span>
+        {action ? (
+          <a className="status-toast__action" href={action.href}>
+            {action.label}
+          </a>
+        ) : null}
       </span>
       <button aria-label="Fechar notificação" onClick={leave} type="button">
         <Icon className="size-4" name="x" />

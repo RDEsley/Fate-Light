@@ -1,6 +1,10 @@
 export type ToastTone = "error" | "info" | "success" | "warning";
 
+export type ToastAction = { href: string; label: string };
+
 export type ToastEntry = {
+  /** Atalho opcional dentro do aviso, para quando ele pede um próximo passo. */
+  action?: ToastAction;
   /** Avisos do mesmo grupo se substituem: só o mais recente fica na tela. */
   group?: string;
   id: number;
@@ -45,6 +49,7 @@ export function readServerToasts() {
  * última ação é o que importa, não a fila das anteriores.
  */
 export function pushToast(toast: {
+  action?: ToastAction;
   group?: string;
   message: string;
   title?: string;
@@ -55,7 +60,13 @@ export function pushToast(toast: {
   if (repeated) {
     entries = entries.map((entry) =>
       entry === repeated
-        ? { ...entry, group: toast.group, title: toast.title, version: entry.version + 1 }
+        ? {
+            ...entry,
+            action: toast.action,
+            group: toast.group,
+            title: toast.title,
+            version: entry.version + 1,
+          }
         : entry,
     );
   } else {
@@ -63,6 +74,7 @@ export function pushToast(toast: {
     entries = [
       ...kept,
       {
+        action: toast.action,
         group: toast.group,
         id: nextId++,
         message: toast.message,

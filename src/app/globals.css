@@ -982,6 +982,40 @@ summary::-webkit-details-marker {
   text-align: center;
 }
 
+/* Entrada do modo visitante: existe, mas não disputa atenção com "Criar conta". */
+.auth-shell__guest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem 0.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.auth-shell__guest button {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.5rem;
+  border-radius: 0.55rem;
+  color: var(--muted);
+  font-weight: 700;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.auth-shell__guest button:hover,
+.auth-shell__guest button:focus-visible {
+  background: color-mix(in srgb, var(--brand-soft) 60%, white);
+  color: var(--brand-strong);
+}
+
 .auth-password-field {
   position: relative;
 }
@@ -2821,6 +2855,16 @@ summary::-webkit-details-marker {
   line-height: 1.45;
 }
 
+.status-toast__action {
+  display: inline-block;
+  margin-top: 0.4rem;
+  color: var(--brand-strong);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .status-toast__icon {
   display: grid;
   width: 2rem;
@@ -4552,6 +4596,48 @@ summary.action-row__head {
   border-color: var(--brand-strong);
   background: var(--brand-soft);
   color: var(--brand-strong);
+}
+
+/* Faixa do modo visitante: avisa uma vez, no topo, sem cobrir a tela que a pessoa veio ver. */
+.guest-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--violet) 26%, var(--line));
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--violet-soft) 55%, white);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.guest-banner p {
+  min-width: 12rem;
+  flex: 1;
+  color: var(--muted);
+}
+
+.guest-banner p strong {
+  color: var(--foreground);
+}
+
+.guest-banner__icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  place-items: center;
+  border-radius: 0.6rem;
+  background: white;
+  color: var(--violet);
+}
+
+.guest-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 /* Faixa de números de resumo acima de uma lista. */

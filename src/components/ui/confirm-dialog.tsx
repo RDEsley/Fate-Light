@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
+import { blockedForGuest } from "../guest-guard";
 import { FieldError } from "./field-error";
 import { Icon, type IconName } from "./icon";
 import { Modal, type ModalTone } from "./modal";
@@ -87,6 +88,8 @@ export function ConfirmDialog({
   // A contagem reinicia na abertura, não dentro do efeito: reabrir o diálogo tem de
   // cobrar a espera de novo, e zerar aqui evita render em cascata.
   const start = () => {
+    // Visitante não confirma nada: o aviso vem antes de pedir frase ou espera.
+    if (blockedForGuest()) return;
     setRemaining(holdSeconds);
     setOpen(true);
   };

@@ -5,6 +5,7 @@ import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { TextField } from "@/components/ui/field";
 import { Form } from "@/components/ui/form";
 import { publicEnvironment } from "@/config/env/public";
+import { guestNotice } from "@/lib/demo/guest";
 
 import { authenticateWithPassword } from "../actions";
 import { PasswordRevealField } from "./password-reveal-field";
@@ -14,6 +15,7 @@ const messages: Record<string, string> = {
   captcha: "Conclua a verificação de segurança e tente novamente.",
   "confirmation-sent": "Confira seu e-mail para confirmar a conta antes de entrar.",
   error: "Não foi possível criar a conta. Revise os dados ou tente novamente.",
+  guest: guestNotice,
   invalid: "Revise o nome, o e-mail, a senha e a confirmação informados.",
   "invalid-credentials": "E-mail ou senha incorretos.",
   "password-updated": "Senha atualizada. Entre novamente com a nova senha.",

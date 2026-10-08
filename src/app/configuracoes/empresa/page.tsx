@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AccountShell } from "@/app/_components/account-shell";
 import { SettingsTabs } from "@/app/_components/settings-tabs";
-import { requireAccountPage } from "@/lib/auth/page-guard";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { WorkspaceForm } from "./workspace-form";
 import { WorkspaceDangerZone } from "./workspace-danger-zone";
@@ -12,8 +11,7 @@ import { WorkspaceDangerZone } from "./workspace-danger-zone";
 export const metadata: Metadata = { title: "Configurações da empresa" };
 
 export default async function WorkspaceSettingsPage() {
-  await requireAccountPage("active");
-  const supabase = await createServerSupabaseClient();
+  const { supabase } = await requireWorkspaceContext();
   const { data: workspace, error: workspaceError } = await supabase
     .from("workspaces")
     .select("id, name, currency, timezone")

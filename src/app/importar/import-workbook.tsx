@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 
+import { blockedForGuest } from "@/components/guest-guard";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 import { Icon } from "@/components/ui/icon";
 import type { ImportActionState } from "@/features/import/types";
@@ -43,7 +44,7 @@ export function ImportWorkbook() {
   };
 
   const run = async (mode: "confirm" | "preview") => {
-    if (!formRef.current) return;
+    if (!formRef.current || blockedForGuest()) return;
     setPending(mode);
     const formData = new FormData(formRef.current);
     if (state.preview) formData.set("digest", state.preview.digest);

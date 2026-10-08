@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { appendNextPath } from "@/lib/auth/redirects";
+import { guestCookieName, guestCookieValue } from "@/lib/demo/guest";
 import { updateSupabaseSession } from "@/lib/supabase/proxy";
 import { publicEnvironment } from "@/config/env/public";
 
@@ -66,7 +67,16 @@ export async function proxy(request: NextRequest) {
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
-  if (!authenticated && isProtected) {
+  // Visitante: sem sessão, com o cookie do modo de demonstração. Ele abre as telas do
+  // sistema (que leem dados fictícios), mas não o onboarding, que é o cadastro de verdade.
+  const guest = !authenticated && request.cookies.get(guestCookieName)?.value === guestCookieValue;
+  const guestCanView = guest && !pathname.startsWith("/onboarding");
+  // Quem entrou de verdade não carrega o modo visitante adiante.
+  if (authenticated && request.cookies.has(guestCookieName)) {
+    response.cookies.delete(guestCookieName);
+  }
+
+  if (!authenticated && isProtected && !guestCanView) {
     const destination = request.nextUrl.clone();
     destination.pathname = "/login";
     destination.search = new URLSearchParams({
