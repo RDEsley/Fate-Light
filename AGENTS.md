@@ -29,7 +29,13 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
 - Não use `any`, casts para ocultar incompatibilidades ou supressões de lint sem justificativa.
 - Adicione dependências apenas com uso concreto, versões exatas e atualização do `package-lock.json`.
 - Não há configuração de Prettier no repositório e o código segue largura 100: ao formatar, use
-  `npx prettier --print-width 100` somente nos arquivos alterados.
+  `npx prettier --print-width 100` somente nos arquivos alterados. Não passe `globals.css` pelo
+  Prettier: ele não está todo formatado e o diff vira ruído.
+- Páginas do sistema obtêm sessão e cliente por `requireWorkspaceContext()`. É ele que decide entre
+  o workspace real e o modo visitante (ADR-0021); criar o cliente do Supabase direto na página a
+  tira da demonstração.
+- O modo visitante é somente leitura por construção: `src/lib/demo/` nunca ganha escrita, e toda
+  consulta ou RPC de leitura nova usada por uma página precisa funcionar também ali.
 
 ## Produto, UI e acessibilidade
 
@@ -47,6 +53,9 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
 - Campo obrigatório nunca fica dentro de bloco recolhido (`FormMore`); explicação longa vai no
   ícone de informação (`hint`), não em texto fixo sob o campo.
 - Empresas/marcas são cadastradas na criação e na edição do cliente; a ficha só filtra por elas.
+- Listas de registros (cobranças, despesas, domínios, alertas) usam `RecordList`/`RecordRow`: uma
+  linha por registro, a ação principal à vista e o restante nos detalhes ao abrir. Filtro acionado
+  por botão declara o estado com `aria-pressed`.
 - Datas são exibidas em `DD/MM/AAAA`, trafegam como `YYYY-MM-DD` e usam o calendário PT-BR.
   Campos de data obrigatórios começam vazios em novos registros; só edições podem vir preenchidas.
 - Ícones são SVG do componente `Icon`; não use emoji, bitmap ou caractere desfocado como ícone.
@@ -98,7 +107,8 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
   `npm run test:e2e`, `npm run security:check`, `git diff --check`.
 - O computador local não possui Docker. Testes `db:*` e a jornada autenticada podem depender do CI;
   quando não puderem rodar localmente, valide SQL estaticamente e confirme esses gates no GitHub
-  Actions antes de concluir.
+  Actions antes de concluir. As telas do sistema podem ser conferidas localmente pelo modo
+  visitante, e `home.spec.ts` e `guest.spec.ts` rodam sem a pilha do Supabase.
 - CI usa placeholders para o front-end e uma pilha Supabase efêmera; nunca depende de segredos ou do
   projeto remoto de produção.
 

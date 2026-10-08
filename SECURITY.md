@@ -7,7 +7,7 @@ atual publicada. O suporte a uma versão 1.0 será definido no respectivo releas
 
 | Versão     | Suporte                  |
 | ---------- | ------------------------ |
-| `0.8.2`    | Atual publicada          |
+| `0.11.0`   | Atual publicada          |
 | Anteriores | Sem manutenção planejada |
 
 ## Relatar uma vulnerabilidade
@@ -36,7 +36,9 @@ vulnerabilidade antes de uma correção ou orientação de mitigação.
 - documentos fiscais usam armazenamento privado e URLs temporárias;
 - segredos e dados reais não devem entrar no repositório, testes ou logs;
 - empresas/marcas (`client_entities`) usam FK composta com o cliente e policies de workspace;
-  consolidação exige frase `CONSOLIDAR` e recusa quando os totais financeiros não batem.
+  consolidação exige frase `CONSOLIDAR` e recusa quando os totais financeiros não batem;
+- o modo visitante não cria sessão nem consulta o banco: as telas leem dados fictícios em memória,
+  toda escrita é recusada e Server Actions não rodam para quem não tem conta (ADR-0021).
 
 ## Riscos residuais conhecidos (linha `0.8.2`)
 
