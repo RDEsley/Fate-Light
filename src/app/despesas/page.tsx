@@ -12,14 +12,12 @@ import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FiscalDocumentPanel } from "@/components/ui/fiscal-document-panel";
+import { FormPanel } from "@/components/ui/form-panel";
 import { Icon } from "@/components/ui/icon";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { addDays, formatCurrency, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
-import {
-  appendIdInFilter,
-  textSearchOrFilter,
-} from "@/features/search/list-query";
+import { appendIdInFilter, textSearchOrFilter } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { ExpenseForm } from "./expense-form";
@@ -180,10 +178,7 @@ export default async function ExpensesPage({
             <option value="next7">Próximos 7 dias</option>
           </select>
         </label>
-        <button
-          className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 text-sm font-black"
-          type="submit"
-        >
+        <button className="button button--primary" type="submit">
           Filtrar
         </button>
       </form>
@@ -196,20 +191,12 @@ export default async function ExpensesPage({
           </span>
         </aside>
       ) : null}
-      <details className="panel-card form-disclosure mb-5">
-        <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
-          <span className="flex items-center gap-2">
-            <span className="bg-negative-soft text-negative grid size-9 place-items-center rounded-xl">
-              <Icon className="size-4" name="plus" />
-            </span>
-            Nova despesa
-          </span>
-          <span className="text-muted flex items-center gap-1 text-xs">
-            <span className="form-disclosure__closed-label">Abrir formulário</span>
-            <span className="form-disclosure__open-label">Fechar formulário</span>
-            <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-          </span>
-        </summary>
+      <FormPanel
+        className="mb-5"
+        description="Custo fixo ou avulso, pago ou a pagar"
+        title="Nova despesa"
+        tone="danger"
+      >
         <ExpenseForm
           categoryOptions={categoryOptions}
           clients={(clients ?? []).map((client) => ({
@@ -225,7 +212,7 @@ export default async function ExpensesPage({
             typeLabel: clientEntityTypeLabel(entity.entity_type),
           }))}
         />
-      </details>
+      </FormPanel>
       {error ? (
         <p role="alert">Não foi possível carregar as despesas.</p>
       ) : expenses?.length ? (

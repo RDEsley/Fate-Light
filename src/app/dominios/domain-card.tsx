@@ -42,8 +42,8 @@ export function DomainCard({
 
   if (editing) {
     return (
-      <article className="border-brand/40 rounded-xl border-2 p-4 sm:p-5 md:col-span-2">
-        <div className="section-heading mb-4">
+      <article className="service-card service-card--editing">
+        <div className="section-heading mb-5">
           <span className="section-heading__icon bg-brand-soft text-brand-strong">
             <Icon name="edit" />
           </span>

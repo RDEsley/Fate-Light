@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { recordChargeDelayReason } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { FormActions, TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
 
@@ -29,7 +31,7 @@ export function DelayReasonForm({ chargeId }: { chargeId: string }) {
         <span className="flex-1">Registrar motivo do atraso</span>
         <Icon className="delay-reason-disclosure__chevron size-4" name="chevron-down" />
       </summary>
-      <form action={recordChargeDelayReason} className="form-grid mt-3 sm:grid-cols-2">
+      <Form action={recordChargeDelayReason} className="mt-3 grid gap-4">
         <input name="id" type="hidden" value={chargeId} />
         <SelectField
           label="Motivo"
@@ -38,23 +40,21 @@ export function DelayReasonForm({ chargeId }: { chargeId: string }) {
           options={reasonOptions}
           value={code}
         />
-        <label className="field sm:col-span-2">
-          <span className="field__label">
-            {code === "other" ? "Explique o motivo" : "Observação (você pode ajustar)"}
-          </span>
-          <textarea
-            defaultValue={code === "other" ? "" : standardReason}
-            key={code}
-            maxLength={500}
-            name="reason"
-            placeholder="Ex.: cliente pediu para pagar junto com a mensalidade seguinte"
-            required
-          />
-        </label>
-        <div className="sm:col-span-2">
+        <TextField
+          defaultValue={code === "other" ? "" : standardReason}
+          key={code}
+          label={code === "other" ? "Explique o motivo" : "Observação (você pode ajustar)"}
+          maxLength={500}
+          minLength={code === "other" ? 4 : 2}
+          multiline
+          name="reason"
+          placeholder="Ex.: cliente pediu para pagar junto com a mensalidade seguinte"
+          required
+        />
+        <FormActions>
           <SubmitButton idleLabel="Salvar no histórico" />
-        </div>
-      </form>
+        </FormActions>
+      </Form>
     </details>
   );
 }

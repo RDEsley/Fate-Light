@@ -4,9 +4,8 @@ import { useActionState, useState } from "react";
 
 import { createExpense } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { FieldError } from "@/components/ui/field-error";
-import { FieldHint } from "@/components/ui/field-hint";
+import { FormActions, TextField, ToggleCard } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import {
   ClientCombobox,
   DateField,
@@ -46,128 +45,104 @@ export function ExpenseForm({
   entities?: ClientEntityOption[];
 }) {
   const [state, formAction] = useActionState(createExpense, initialActionState);
-  const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
   const [expenseType, setExpenseType] = useState(sent.text("expenseType", "fixed"));
   // A empresa/marca depende do cliente escolhido, então o id vive aqui e não no combobox.
   const [clientId, setClientId] = useState(sent.text("clientId"));
+  const hasEntities = Boolean(clientId) && entities.some((entity) => entity.clientId === clientId);
 
   return (
-    <form action={formAction} className="form-grid mt-4 sm:grid-cols-2">
-      {state.status === "error" && state.message ? (
-        <div className="sm:col-span-2">
-          <FeedbackBanner message={state.message} tone="error" />
-        </div>
-      ) : null}
-      <label className="field sm:col-span-2">
-        <span className="field__label">Descrição</span>
-        <input
-          aria-invalid={Boolean(errors.description)}
+    <Form action={formAction} className="grid gap-4" state={state}>
+      <div className="form-grid sm:grid-cols-2 lg:grid-cols-12">
+        <TextField
+          className="sm:col-span-2 lg:col-span-6"
           defaultValue={sent.text("description")}
+          label="Descrição"
           maxLength={200}
+          minLength={2}
           name="description"
           placeholder="Ex.: Hospedagem do site"
           required
         />
-        <FieldError message={errors.description} />
-      </label>
-      <SelectField
-        defaultValue={sent.text("category", "other")}
-        hint={
-          <FieldHint>
-            Serve para agrupar as despesas nos relatórios. Na dúvida, use “Outros”.
-          </FieldHint>
-        }
-        label="Categoria"
-        name="category"
-        options={categoryOptions}
-      />
-      <SelectField
-        hint={
-          <FieldHint>
-            Fixa é aluguel ou assinatura. Variável é avulsa ou muda de valor. A recorrência mensal
-            só existe para despesas fixas e precisa ser ligada explicitamente.
-          </FieldHint>
-        }
-        label="Tipo"
-        name="expenseType"
-        onValueChange={setExpenseType}
-        options={expenseTypeOptions}
-        value={expenseType}
-      />
-      <MoneyField
-        defaultValue={sent.text("amount")}
-        error={errors.amount}
-        label="Valor"
-        name="amount"
-        required
-      />
-      <DateField
-        defaultValue={sent.text("dueDate")}
-        error={errors.dueDate}
-        label="Vencimento ou data"
-        name="dueDate"
-        required
-      />
-      <SelectField
-        defaultValue={sent.text("status", "pending")}
-        hint={
-          <FieldHint>
-            “Paga” registra o pagamento na data informada acima, e não na data de hoje. Em despesa
-            mensal, a próxima ocorrência nasce automaticamente após marcar como paga.
-          </FieldHint>
-        }
-        label="Status"
-        name="status"
-        options={statusOptions}
-      />
-      <ClientCombobox
-        clients={clients}
-        defaultFilter="all"
-        defaultValue={clientId}
-        label="Cliente"
-        onSelect={(client) => setClientId(client?.id ?? "")}
-        optional
-      />
-      <EntitySelect
-        clientId={clientId || null}
-        defaultValue={sent.text("clientEntityId")}
-        entities={entities}
-        error={errors.clientEntityId}
-      />
-      {expenseType === "fixed" ? (
-        <div className="option-card sm:col-span-2">
-          <label className="option-card__toggle">
-            <input
-              defaultChecked={sent.checkbox("enableRecurrence")}
-              name="enableRecurrence"
-              type="checkbox"
-            />
-            <span>
-              <strong>Repetir todo mês</strong>
-              <small>
-                Ao marcar como paga, o sistema cria a próxima ocorrência com o mesmo valor. Você
-                pode encerrar a série depois, sem apagar o histórico.
-              </small>
-            </span>
-          </label>
-          <FieldError message={errors.enableRecurrence} />
-        </div>
-      ) : null}
-      <label className="field sm:col-span-2">
-        <span className="field__label">
-          Observações <span className="field__optional">opcional</span>
-        </span>
-        <textarea
-          defaultValue={sent.text("notes")}
-          maxLength={5000}
-          name="notes"
-          placeholder="Contrato, forma de pagamento, o que mais ajudar depois"
+        <MoneyField
+          className="lg:col-span-3"
+          defaultValue={sent.text("amount")}
+          label="Valor"
+          name="amount"
+          required
         />
-      </label>
-      <div className="sm:col-span-2">
-        <SubmitButton idleLabel="Criar despesa" />
+        <DateField
+          className="lg:col-span-3"
+          defaultValue={sent.text("dueDate")}
+          label="Vencimento ou data"
+          name="dueDate"
+          required
+        />
+        <SelectField
+          className="lg:col-span-4"
+          defaultValue={sent.text("category", "other")}
+          hint="Serve para agrupar as despesas nos relatórios. Na dúvida, use “Outros”."
+          label="Categoria"
+          name="category"
+          options={categoryOptions}
+        />
+        <SelectField
+          className="lg:col-span-4"
+          hint="Fixa é aluguel ou assinatura. Variável é avulsa ou muda de valor. Só a fixa pode repetir todo mês."
+          label="Tipo"
+          name="expenseType"
+          onValueChange={setExpenseType}
+          options={expenseTypeOptions}
+          value={expenseType}
+        />
+        <SelectField
+          className="sm:col-span-2 lg:col-span-4"
+          defaultValue={sent.text("status", "pending")}
+          hint="“Paga” registra o pagamento na data informada, não na de hoje. Em despesa mensal, a próxima ocorrência nasce ao marcar como paga."
+          label="Status"
+          name="status"
+          options={statusOptions}
+        />
+        <ClientCombobox
+          className={hasEntities ? "sm:col-span-2 lg:col-span-6" : "sm:col-span-2 lg:col-span-12"}
+          clients={clients}
+          defaultFilter="all"
+          defaultValue={clientId}
+          hint="Vincule quando o custo existe por causa de um cliente. Sem vínculo, vale como custo geral."
+          label="Cliente"
+          onSelect={(client) => setClientId(client?.id ?? "")}
+          optional
+        />
+        <EntitySelect
+          className="sm:col-span-2 lg:col-span-6"
+          clientId={clientId || null}
+          defaultValue={sent.text("clientEntityId")}
+          entities={entities}
+        />
       </div>
-    </form>
+
+      {expenseType === "fixed" ? (
+        <ToggleCard
+          defaultChecked={sent.checkbox("enableRecurrence")}
+          description="Ao marcar como paga, a próxima ocorrência é criada com o mesmo valor. Você pode encerrar a série depois."
+          name="enableRecurrence"
+          title="Repetir todo mês"
+        />
+      ) : null}
+
+      <TextField
+        defaultValue={sent.text("notes")}
+        label="Observações"
+        maxLength={5000}
+        multiline
+        name="notes"
+        optional
+        placeholder="Contrato, forma de pagamento, o que mais ajudar depois"
+      />
+
+      <FormActions>
+        <SubmitButton idleLabel="Criar despesa" />
+      </FormActions>
+    </Form>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { FieldError } from "@/components/ui/field-error";
+import { FormActions, TextField, ToggleCard } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { IntegerField } from "@/components/ui/integer-field";
 import { MoneyField } from "@/components/ui/money-field";
 import { PercentField } from "@/components/ui/percent-field";
@@ -27,85 +27,107 @@ export type CatalogServiceValues = {
 
 export function ServiceCatalogForm({
   action,
+  onCancel,
   service,
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  onCancel?: () => void;
   service?: CatalogServiceValues;
 }) {
   const [state, formAction] = useActionState(action, initialActionState);
-  const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
   const stored = (value: number | string | null | undefined) =>
     value === null || value === undefined ? "" : String(value);
+  const interval = sent.text(
+    "adjustmentIntervalMonths",
+    stored(service?.default_adjustment_interval_months),
+  );
+  // Intervalo e porcentagem só valem juntos; a chave mostra os dois ou nenhum.
+  const [adjustment, setAdjustment] = useState(Boolean(interval));
 
   return (
-    <form action={formAction} className="form-grid mt-3 sm:grid-cols-2">
+    <Form action={formAction} className="grid gap-4" state={state}>
       {service ? <input name="id" type="hidden" value={service.id} /> : null}
-      {state.status === "error" && state.message ? (
-        <div className="sm:col-span-2">
-          <FeedbackBanner message={state.message} tone="error" />
-        </div>
-      ) : null}
-      <label className="field">
-        <span className="field__label">Nome</span>
-        <input
-          aria-invalid={Boolean(errors.name)}
+
+      <div className="form-grid sm:grid-cols-2 lg:grid-cols-12">
+        <TextField
+          className="sm:col-span-2 lg:col-span-6"
           defaultValue={sent.text("name", service?.name ?? "")}
+          hint="Use um nome que você reconheceria em qualquer cliente: é por ele que o serviço é encontrado na hora de aplicar."
+          label="Nome"
           maxLength={120}
+          minLength={2}
           name="name"
           placeholder="Ex.: Gestão de Google Ads"
+          required
         />
-        <FieldError message={errors.name} />
-        <span className="field__hint">
-          Nomes se repetem mal: use um nome que você reconheceria em qualquer cliente.
-        </span>
-      </label>
-      <MoneyField
-        defaultValue={sent.text("defaultPrice", stored(service?.default_price) || "0")}
-        error={errors.defaultPrice}
-        hint="É só uma sugestão inicial. Ao aplicar o serviço em um cliente você pode mudar o valor sem afetar o catálogo nem os outros clientes."
-        label="Valor padrão"
-        name="defaultPrice"
-      />
-      <SelectField
-        defaultValue={sent.text("billingType", service?.default_billing_type ?? "monthly")}
-        label="Periodicidade"
-        name="billingType"
-        options={billingOptions}
-      />
-      <IntegerField
-        defaultValue={sent.text(
-          "adjustmentIntervalMonths",
-          stored(service?.default_adjustment_interval_months),
-        )}
-        error={errors.adjustmentIntervalMonths}
-        label="Reajuste a cada (meses)"
-        max={60}
-        min={1}
-        name="adjustmentIntervalMonths"
-        optional
-      />
-      <PercentField
-        defaultValue={sent.text("adjustmentRate", stored(service?.default_adjustment_rate))}
-        error={errors.adjustmentRate}
-        label="Sugestão de reajuste (%)"
-        name="adjustmentRate"
-        optional
-      />
-      <label className="field sm:col-span-2">
-        <span className="field__label">
-          Descrição <span className="field__optional">opcional</span>
-        </span>
-        <textarea
-          defaultValue={sent.text("description", service?.description ?? "")}
-          maxLength={3000}
-          name="description"
+        <MoneyField
+          className="lg:col-span-3"
+          defaultValue={sent.text("defaultPrice", stored(service?.default_price) || "0")}
+          hint="É só uma sugestão inicial. Ao aplicar o serviço em um cliente você pode mudar o valor sem afetar o catálogo nem os outros clientes."
+          label="Valor padrão"
+          name="defaultPrice"
+          required
         />
-        <FieldError message={errors.description} />
-      </label>
-      <div className="sm:col-span-2">
-        <SubmitButton idleLabel={service ? "Salvar alterações" : "Criar serviço"} />
+        <SelectField
+          className="lg:col-span-3"
+          defaultValue={sent.text("billingType", service?.default_billing_type ?? "monthly")}
+          label="Periodicidade"
+          name="billingType"
+          options={billingOptions}
+        />
       </div>
-    </form>
+
+      <ToggleCard
+        checked={adjustment}
+        description="Sugere a revisão do preço de tempos em tempos para quem usar este serviço."
+        onCheckedChange={setAdjustment}
+        title="Lembrete de reajuste"
+      >
+        {adjustment ? (
+          <div className="form-grid sm:grid-cols-2">
+            <IntegerField
+              defaultValue={interval || "12"}
+              label="A cada quantos meses"
+              max={60}
+              min={1}
+              name="adjustmentIntervalMonths"
+              required
+            />
+            <PercentField
+              defaultValue={sent.text("adjustmentRate", stored(service?.default_adjustment_rate))}
+              label="Reajuste sugerido (%)"
+              name="adjustmentRate"
+              required
+            />
+          </div>
+        ) : null}
+      </ToggleCard>
+      {adjustment ? null : (
+        <>
+          <input name="adjustmentIntervalMonths" type="hidden" value="" />
+          <input name="adjustmentRate" type="hidden" value="" />
+        </>
+      )}
+
+      <TextField
+        defaultValue={sent.text("description", service?.description ?? "")}
+        label="Descrição"
+        maxLength={3000}
+        multiline
+        name="description"
+        optional
+        placeholder="O que está incluso, para lembrar na hora de aplicar"
+      />
+
+      <FormActions>
+        {onCancel ? (
+          <button className="button button--secondary" onClick={onCancel} type="button">
+            Cancelar
+          </button>
+        ) : null}
+        <SubmitButton idleLabel={service ? "Salvar alterações" : "Criar serviço"} />
+      </FormActions>
+    </Form>
   );
 }

@@ -3,9 +3,8 @@
 import { useActionState, useState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { FieldError } from "@/components/ui/field-error";
-import { FieldHint } from "@/components/ui/field-hint";
+import { FormActions, TextField, ToggleCard } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import {
   ClientCombobox,
   DateField,
@@ -13,7 +12,7 @@ import {
   type ClientEntityOption,
   type ClientOption,
 } from "@/components/ui/form-controls";
-import { Icon } from "@/components/ui/icon";
+import { FormMore } from "@/components/ui/form-panel";
 import { MoneyField } from "@/components/ui/money-field";
 import { initialActionState, submittedValues, type ActionState } from "@/lib/forms/action-state";
 
@@ -50,12 +49,12 @@ export function DomainForm({
 }) {
   const editing = Boolean(domain);
   const [state, formAction] = useActionState(action, initialActionState);
-  const errors = state.fieldErrors ?? {};
   const sent = submittedValues(state);
   const [clientId, setClientId] = useState(domain?.clientId ?? "");
   const [domainName, setDomainName] = useState(domain?.domain ?? "");
   const [responsibility, setResponsibility] = useState(domain?.paymentResponsibility ?? "");
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const hasEntities = Boolean(clientId) && entities.some((entity) => entity.clientId === clientId);
 
   const applyClient = (client: ClientOption | null) => {
     setClientId(client?.id ?? "");
@@ -70,146 +69,118 @@ export function DomainForm({
   };
 
   return (
-    <form action={formAction} className="form-grid mt-4 sm:grid-cols-2">
+    <Form action={formAction} className="grid gap-4" state={state}>
       {domain ? <input name="id" type="hidden" value={domain.id} /> : null}
-      {state.status === "error" && state.message ? (
-        <div className="sm:col-span-2">
-          <FeedbackBanner message={state.message} tone="error" />
-        </div>
-      ) : null}
-      <ClientCombobox
-        clients={clients}
-        defaultFilter="all"
-        defaultValue={domain?.clientId}
-        onSelect={applyClient}
-      />
-      <label className="field">
-        <span className="field__label">Domínio</span>
-        <input
-          aria-invalid={Boolean(errors.domain)}
+
+      <div className="form-grid sm:grid-cols-2 lg:grid-cols-12">
+        <ClientCombobox
+          className="lg:col-span-6"
+          clients={clients}
+          defaultFilter="all"
+          defaultValue={domain?.clientId}
+          onSelect={applyClient}
+        />
+        <TextField
+          className="lg:col-span-6"
+          help={
+            suggestion ? (
+              <button
+                className="text-left underline underline-offset-2"
+                onClick={() => {
+                  setDomainName(suggestion);
+                  setSuggestion(null);
+                }}
+                type="button"
+              >
+                Usar o site cadastrado no cliente: {suggestion}
+              </button>
+            ) : undefined
+          }
+          label="Domínio"
           maxLength={253}
           name="domain"
-          onChange={(event) => setDomainName(event.target.value)}
+          onValueChange={setDomainName}
           placeholder="exemplo.com.br"
           required
           value={domainName}
         />
-        <FieldError message={errors.domain} />
-        {suggestion ? (
-          <button
-            className="field__hint mt-1 block text-left underline underline-offset-2"
-            onClick={() => {
-              setDomainName(suggestion);
-              setSuggestion(null);
-            }}
-            type="button"
-          >
-            Usar o site cadastrado no cliente: {suggestion}
-          </button>
-        ) : null}
-      </label>
-      <DateField
-        defaultValue={domain?.expiresOn}
-        error={errors.expiresOn}
-        label="Data de expiração"
-        name="expiresOn"
-        required
-      />
-      <EntitySelect
-        clientId={clientId || null}
-        defaultValue={sent.text("clientEntityId", domain?.clientEntityId ?? "")}
-        entities={entities}
-        error={errors.clientEntityId}
-      />
-      <label className="field">
-        <span className="field__label">
-          Responsável pelo pagamento
-          <FieldHint>
-            Quem paga a renovação: você, o cliente ou um terceiro. Aparece no card para você saber a
-            quem cobrar quando o prazo chegar.
-          </FieldHint>
-        </span>
-        <input
-          aria-invalid={Boolean(errors.paymentResponsibility)}
+        <DateField
+          className="lg:col-span-4"
+          defaultValue={domain?.expiresOn}
+          label="Data de expiração"
+          name="expiresOn"
+          required
+        />
+        <TextField
+          className={hasEntities ? "lg:col-span-4" : "lg:col-span-8"}
+          hint="Quem paga a renovação: você, o cliente ou um terceiro. Aparece no card para você saber a quem cobrar quando o prazo chegar."
+          label="Responsável pelo pagamento"
           maxLength={120}
+          minLength={2}
           name="paymentResponsibility"
-          onChange={(event) => setResponsibility(event.target.value)}
+          onValueChange={setResponsibility}
           placeholder="Ex.: Empresa"
           required
           value={responsibility}
         />
-        <FieldError message={errors.paymentResponsibility} />
-      </label>
+        <EntitySelect
+          className="sm:col-span-2 lg:col-span-4"
+          clientId={clientId || null}
+          defaultValue={sent.text("clientEntityId", domain?.clientEntityId ?? "")}
+          entities={entities}
+        />
+      </div>
 
-      {/* Aberto quando o erro está aqui dentro: apontar um campo escondido atrás de um
-          disclosure fechado é o mesmo que não apontar. */}
-      <details
-        className="form-disclosure sm:col-span-2"
-        open={editing || Boolean(errors.registrar || errors.cost || errors.notes)}
+      <FormMore
+        defaultOpen={editing}
+        description="Registrador, custo, renovação e observações"
+        title="Mais detalhes"
       >
-        <summary className="flex cursor-pointer items-center gap-1 text-sm font-semibold">
-          Mais detalhes <span className="field__optional">opcional</span>
-          <Icon className="form-disclosure__chevron ml-auto size-4" name="chevron-down" />
-        </summary>
-        <div className="form-grid mt-3 sm:grid-cols-2">
-          <label className="field">
-            <span className="field__label">
-              Registrador <span className="field__optional">opcional</span>
-              <FieldHint>Cole o link do painel para abrir a renovação com um clique.</FieldHint>
-            </span>
-            <input
-              defaultValue={sent.text("registrar", domain?.registrar ?? "")}
-              maxLength={120}
-              name="registrar"
-              placeholder="Ex.: godaddy.com ou GoDaddy"
-            />
-            <FieldError message={errors.registrar} />
-          </label>
+        <div className="form-grid sm:grid-cols-2">
+          <TextField
+            defaultValue={sent.text("registrar", domain?.registrar ?? "")}
+            hint="Cole o link do painel para abrir a renovação com um clique."
+            label="Registrador"
+            maxLength={120}
+            name="registrar"
+            optional
+            placeholder="Ex.: godaddy.com ou GoDaddy"
+          />
           <MoneyField
             defaultValue={sent.text(
               "cost",
               domain?.cost === null || domain?.cost === undefined ? "" : String(domain.cost),
             )}
-            error={errors.cost}
             label="Custo"
             name="cost"
             optional
           />
-          <div className="option-card sm:col-span-2">
-            <label className="option-card__toggle">
-              <input
-                defaultChecked={sent.checkbox("autoRenew", domain?.autoRenew)}
-                name="autoRenew"
-                type="checkbox"
-              />
-              <span>
-                <strong>Renovação automática</strong>
-                <small>O registrador cobra e renova sozinho quando o prazo vence.</small>
-              </span>
-            </label>
-          </div>
-          <label className="field sm:col-span-2">
-            <span className="field__label">
-              Observações <span className="field__optional">opcional</span>
-            </span>
-            <textarea
-              defaultValue={sent.text("notes", domain?.notes ?? "")}
-              maxLength={5000}
-              name="notes"
-              placeholder="Login usado, combinados sobre a renovação…"
-            />
-          </label>
         </div>
-      </details>
+        <ToggleCard
+          defaultChecked={sent.checkbox("autoRenew", domain?.autoRenew)}
+          description="O registrador cobra e renova sozinho quando o prazo vence."
+          name="autoRenew"
+          title="Renovação automática"
+        />
+        <TextField
+          defaultValue={sent.text("notes", domain?.notes ?? "")}
+          label="Observações"
+          maxLength={5000}
+          multiline
+          name="notes"
+          optional
+          placeholder="Login usado, combinados sobre a renovação…"
+        />
+      </FormMore>
 
-      <div className="flex flex-wrap items-end justify-end gap-3 sm:col-span-2">
+      <FormActions>
         {onCancel ? (
-          <button className="modal-cancel" onClick={onCancel} type="button">
+          <button className="button button--secondary" onClick={onCancel} type="button">
             Cancelar
           </button>
         ) : null}
         <SubmitButton idleLabel={editing ? "Salvar domínio" : "Criar domínio"} />
-      </div>
-    </form>
+      </FormActions>
+    </Form>
   );
 }

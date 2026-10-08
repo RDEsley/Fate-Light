@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createDomain } from "@/app/_actions/mvp";
 import { AccountShell } from "@/app/_components/account-shell";
 import { MvpStatusMessage } from "@/app/_components/mvp-status-message";
+import { FormPanel } from "@/components/ui/form-panel";
 import { Icon } from "@/components/ui/icon";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
@@ -92,7 +93,11 @@ export default async function DomainsPage({
       query,
     ).split(",");
     appendIdInFilter(parts, "client_id", idsMatchingText(clients, query, ["name", "trade_name"]));
-    appendIdInFilter(parts, "client_entity_id", idsMatchingText(entityRows, query, ["display_name"]));
+    appendIdInFilter(
+      parts,
+      "client_entity_id",
+      idsMatchingText(entityRows, query, ["display_name"]),
+    );
     domainsRequest = domainsRequest.or(parts.join(","));
   }
   if (state === "active" || state === "cancelled") {
@@ -169,10 +174,7 @@ export default async function DomainsPage({
             placeholder="Domínio, cliente, empresa, registrador..."
           />
         </label>
-        <button
-          className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 text-sm font-black"
-          type="submit"
-        >
+        <button className="button button--primary" type="submit">
           Filtrar
         </button>
         <div className="client-filter-pills sm:col-span-2">
@@ -192,22 +194,14 @@ export default async function DomainsPage({
         </div>
       </form>
 
-      <details className="panel-card form-disclosure mb-5">
-        <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
-          <span className="flex items-center gap-2">
-            <span className="bg-violet-soft text-violet grid size-9 place-items-center rounded-xl">
-              <Icon className="size-4" name="plus" />
-            </span>
-            Novo domínio
-          </span>
-          <span className="text-muted flex items-center gap-1 text-xs">
-            <span className="form-disclosure__closed-label">Abrir formulário</span>
-            <span className="form-disclosure__open-label">Fechar formulário</span>
-            <Icon className="form-disclosure__chevron size-4" name="chevron-down" />
-          </span>
-        </summary>
+      <FormPanel
+        className="mb-5"
+        description="Acompanhe a expiração e saiba quem paga a renovação"
+        title="Novo domínio"
+        tone="violet"
+      >
         <DomainForm action={createDomain} clients={clientOptions} entities={entityOptions} />
-      </details>
+      </FormPanel>
 
       {error ? (
         <p className="panel-card" role="alert">

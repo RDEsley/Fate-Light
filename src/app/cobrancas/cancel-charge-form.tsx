@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { cancelCharge } from "@/app/_actions/mvp";
+import { TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { Icon } from "@/components/ui/icon";
 import { Modal } from "@/components/ui/modal";
 import { SelectField } from "@/components/ui/select-field";
@@ -44,7 +46,7 @@ export function CancelChargeForm({
         open={open}
         title={`Cancelar ${description}`}
       >
-        <form action={cancelCharge} className="grid gap-3" id={`cancel-${chargeId}`}>
+        <Form action={cancelCharge} className="grid gap-4" id={`cancel-${chargeId}`}>
           <input name="id" type="hidden" value={chargeId} />
           <SelectField
             label="Motivo do cancelamento"
@@ -53,19 +55,17 @@ export function CancelChargeForm({
             options={options}
             value={code}
           />
-          <label className="field">
-            <span className="field__label">
-              {code === "other" ? "Explique o motivo" : "Detalhe (você pode ajustar)"}
-            </span>
-            <textarea
-              maxLength={500}
-              name="reason"
-              onChange={(event) => setReason(event.target.value)}
-              placeholder="Ex.: cliente pediu para pausar o contrato em agosto"
-              required
-              value={reason}
-            />
-          </label>
+          <TextField
+            label={code === "other" ? "Explique o motivo" : "Detalhe (você pode ajustar)"}
+            maxLength={500}
+            minLength={code === "other" ? 4 : 2}
+            multiline
+            name="reason"
+            onValueChange={setReason}
+            placeholder="Ex.: cliente pediu para pausar o contrato em agosto"
+            required
+            value={reason}
+          />
           <div className="modal-panel__actions -mx-[1.15rem] mt-1 -mb-[0.35rem]">
             <button className="modal-cancel" onClick={close} type="button">
               Voltar
@@ -74,7 +74,7 @@ export function CancelChargeForm({
               Cancelar cobrança
             </button>
           </div>
-        </form>
+        </Form>
       </Modal>
     </>
   );
