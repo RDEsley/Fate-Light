@@ -25,7 +25,7 @@ export function SupportContactPanel() {
           {supportContact.whatsappMessage}
         </blockquote>
         <a
-          className="bg-brand text-brand-contrast border-brand-strong inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-5 text-sm font-bold"
+          className="button button--primary w-fit"
           href={whatsappHref}
           rel="noreferrer noopener"
           target="_blank"

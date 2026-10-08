@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { Field, FormActions, TextField } from "@/components/ui/field";
 import { Form } from "@/components/ui/form";
+import { Icon } from "@/components/ui/icon";
 import { SelectField } from "@/components/ui/select-field";
 import { initialActionState, submittedValues } from "@/lib/forms/action-state";
 
@@ -55,9 +56,17 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
   const sent = submittedValues(state);
 
   return (
-    <Form action={formAction} className="grid gap-5" state={state}>
-      <fieldset className="cartoon-card p-5 sm:p-6">
-        <legend className="px-2 font-semibold">Identidade</legend>
+    <Form action={formAction} className="grid gap-4" state={state}>
+      <section className="panel-card">
+        <div className="section-heading mb-5">
+          <span className="section-heading__icon bg-brand-soft text-brand-strong">
+            <Icon name="building" />
+          </span>
+          <div>
+            <h2>Identidade</h2>
+            <p>Como a empresa aparece no sistema e nos documentos.</p>
+          </div>
+        </div>
         <div className="form-grid sm:grid-cols-2">
           <TextField
             className="sm:col-span-2"
@@ -92,10 +101,18 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
             optional
           />
         </div>
-      </fieldset>
+      </section>
 
-      <fieldset className="cartoon-card p-5 sm:p-6">
-        <legend className="px-2 font-semibold">Endereço</legend>
+      <section className="panel-card">
+        <div className="section-heading mb-5">
+          <span className="section-heading__icon bg-violet-soft text-violet">
+            <Icon name="globe" />
+          </span>
+          <div>
+            <h2>Endereço</h2>
+            <p>Opcional. Preencha só o que usar.</p>
+          </div>
+        </div>
         <div className="form-grid sm:grid-cols-2">
           <TextField
             autoComplete="street-address"
@@ -153,10 +170,18 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
             options={countryOptions}
           />
         </div>
-      </fieldset>
+      </section>
 
-      <fieldset className="cartoon-card p-5 sm:p-6">
-        <legend className="px-2 font-semibold">Preferências financeiras</legend>
+      <section className="panel-card">
+        <div className="section-heading mb-5">
+          <span className="section-heading__icon bg-warning-soft text-warning">
+            <Icon name="wallet" />
+          </span>
+          <div>
+            <h2>Preferências financeiras</h2>
+            <p>Regras que valem para datas, moeda e relatórios.</p>
+          </div>
+        </div>
         <div className="form-grid sm:grid-cols-2">
           <Field
             hint="Bloqueada para preservar a consistência do histórico."
@@ -189,7 +214,7 @@ export function WorkspaceForm({ settings, workspace }: WorkspaceFormProps) {
         {settings.default_alert_offsets.map((days) => (
           <input key={days} name="alertOffsets" type="hidden" value={days} />
         ))}
-      </fieldset>
+      </section>
 
       <FormActions className="form-actions--page">
         <SubmitButton idleLabel="Salvar configurações" />
