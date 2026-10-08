@@ -1,4 +1,4 @@
-import { ToastNotification } from "@/components/ui/toast-notification";
+import { StatusToast } from "@/components/ui/toaster";
 
 const messages: Record<string, string> = {
   cancelled: "Cobrança cancelada com o motivo registrado no histórico.",
@@ -63,5 +63,5 @@ export function MvpStatusMessage({ status }: { status?: string }) {
       : status?.includes("blocked") || status?.includes("storage-pending")
         ? "warning"
         : "success";
-  return <ToastNotification message={message} tone={tone} />;
+  return <StatusToast message={message} tone={tone} />;
 }

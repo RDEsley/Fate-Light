@@ -7,6 +7,7 @@ type SubmitButtonProps = {
   disabled?: boolean;
   idleLabel: string;
   pendingLabel?: string;
+  variant?: "danger" | "primary";
 };
 
 export function SubmitButton({
@@ -14,15 +15,18 @@ export function SubmitButton({
   disabled = false,
   idleLabel,
   pendingLabel = "Salvando…",
+  variant = "primary",
 }: SubmitButtonProps) {
   const { pending } = useFormStatus();
 
   return (
     <button
-      className={`bg-brand text-brand-contrast hover:bg-brand-strong disabled:bg-muted border-brand-strong disabled:border-muted min-h-11 rounded-xl border-2 px-5 py-2.5 font-black shadow-[2px_2px_0_rgba(37,50,58,.12)] disabled:cursor-wait disabled:shadow-none ${className}`}
+      aria-busy={pending || undefined}
+      className={`button button--${variant} ${className}`}
       disabled={disabled || pending}
       type="submit"
     >
+      {pending ? <span aria-hidden="true" className="button__spinner" /> : null}
       {pending ? pendingLabel : idleLabel}
     </button>
   );

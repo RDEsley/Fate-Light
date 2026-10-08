@@ -5,6 +5,7 @@ import {
   formatCurrency,
   formatDatePtBr,
   formatDateTimePtBr,
+  formatPercent,
   isoDateInTimeZone,
   looksLikeHost,
   monthBounds,
@@ -115,6 +116,12 @@ describe("MVP financial boundaries", () => {
     expect(expiryLabel("2026-07-30", "2026-07-31").label).toBe("Vencido");
     expect(expiryLabel("2026-08-07", "2026-07-31").label).toBe("Vence em até 7 dias");
     expect(expiryLabel("2026-08-30", "2026-07-31").label).toBe("Vence em até 30 dias");
+  });
+
+  it("escreve percentual com vírgula decimal", () => {
+    expect(formatPercent(5.5)).toBe("5,5%");
+    expect(formatPercent("10.00")).toBe("10%");
+    expect(formatPercent(null)).toBe("");
   });
 
   it("calcula datas e moeda para o dashboard", () => {

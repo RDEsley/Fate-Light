@@ -1,4 +1,4 @@
-import { ToastNotification } from "@/components/ui/toast-notification";
+import { StatusToast } from "@/components/ui/toaster";
 
 const messages: Record<string, string> = {
   archived: "Cliente arquivado. O histórico continua guardado.",
@@ -7,6 +7,8 @@ const messages: Record<string, string> = {
   "client-data-transferred":
     "Dados transferidos. Serviços, cobranças, despesas, domínios, contatos e empresas/marcas agora estão no cliente de destino.",
   created: "Cliente criado com segurança.",
+  "entities-error":
+    "Cliente criado, mas as empresas e marcas não puderam ser salvas. Cadastre-as em Editar cliente.",
   "entity-archived": "Empresa/marca arquivada. O histórico dela continua vinculado.",
   "entity-created": "Empresa/marca criada neste cliente.",
   "entity-error": "Não foi possível salvar a empresa/marca.",
@@ -47,7 +49,7 @@ export function ClientStatusMessage({ status }: { status?: string }) {
   const message = status ? messages[status] : undefined;
   const isError = status?.includes("error") || status?.includes("invalid");
   return message ? (
-    <ToastNotification
+    <StatusToast
       message={message}
       tone={isError ? "error" : status?.includes("blocked") ? "warning" : "success"}
     />

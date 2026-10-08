@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
-import { FieldError } from "./field-error";
+import { Field } from "./field";
+import { useFieldFeedback } from "./form-context";
 
 function parsePercentageInput(raw: string): string {
   const cleaned = raw.replace(/[^\d,.]/g, "");
@@ -25,32 +26,40 @@ export function toPercentCanonical(display: string): string {
 }
 
 type PercentFieldProps = {
+  className?: string;
   defaultValue?: number | string | null;
   error?: string;
+  hint?: string;
   label: string;
   max?: number;
   name: string;
   onCanonicalChange?: (value: string) => void;
   optional?: boolean;
+  required?: boolean;
 };
 
 /**
  * Percentual com vírgula brasileira. Display e hidden representam o mesmo valor.
- * Valores acima de `max` ficam inválidos na UI; o servidor/Zod rejeita o limite.
+ * Valores acima de `max` ficam inválidos na UI e barram o envio; o servidor repete a regra.
  */
 export function PercentField({
+  className,
   defaultValue = null,
   error,
+  hint,
   label,
   max = 100,
   name,
   onCanonicalChange,
   optional = false,
+  required = false,
 }: PercentFieldProps) {
   const id = useId();
   const inputId = `${id}-${name}`;
   const errorId = `${inputId}-error`;
   const hintId = `${inputId}-hint`;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const feedback = useFieldFeedback(name, error);
   const initial =
     defaultValue === null || defaultValue === undefined || defaultValue === ""
       ? ""
@@ -58,37 +67,50 @@ export function PercentField({
   const [display, setDisplay] = useState(initial);
   const canonical = toPercentCanonical(display);
   const numeric = canonical === "" ? null : Number(canonical);
-  const overMax = numeric !== null && numeric > max;
-  const underMin = numeric !== null && numeric < 0;
-  const localError =
-    error ||
-    (overMax ? `Informe no máximo ${String(max).replace(".", ",")}%.` : null) ||
-    (underMin ? "O percentual não pode ser negativo." : null);
+  const limitError =
+    numeric !== null && numeric > max
+      ? `Informe no máximo ${String(max).replace(".", ",")}%.`
+      : numeric !== null && numeric < 0
+        ? "O percentual não pode ser negativo."
+        : null;
+  const localError = feedback.error || limitError || undefined;
+
+  // O limite também vira restrição do controle, para o formulário barrar o envio aqui
+  // em vez de deixar a recusa para o servidor.
+  useEffect(() => {
+    inputRef.current?.setCustomValidity(limitError ?? "");
+  }, [limitError]);
 
   const updateDisplay = (next: string) => {
     setDisplay(next);
+    feedback.clear();
     onCanonicalChange?.(toPercentCanonical(next));
   };
 
-  const describedBy = localError ? errorId : undefined;
-
   return (
-    <label className="field">
-      <span className="field__label">
-        {label}
-        {optional ? <span className="field__optional">opcional</span> : null}
-      </span>
+    <Field
+      className={className}
+      error={localError}
+      errorId={errorId}
+      hint={hint}
+      htmlFor={inputId}
+      label={label}
+      optional={optional}
+    >
       <input
-        aria-describedby={describedBy}
-        aria-invalid={Boolean(localError)}
+        aria-describedby={localError ? errorId : undefined}
+        aria-invalid={localError ? true : undefined}
         aria-label={label}
         autoComplete="off"
+        data-field={name}
         id={inputId}
         inputMode="decimal"
         onChange={(event) =>
           updateDisplay(parsePercentageInput(event.target.value).replace(".", ","))
         }
         placeholder="Ex.: 5,5"
+        ref={inputRef}
+        required={required && !optional}
         type="text"
         value={display}
       />
@@ -96,7 +118,6 @@ export function PercentField({
       <span className="sr-only" id={hintId}>
         Limite de {String(max).replace(".", ",")} por cento
       </span>
-      <FieldError id={errorId} message={localError} />
-    </label>
+    </Field>
   );
 }

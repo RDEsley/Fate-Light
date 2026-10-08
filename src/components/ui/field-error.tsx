@@ -7,7 +7,7 @@ import { Icon } from "./icon";
 export function FieldError({ id, message }: { id?: string; message?: string | null }) {
   return message ? (
     <span className="field__error" id={id}>
-      <Icon className="size-3.5" name="alert" /> {message}
+      <Icon className="size-3.5" name="alert-circle" /> {message}
     </span>
   ) : null;
 }

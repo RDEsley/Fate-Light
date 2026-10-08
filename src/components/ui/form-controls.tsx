@@ -4,7 +4,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { formatDatePtBr, isoToday, parseDatePtBr } from "@/features/mvp/format";
 
-import { FieldError } from "./field-error";
+import { classNames, Field } from "./field";
+import { useFieldFeedback } from "./form-context";
 import { Icon } from "./icon";
 import { SelectField } from "./select-field";
 import { scrollPopoverIntoView } from "./disclosure-auto-scroll";
@@ -48,30 +49,29 @@ export function EntitySelect({
 
   const selected = available.some((entity) => entity.id === defaultValue) ? defaultValue : "";
   return (
-    <div className={className}>
-      {/* Remonta ao trocar de cliente: a lista muda e o valor anterior deixa de existir. */}
-      <SelectField
-        defaultValue={selected}
-        key={clientId}
-        label={label}
-        name={name}
-        optional
-        options={[
-          {
-            description: "Sem separar por empresa, marca ou projeto",
-            label: "Geral / sem empresa",
-            value: "",
-          },
-          ...available.map((entity) => ({
-            description: entity.typeLabel,
-            label: entity.name,
-            value: entity.id,
-          })),
-        ]}
-        placeholder="Geral / sem empresa"
-      />
-      <FieldError message={error} />
-    </div>
+    // Remonta ao trocar de cliente: a lista muda e o valor anterior deixa de existir.
+    <SelectField
+      className={className}
+      defaultValue={selected}
+      error={error}
+      key={clientId}
+      label={label}
+      name={name}
+      optional
+      options={[
+        {
+          description: "Sem separar por empresa, marca ou projeto",
+          label: "Geral / sem empresa",
+          value: "",
+        },
+        ...available.map((entity) => ({
+          description: entity.typeLabel,
+          label: entity.name,
+          value: entity.id,
+        })),
+      ]}
+      placeholder="Geral / sem empresa"
+    />
   );
 }
 
@@ -94,37 +94,51 @@ const statusLabels: Record<string, string> = {
 };
 
 export function ClientCombobox({
+  className,
   clients,
   defaultFilter = "active",
   defaultValue = "",
+  error,
+  hint,
   label = "Cliente",
   name = "clientId",
   onSelect,
   optional = false,
 }: {
+  className?: string;
   clients: ClientOption[];
   defaultFilter?: ClientFilter;
   defaultValue?: string;
+  error?: string;
+  hint?: string;
   label?: string;
   name?: string;
   onSelect?: (client: ClientOption | null) => void;
   optional?: boolean;
 }) {
   const listId = useId();
+  const errorId = `${listId}-error`;
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const feedback = useFieldFeedback(name, error);
   const initial = clients.find((client) => client.id === defaultValue);
   const [filter, setFilter] = useState<ClientFilter>(defaultFilter);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(initial?.name ?? "");
   const [selectedId, setSelectedId] = useState(defaultValue);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    const closeOnOutsideClick = (event: PointerEvent) => {
+    const closeWhenOutside = (event: Event) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
-    document.addEventListener("pointerdown", closeOnOutsideClick);
-    return () => document.removeEventListener("pointerdown", closeOnOutsideClick);
+    // `focusin` cobre a saída por Tab: sem ele a lista ficava aberta sobre o campo seguinte.
+    document.addEventListener("pointerdown", closeWhenOutside);
+    document.addEventListener("focusin", closeWhenOutside);
+    return () => {
+      document.removeEventListener("pointerdown", closeWhenOutside);
+      document.removeEventListener("focusin", closeWhenOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -183,40 +197,62 @@ export function ClientCombobox({
     setQuery(client.name);
     setSelectedId(client.id);
     setOpen(false);
+    feedback.clear();
     onSelect?.(client);
   };
 
+  const highlighted = Math.min(activeIndex, Math.max(visibleClients.length - 1, 0));
+
   return (
-    <div className="field client-combobox" ref={rootRef}>
-      <label className="field__label" htmlFor={`${listId}-search`}>
-        {label} {optional ? <span className="field__optional">opcional</span> : null}
-      </label>
+    <Field
+      className={classNames("client-combobox", className)}
+      error={feedback.error}
+      errorId={errorId}
+      hint={hint}
+      htmlFor={`${listId}-search`}
+      label={label}
+      optional={optional}
+      ref={rootRef}
+    >
       <input name={name} type="hidden" value={selectedId} />
       <div className="client-combobox__control">
         <Icon className="text-muted size-4" name="search" />
         <input
           aria-autocomplete="list"
           aria-controls={listId}
+          aria-describedby={feedback.error ? errorId : undefined}
           aria-expanded={open}
+          aria-invalid={feedback.error ? true : undefined}
           autoComplete="off"
+          data-field={name}
           id={`${listId}-search`}
           ref={searchRef}
           onChange={(event) => {
             setQuery(event.target.value);
             setSelectedId("");
+            setActiveIndex(0);
             setOpen(true);
+            feedback.clear();
+            if (selectedId) onSelect?.(null);
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={(event) => {
             if (event.key === "Escape") setOpen(false);
-            if (event.key === "Enter" && open && visibleClients[0]) {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
               event.preventDefault();
-              selectClient(visibleClients[0]);
+              setOpen(true);
+              const step = event.key === "ArrowDown" ? 1 : -1;
+              const last = Math.max(visibleClients.length - 1, 0);
+              setActiveIndex(Math.min(Math.max(highlighted + step, 0), last));
+            }
+            if (event.key === "Enter" && open && visibleClients[highlighted]) {
+              event.preventDefault();
+              selectClient(visibleClients[highlighted]);
             }
           }}
           placeholder="Digite para buscar..."
           role="combobox"
-          type="search"
+          type="text"
           value={query}
         />
         {selectedId ? <Icon className="text-positive size-4" name="check" /> : null}
@@ -234,7 +270,10 @@ export function ClientCombobox({
               <button
                 aria-pressed={filter === value}
                 key={value}
-                onClick={() => setFilter(value)}
+                onClick={() => {
+                  setFilter(value);
+                  setActiveIndex(0);
+                }}
                 type="button"
               >
                 {text}
@@ -250,6 +289,7 @@ export function ClientCombobox({
                   setQuery("");
                   setSelectedId("");
                   setOpen(false);
+                  feedback.clear();
                   onSelect?.(null);
                 }}
                 role="option"
@@ -259,12 +299,14 @@ export function ClientCombobox({
                 <span>Sem vínculo com cliente</span>
               </button>
             ) : null}
-            {visibleClients.map((client) => (
+            {visibleClients.map((client, index) => (
               <button
                 aria-selected={selectedId === client.id}
                 className="client-combobox__option"
+                data-active={index === highlighted ? "true" : undefined}
                 key={client.id}
                 onClick={() => selectClient(client)}
+                onPointerEnter={() => setActiveIndex(index)}
                 role="option"
                 type="button"
               >
@@ -286,21 +328,27 @@ export function ClientCombobox({
           ) : null}
         </div>
       ) : null}
-    </div>
+    </Field>
   );
 }
 
+const invalidDateMessage = "Informe uma data válida no formato DD/MM/AAAA.";
+
 export function DateField({
+  className,
   defaultValue,
   error,
+  hint,
   label,
   name,
   onValueChange,
   optional = false,
   required = false,
 }: {
+  className?: string;
   defaultValue?: string;
   error?: string;
+  hint?: string;
   label: string;
   name: string;
   onValueChange?: (isoDate: string) => void;
@@ -308,7 +356,10 @@ export function DateField({
   required?: boolean;
 }) {
   const calendarId = useId();
+  const errorId = `${calendarId}-error`;
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const feedback = useFieldFeedback(name, error);
   const initialValue = defaultValue ?? "";
   const [dateValue, setDateValue] = useState(initialValue);
   const [displayValue, setDisplayValue] = useState(
@@ -319,30 +370,38 @@ export function DateField({
 
   const commitDate = (iso: string) => {
     setDateValue(iso);
+    feedback.clear();
     onValueChange?.(iso);
   };
 
   useEffect(() => {
-    const close = (event: PointerEvent) => {
+    const closeWhenOutside = (event: Event) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const closeWithEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
-    document.addEventListener("pointerdown", close);
+    document.addEventListener("pointerdown", closeWhenOutside);
+    document.addEventListener("focusin", closeWhenOutside);
     document.addEventListener("keydown", closeWithEscape);
     return () => {
-      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("pointerdown", closeWhenOutside);
+      document.removeEventListener("focusin", closeWhenOutside);
       document.removeEventListener("keydown", closeWithEscape);
     };
   }, []);
 
   useEffect(() => {
     if (!open) return;
-    scrollPopoverIntoView(
-      rootRef.current?.querySelector<HTMLElement>(".date-calendar") ?? null,
-    );
+    scrollPopoverIntoView(rootRef.current?.querySelector<HTMLElement>(".date-calendar") ?? null);
   }, [open]);
+
+  // A restrição acompanha o estado, não o evento de digitação: escolher um dia no
+  // calendário depois de digitar uma data incompleta precisa limpar o bloqueio, e ele
+  // ficava preso no campo impedindo o envio mesmo com a data já válida.
+  useEffect(() => {
+    inputRef.current?.setCustomValidity(displayValue && !dateValue ? invalidDateMessage : "");
+  }, [dateValue, displayValue]);
 
   const [year, month] = monthCursor.split("-").map(Number);
   const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
@@ -355,32 +414,44 @@ export function DateField({
     timeZone: "UTC",
     year: "numeric",
   }).format(new Date(`${monthCursor}T00:00:00.000Z`));
+  const today = isoToday();
+  const dayIso = (day: number) =>
+    `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
 
   const moveMonth = (offset: number) => {
     const next = new Date(Date.UTC(year, month - 1 + offset, 1));
     setMonthCursor(next.toISOString().slice(0, 10));
   };
 
-  const selectDate = (day: number) => {
-    const iso = `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+  const chooseDate = (iso: string) => {
     commitDate(iso);
     setDisplayValue(formatDatePtBr(iso));
+    setMonthCursor(`${iso.slice(0, 7)}-01`);
     setOpen(false);
   };
 
   return (
-    <div className="field date-field-root" ref={rootRef}>
-      <label className="field__label" htmlFor={`${calendarId}-input`}>
-        {label} {optional ? <span className="field__optional">opcional</span> : null}
-      </label>
+    <Field
+      className={classNames("date-field-root", className)}
+      error={feedback.error}
+      errorId={errorId}
+      hint={hint}
+      htmlFor={`${calendarId}-input`}
+      label={label}
+      optional={optional}
+      ref={rootRef}
+    >
       <span className="date-field">
         <input name={name} type="hidden" value={dateValue} />
         <input
           aria-controls={calendarId}
+          aria-describedby={feedback.error ? errorId : undefined}
           aria-expanded={open}
           aria-haspopup="dialog"
-          aria-invalid={error ? true : undefined}
+          aria-invalid={feedback.error ? true : undefined}
           autoComplete="off"
+          data-field={name}
+          data-required-message="Informe a data."
           id={`${calendarId}-input`}
           inputMode="numeric"
           maxLength={10}
@@ -392,19 +463,17 @@ export function DateField({
             const parsed = parseDatePtBr(masked);
             setDisplayValue(masked);
             commitDate(parsed ?? "");
-            event.currentTarget.setCustomValidity(
-              masked && !parsed ? "Informe uma data válida no formato DD/MM/AAAA." : "",
-            );
+            if (parsed) setMonthCursor(`${parsed.slice(0, 7)}-01`);
           }}
           onFocus={() => setOpen(true)}
-          pattern="\d{2}/\d{2}/\d{4}"
           placeholder="DD/MM/AAAA"
+          ref={inputRef}
           required={required}
           role="combobox"
           type="text"
           value={displayValue}
         />
-        <Icon className="text-brand-strong pointer-events-none size-4" name="calendar" />
+        <Icon className="date-field__icon pointer-events-none size-4" name="calendar" />
       </span>
       {open ? (
         <span className="date-calendar" id={calendarId} role="dialog">
@@ -427,18 +496,10 @@ export function DateField({
               day ? (
                 <button
                   aria-label={`${day.toString().padStart(2, "0")}/${month.toString().padStart(2, "0")}/${year}`}
-                  aria-selected={
-                    dateValue ===
-                    `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`
-                  }
-                  className={
-                    isoToday() ===
-                    `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`
-                      ? "is-today"
-                      : undefined
-                  }
+                  aria-selected={dateValue === dayIso(day)}
+                  className={today === dayIso(day) ? "is-today" : undefined}
                   key={`${year}-${month}-${day}`}
-                  onClick={() => selectDate(day)}
+                  onClick={() => chooseDate(dayIso(day))}
                   role="gridcell"
                   type="button"
                 >
@@ -449,22 +510,11 @@ export function DateField({
               ),
             )}
           </span>
-          <button
-            className="date-calendar__today"
-            onClick={() => {
-              const today = isoToday();
-              setMonthCursor(`${today.slice(0, 7)}-01`);
-              setDateValue(today);
-              setDisplayValue(formatDatePtBr(today));
-              setOpen(false);
-            }}
-            type="button"
-          >
+          <button className="date-calendar__today" onClick={() => chooseDate(today)} type="button">
             Hoje
           </button>
         </span>
       ) : null}
-      <FieldError message={error} />
-    </div>
+    </Field>
   );
 }

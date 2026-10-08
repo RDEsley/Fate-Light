@@ -3,6 +3,12 @@ export function formatCurrency(value: number | string | null) {
   return new Intl.NumberFormat("pt-BR", { currency: "BRL", style: "currency" }).format(numeric);
 }
 
+/** Percentual como o usuário digita: vírgula decimal e sem zeros sobrando. */
+export function formatPercent(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return "";
+  return `${String(Number(value)).replace(".", ",")}%`;
+}
+
 export function formatDatePtBr(value: string | null | undefined) {
   if (!value) return "Data não informada";
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
