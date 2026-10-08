@@ -44,5 +44,9 @@ vulnerabilidade antes de uma correção ou orientação de mitigação.
   do release 1.0 (ver [release-v1.md](docs/release-v1.md)).
 - O envio de e-mail de produção depende da configuração de SMTP enquanto o projeto não possui
   domínio próprio; autenticação por senha permanece disponível.
+- `braces` <= 3.0.3 (GHSA-vfj7-8cjw-p6xm, negação de serviço) não tem versão corrigida. Chega
+  somente por `@next/eslint-plugin-next`, usado no lint, e não entra no app em produção. A
+  exceção fica registrada em `scripts/audit-dependencies.mjs`, que continua barrando qualquer
+  outro aviso alto ou crítico; remova-a quando houver correção publicada.
 - Proteção contra senhas vazadas (Leaked Password Protection) no Auth do Supabase, se ainda
   desativada no projeto remoto, permanece pendência operacional de produção.

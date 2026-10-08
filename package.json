@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:e2e:auth": "node scripts/run-auth-e2e.mjs",
     "security:check": "node scripts/check-repository-safety.mjs",
+    "security:audit": "node scripts/audit-dependencies.mjs",
     "db:test": "supabase test db --local supabase/tests",
     "db:types": "node scripts/generate-database-types.mjs",
     "db:types:linked": "node scripts/generate-database-types.mjs --linked",

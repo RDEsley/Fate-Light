@@ -84,7 +84,7 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
   nomes originais sensíveis de arquivos ou dados reais de clientes.
 - `.mcp.json`, artefatos locais, builds, dependências, cobertura e relatórios permanecem ignorados.
 - Mensagens públicas não revelam existência de contas, detalhes internos do banco ou configuração.
-- Execute `npm audit` e `npm run security:check`; corrija vulnerabilidades de forma compatível, sem
+- Execute `npm run security:audit` (auditoria com exceções explícitas) e `npm run security:check`; corrija vulnerabilidades de forma compatível, sem
   `--force`, e documente riscos residuais.
 
 ## Testes e gates
