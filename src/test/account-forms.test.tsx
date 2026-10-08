@@ -21,6 +21,7 @@ import { OnboardingForm } from "@/app/onboarding/onboarding-form";
 import { ProfileForm } from "@/app/perfil/profile-form";
 import { LifecycleRequestPanel } from "@/app/perfil/lifecycle-request-panel";
 import { MotionSettings } from "@/components/motion-settings";
+import { accountDeletionPhrase } from "@/features/account/lifecycle";
 
 describe("account forms", () => {
   it("exige aceite individual das versões legais no onboarding", () => {
@@ -109,35 +110,37 @@ describe("account forms", () => {
     expect(window.localStorage.getItem("fate-light:system-motion")).toBe("off");
   });
 
-  it("explica os limites e exige confirmação reforçada para exclusão", () => {
+  it("mostra exportação e exclusão como ações diretas, sem campo de frase na página", () => {
     render(<LifecycleRequestPanel requests={[]} />);
 
     expect(screen.getByRole("button", { name: /solicitar exportação/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Excluir conta" })).toBeVisible();
     expect(screen.getByText(/nenhuma solicitação registrada/i)).toBeVisible();
-
-    // A exclusão fica atrás de um disclosure fechado para não competir com o uso normal.
-    const disclosure = screen.getByText(/encerrar a conta/i).closest("details");
-    expect(disclosure).toBeInTheDocument();
-    expect(screen.getByText(/não apaga dados/i)).not.toBeVisible();
-
-    disclosure!.open = true;
-    expect(screen.getByText(/não apaga dados/i)).toBeVisible();
-    expect(screen.getByLabelText(/digite excluir minha conta/i)).toBeRequired();
-    expect(screen.getByRole("checkbox", { name: /registra o pedido/i })).toBeRequired();
+    // A frase só é pedida dentro da confirmação; fora dela a página fica enxuta.
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(accountDeletionPhrase)).not.toBeInTheDocument();
   });
 
-  it("libera a exclusão somente após a frase exata de confirmação", () => {
+  it("libera a exclusão somente após a frase exata e envia o que foi digitado", () => {
     render(<LifecycleRequestPanel requests={[]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Excluir conta" }));
+    const dialog = screen.getByRole("dialog", { name: /excluir minha conta/i });
+    expect(dialog).toHaveTextContent(/nada é apagado nem suspenso agora/i);
 
     const submit = screen.getByRole("button", { name: /solicitar exclusão/i });
     expect(submit).toBeDisabled();
 
-    const field = screen.getByLabelText(/digite excluir minha conta/i);
+    const field = screen.getByPlaceholderText(accountDeletionPhrase);
     fireEvent.change(field, { target: { value: "excluir" } });
     expect(screen.getByText(/a frase ainda não confere/i)).toBeInTheDocument();
     expect(submit).toBeDisabled();
 
-    fireEvent.change(field, { target: { value: "EXCLUIR MINHA CONTA" } });
+    fireEvent.change(field, { target: { value: accountDeletionPhrase } });
     expect(submit).toBeEnabled();
+    // O servidor confere a frase de verdade: ela viaja no campo oculto do formulário.
+    expect(document.querySelector('input[type="hidden"][name="confirmation"]')).toHaveValue(
+      accountDeletionPhrase,
+    );
   });
 });

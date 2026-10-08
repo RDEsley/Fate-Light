@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { accountDeletionPhrase } from "@/features/account/lifecycle";
 import type { ActionState } from "@/lib/forms/action-state";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+// A frase chega digitada pelo usuário no diálogo de confirmação, não de um campo fixo.
 const deletionSchema = z.object({
-  acknowledged: z.literal("on"),
-  confirmation: z.literal("EXCLUIR MINHA CONTA"),
+  confirmation: z.literal(accountDeletionPhrase),
 });
 
 const recentAuthenticationWindowSeconds = 10 * 60;
@@ -70,14 +71,13 @@ export async function requestAccountDeletion(
   formData: FormData,
 ): Promise<ActionState> {
   const confirmation = deletionSchema.safeParse({
-    acknowledged: formData.get("acknowledged"),
-    confirmation: formData.get("confirmation"),
+    confirmation: String(formData.get("confirmation") ?? "").trim(),
   });
 
   if (!confirmation.success) {
     return {
       status: "error",
-      message: "Confirme a ciência e digite exatamente EXCLUIR MINHA CONTA.",
+      message: `Digite exatamente ${accountDeletionPhrase} para confirmar o pedido.`,
     };
   }
 

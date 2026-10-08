@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const disclosureSelector = ".form-disclosure, .form-panel, .form-more, .danger-zone";
+const disclosureSelector = ".form-disclosure, .form-panel, .form-more";
 
 function prefersReducedMotion() {
   return (

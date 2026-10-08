@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { workspaceResetPhrase } from "@/features/account/lifecycle";
 import { rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -105,9 +106,14 @@ export async function resetWorkspaceOperationalData(
   _previousState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const confirmation = z.literal("EXCLUIR TUDO").safeParse(formData.get("confirmation"));
+  const confirmation = z
+    .literal(workspaceResetPhrase)
+    .safeParse(String(formData.get("confirmation") ?? "").trim());
   if (!confirmation.success) {
-    return { status: "error", message: "Digite EXCLUIR TUDO para confirmar a limpeza." };
+    return {
+      status: "error",
+      message: `Digite ${workspaceResetPhrase} para confirmar a limpeza.`,
+    };
   }
   const { supabase } = await requireWorkspaceContext();
   const { data: objectPaths, error } = await supabase.rpc(
