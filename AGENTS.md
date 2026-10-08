@@ -28,6 +28,8 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
 - Prefira funções pequenas, retornos antecipados e comentários que expliquem decisões, não sintaxe.
 - Não use `any`, casts para ocultar incompatibilidades ou supressões de lint sem justificativa.
 - Adicione dependências apenas com uso concreto, versões exatas e atualização do `package-lock.json`.
+- Não há configuração de Prettier no repositório e o código segue largura 100: ao formatar, use
+  `npx prettier --print-width 100` somente nos arquivos alterados.
 
 ## Produto, UI e acessibilidade
 
@@ -39,6 +41,12 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
   variação visual isolada quando um padrão existente puder ser refinado.
 - Formulários devem ser compactos, responsivos e mobile-first, com rótulo visível, foco claro,
   feedback junto ao campo e preservação dos valores após erro.
+- Todo formulário usa `<Form>` (`src/components/ui/form.tsx`) com os campos de `field.tsx`,
+  `form-controls.tsx` e afins. A validação nativa do navegador fica desligada: o erro aparece no
+  campo e na pilha de avisos (`pushToast`/`StatusToast`), nunca em faixa no meio do formulário.
+- Campo obrigatório nunca fica dentro de bloco recolhido (`FormMore`); explicação longa vai no
+  ícone de informação (`hint`), não em texto fixo sob o campo.
+- Empresas/marcas são cadastradas na criação e na edição do cliente; a ficha só filtra por elas.
 - Datas são exibidas em `DD/MM/AAAA`, trafegam como `YYYY-MM-DD` e usam o calendário PT-BR.
   Campos de data obrigatórios começam vazios em novos registros; só edições podem vir preenchidas.
 - Ícones são SVG do componente `Icon`; não use emoji, bitmap ou caractere desfocado como ícone.

@@ -5,6 +5,46 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-08
+
+### Added
+
+- Validação própria dos formulários: o campo recusado ganha borda vermelha e mensagem logo abaixo,
+  o primeiro erro recebe o foco e um aviso resume o que falta, no lugar do balão nativo do
+  navegador. Vale para o que é barrado na tela e para o que o servidor recusa.
+- Empresas e marcas informadas já no cadastro do cliente e gerenciadas em “Editar cliente”.
+- Resumo de preço ao vivo no formulário de serviço, com os ajustes ativos à vista.
+- Ícone de informação com a explicação do campo sob demanda, no lugar de textos fixos.
+
+### Changed
+
+- Formulários de serviço, cliente, cobrança, despesa, domínio, catálogo e empresa/marca refeitos em
+  grade simétrica, com a mesma altura de controle e o mesmo painel de “novo registro”.
+- Ficha do cliente mais enxuta: empresas/marcas viram um filtro em uma linha e as opções avançadas
+  passam a ser uma lista de ações.
+- Avisos de resultado empilham em um único lugar e saem da URL depois de exibidos.
+- Login, cadastro, recuperação de senha, onboarding, perfil, configurações da empresa e alerta
+  avulso passam a usar o mesmo retorno de erro; o login ganhou o botão de mostrar a senha.
+- Barras de filtro das listas com o botão e a altura de controle padrão.
+
+### Fixed
+
+- Aplicar serviço travava sem aviso: “Início do serviço”, obrigatório, ficava dentro do bloco
+  recolhido de personalização.
+- O aviso de uma ação repetida em seguida (pagar duas cobranças, por exemplo) não aparecia.
+- Data escolhida no calendário depois de uma digitação incompleta continuava bloqueando o envio, e
+  o botão “Hoje” não atualizava quem dependia da data.
+- Formulário dentro de formulário na edição do cliente (lançamentos de receita anterior).
+- Link do cliente preenchido pela metade era descartado ao salvar, sem explicação.
+- Desfazer o cliente escolhido pela digitação deixava as empresas/marcas dele disponíveis.
+- Selo de status do catálogo sem estilo e percentuais exibidos com ponto em vez de vírgula.
+- O atalho “Config. de alertas” levava à tela da empresa; a antecedência fica no perfil.
+
+### Security
+
+- Next.js e `eslint-config-next` atualizados para 16.3.8 e correções compatíveis do `npm audit`
+  aplicadas. Restam avisos em `braces`, alcançável só pelas ferramentas de lint.
+
 ## [0.8.6] - 2026-09-09
 
 ### Changed
