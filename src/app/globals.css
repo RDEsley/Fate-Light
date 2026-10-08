@@ -4287,6 +4287,43 @@ summary.action-row__head {
   }
 }
 
+/* Antecedência personalizada: um campo curto que aparece só quando pedido. */
+.custom-offset {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: #fbfcf9;
+  padding: 0.8rem 0.85rem;
+  gap: 0.45rem;
+  animation: disclosure-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.custom-offset__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.custom-offset__row input {
+  width: 8rem;
+  min-height: var(--control-height);
+  flex: 1 1 6rem;
+  border-radius: var(--control-radius);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 480px) {
+  .custom-offset__row input {
+    max-width: 10rem;
+  }
+}
+
+.custom-offset__row input[aria-invalid="true"] {
+  border-color: var(--negative);
+  background-color: color-mix(in srgb, var(--negative-soft) 38%, white);
+}
+
 /* Faixa de números de resumo acima de uma lista. */
 .stat-strip {
   display: grid;
@@ -4426,6 +4463,22 @@ summary.action-row__head {
 .chip:has(input:focus-visible) {
   outline: 3px solid rgb(22 155 136 / 0.34);
   outline-offset: 2px;
+}
+
+.chip--add {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+}
+
+.chip--add::before {
+  display: none;
+}
+
+.chip--add:hover {
+  border-color: var(--brand);
+  color: var(--brand-strong);
 }
 
 /* O escurecimento vem do box-shadow gigante do recorte: assim a área destacada fica
@@ -5019,42 +5072,6 @@ summary.action-row__head {
 
 .history-filters__submit {
   min-height: 2.5rem;
-}
-
-.alert-offsets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.alert-offsets__option {
-  display: inline-flex;
-  min-height: 2.4rem;
-  cursor: pointer;
-  align-items: center;
-  border: 1.5px solid var(--line);
-  border-radius: 999px;
-  background: #fbfcf9;
-  padding: 0 0.9rem;
-  font-size: 0.8rem;
-  font-weight: 800;
-  gap: 0.45rem;
-}
-
-.alert-offsets__option:hover {
-  border-color: var(--line-strong);
-}
-
-.alert-offsets__option:has(input:checked) {
-  border-color: var(--brand);
-  background: var(--brand-soft);
-  color: var(--brand-strong);
-}
-
-.alert-offsets__option input {
-  width: 0.95rem;
-  height: 0.95rem;
-  accent-color: var(--brand);
 }
 
 .activity-timeline {

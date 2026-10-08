@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { publicEnvironment } from "@/config/env/public";
+import { maxAlertOffsetDays, maxAlertOffsets } from "@/features/alerts/offsets";
 import type { ActionState } from "@/lib/forms/action-state";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -62,9 +63,9 @@ export async function updateProfile(
 }
 
 const alertOffsetsSchema = z
-  .array(z.coerce.number().int().min(0).max(365))
+  .array(z.coerce.number().int().min(0).max(maxAlertOffsetDays))
   .min(1)
-  .max(7)
+  .max(maxAlertOffsets)
   .transform((values) => [...new Set(values)].sort((left, right) => left - right));
 
 const changePasswordSchema = z
@@ -166,11 +167,16 @@ export async function updateAlertPreferences(
   _previousState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = alertOffsetsSchema.safeParse(formData.getAll("alertOffsets"));
+  const submitted = formData.getAll("alertOffsets");
+  const parsed = alertOffsetsSchema.safeParse(submitted);
   if (!parsed.success) {
     return {
       status: "error",
-      message: "Escolha ao menos uma antecedência para continuar recebendo avisos.",
+      message: !submitted.length
+        ? "Escolha ao menos uma antecedência para continuar recebendo avisos."
+        : submitted.length > maxAlertOffsets
+          ? `Escolha no máximo ${maxAlertOffsets} antecedências.`
+          : `Cada antecedência precisa ser um número inteiro de 0 a ${maxAlertOffsetDays} dias.`,
     };
   }
 
