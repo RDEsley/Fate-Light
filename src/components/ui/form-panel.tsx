@@ -69,7 +69,7 @@ export function FormMore({
   className,
   defaultOpen = false,
   description,
-  icon = "sliders",
+  icon = "palette",
   title,
 }: {
   children: ReactNode;
