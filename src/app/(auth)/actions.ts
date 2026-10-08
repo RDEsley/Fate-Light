@@ -189,6 +189,7 @@ export async function authenticateWithPassword(formData: FormData) {
   confirmationUrl.searchParams.set("next", nextPath);
   let hasSession = false;
   let failed = false;
+  let rateLimited = false;
   try {
     const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
@@ -200,11 +201,16 @@ export async function authenticateWithPassword(formData: FormData) {
       },
     });
     failed = Boolean(error);
+    rateLimited = isEmailRateLimitError(error);
     hasSession = Boolean(data.session);
-  } catch {
+  } catch (error) {
     failed = true;
+    rateLimited = isEmailRateLimitError(error);
   }
 
+  // O limite de envio é do provedor de e-mail, não um erro de quem está se cadastrando:
+  // dizer "revise os dados" aqui mandava a pessoa corrigir o que estava certo.
+  if (rateLimited) redirect(statusPath(mode, "email-rate-limit"));
   if (failed) redirect(statusPath(mode, "error"));
   if (!hasSession) redirect(statusPath(mode, "confirmation-sent"));
   const destination = await getAccountDestination(supabase, nextPath);

@@ -106,6 +106,29 @@ describe("password authentication action", () => {
     );
   });
 
+  it("separa o limite de envio de e-mail de um erro nos dados do cadastro", async () => {
+    authMocks.signUp.mockResolvedValue({
+      data: { session: null },
+      error: { code: "over_email_send_rate_limit", status: 429 },
+    });
+    await expect(authenticateWithPassword(passwordForm({ mode: "signup" }))).rejects.toThrow(
+      "REDIRECT:/cadastro?status=email-rate-limit",
+    );
+
+    authMocks.signUp.mockRejectedValue({ status: 429 });
+    await expect(authenticateWithPassword(passwordForm({ mode: "signup" }))).rejects.toThrow(
+      "REDIRECT:/cadastro?status=email-rate-limit",
+    );
+
+    authMocks.signUp.mockResolvedValue({
+      data: { session: null },
+      error: { code: "weak_password", status: 422 },
+    });
+    await expect(authenticateWithPassword(passwordForm({ mode: "signup" }))).rejects.toThrow(
+      "REDIRECT:/cadastro?status=error",
+    );
+  });
+
   it("rejeita confirmação de senha divergente antes do provedor", async () => {
     await expect(
       authenticateWithPassword(
