@@ -5,6 +5,17 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-08
+
+### Fixed
+
+- Rótulo e marca de “opcional” colados no nome acessível dos campos.
+
+### Changed
+
+- Auditoria de dependências do CI com exceções explícitas e justificadas
+  (`scripts/audit-dependencies.mjs`).
+
 ## [0.10.0] - 2026-10-08
 
 ### Added
