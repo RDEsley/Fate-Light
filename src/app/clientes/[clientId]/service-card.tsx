@@ -148,25 +148,25 @@ export function ServiceCard({
               {formatCurrency(pricing.amount + additionalRevenue)}
             </dd>
             {additionalRevenue > 0 ? (
-              <small>
+              <dd className="service-card__note">
                 {formatCurrency(pricing.amount)} + {formatCurrency(additionalRevenue)} de adicional
-              </small>
+              </dd>
             ) : pricing.promoActive ? (
-              <small>{promoLabel}</small>
+              <dd className="service-card__note">{promoLabel}</dd>
             ) : service.discountType !== "none" ? (
-              <small>
+              <dd className="service-card__note">
                 desconto de{" "}
                 {service.discountType === "percentage"
                   ? formatPercent(service.discountValue)
                   : formatCurrency(service.discountValue)}
-              </small>
+              </dd>
             ) : null}
           </div>
           <div>
             <dt>Cobrança</dt>
             <dd>{billingFrequencyLabel(service.billingType)}</dd>
             {service.billingType === "single" && service.installmentCount > 1 ? (
-              <small>{service.installmentCount} parcelas</small>
+              <dd className="service-card__note">{service.installmentCount} parcelas</dd>
             ) : null}
           </div>
           <div>
@@ -187,11 +187,11 @@ export function ServiceCard({
             <dt>Repasses</dt>
             <dd>{formatCurrency(passThrough)}</dd>
             {passThrough > 0 ? (
-              <small>
+              <dd className="service-card__note">
                 {service.additionalFeeIsRevenue
                   ? "verba de mídia"
                   : "mídia + adicional de terceiro"}
-              </small>
+              </dd>
             ) : null}
           </div>
         </dl>
