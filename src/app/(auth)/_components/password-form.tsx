@@ -14,10 +14,12 @@ import { TurnstileField } from "./turnstile-field";
 const messages: Record<string, string> = {
   captcha: "Conclua a verificação de segurança e tente novamente.",
   "confirmation-sent": "Confira seu e-mail para confirmar a conta antes de entrar.",
+  "email-rate-limit": "Muitos pedidos em pouco tempo. Aguarde alguns minutos e tente de novo.",
   error: "Não foi possível criar a conta. Revise os dados ou tente novamente.",
   guest: guestNotice,
   invalid: "Revise o nome, o e-mail, a senha e a confirmação informados.",
-  "invalid-credentials": "E-mail ou senha incorretos.",
+  "invalid-credentials":
+    "E-mail ou senha incorretos. Se acabou de criar a conta, confirme o e-mail antes de entrar.",
   "password-updated": "Senha atualizada. Entre novamente com a nova senha.",
   "signed-out": "Sua sessão foi encerrada com segurança.",
 };
@@ -43,6 +45,7 @@ export function PasswordForm({
             status === "invalid" ||
             status === "invalid-credentials" ||
             status === "error" ||
+            status === "email-rate-limit" ||
             status === "captcha"
               ? "error"
               : status === "signed-out"
