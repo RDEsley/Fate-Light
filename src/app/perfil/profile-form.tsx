@@ -3,8 +3,8 @@
 import { useActionState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { FieldHint } from "@/components/ui/field-hint";
+import { Field, FormActions, TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { SelectField } from "@/components/ui/select-field";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -20,62 +20,44 @@ type ProfileFormProps = {
   };
 };
 
-const fieldClassName = "w-full";
-
 export function ProfileForm({ email, profile }: ProfileFormProps) {
   const [state, formAction] = useActionState(updateProfile, initialActionState);
 
   return (
-    <form action={formAction} className="space-y-4">
-      {state.message ? (
-        <FeedbackBanner
-          message={state.message}
-          tone={state.status === "error" ? "error" : "success"}
+    <Form action={formAction} className="grid gap-4" state={state}>
+      <div className="form-grid sm:grid-cols-2">
+        <TextField
+          autoComplete="name"
+          defaultValue={profile.full_name}
+          label="Nome completo"
+          maxLength={120}
+          minLength={2}
+          name="fullName"
+          required
         />
-      ) : null}
-
-      <div className="profile-form-grid">
-        <label className="field">
-          <span className="field__label">Nome completo</span>
+        <Field htmlFor="profile-email" label="E-mail confirmado">
           <input
-            autoComplete="name"
-            className={fieldClassName}
-            defaultValue={profile.full_name}
-            maxLength={120}
-            name="fullName"
-            required
-          />
-        </label>
-        <label className="field">
-          <span className="field__label">E-mail confirmado</span>
-          <input
-            className={`${fieldClassName} text-muted`}
+            className="text-muted"
             disabled
+            id="profile-email"
             readOnly
             type="email"
             value={email}
           />
-        </label>
-        <label className="field">
-          <span className="field__label">
-            Telefone <span className="field__optional">opcional</span>
-          </span>
-          <input
-            autoComplete="tel"
-            className={fieldClassName}
-            defaultValue={profile.phone ?? ""}
-            maxLength={32}
-            name="phone"
-            type="tel"
-          />
-        </label>
+        </Field>
+        <TextField
+          autoComplete="tel"
+          defaultValue={profile.phone ?? ""}
+          label="Telefone"
+          maxLength={32}
+          minLength={7}
+          name="phone"
+          optional
+          type="tel"
+        />
         <SelectField
           defaultValue={profile.timezone}
-          hint={
-            <FieldHint>
-              Usado nas suas preferências pessoais. Datas financeiras seguem o fuso da empresa.
-            </FieldHint>
-          }
+          hint="Usado nas suas preferências pessoais. Datas financeiras seguem o fuso da empresa."
           label="Fuso horário"
           name="timezone"
           options={[
@@ -89,9 +71,9 @@ export function ProfileForm({ email, profile }: ProfileFormProps) {
         <input name="locale" type="hidden" value={profile.locale} />
       </div>
 
-      <div className="flex justify-end border-t pt-4">
+      <FormActions>
         <SubmitButton idleLabel="Salvar perfil" />
-      </div>
-    </form>
+      </FormActions>
+    </Form>
   );
 }

@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { publicEnvironment } from "@/config/env/public";
 
 import { authenticateWithPassword } from "../actions";
@@ -47,7 +49,7 @@ export function PasswordForm({
           }
         />
       ) : null}
-      <form action={authenticateWithPassword} className="auth-shell__fields">
+      <Form action={authenticateWithPassword} className="auth-shell__fields">
         <input name="mode" type="hidden" value={mode} />
         <input name="next" type="hidden" value={nextPath} />
         <div className="absolute -left-[10000px]" aria-hidden="true">
@@ -61,62 +63,40 @@ export function PasswordForm({
           />
         </div>
         {!isLogin ? (
-          <div className="field">
-            <label className="field__label" htmlFor={`${mode}-password-display-name`}>
-              Nome ou nome da empresa
-            </label>
-            <input
-              autoComplete="name"
-              className="text-base"
-              id={`${mode}-password-display-name`}
-              maxLength={120}
-              minLength={2}
-              name="displayName"
-              placeholder="Como devemos chamar você?"
-              required
-              type="text"
-            />
-          </div>
-        ) : null}
-        <div className="field">
-          <label className="field__label" htmlFor={`${mode}-password-email`}>
-            E-mail
-          </label>
-          <input
-            autoComplete="email"
-            className="text-base"
-            id={`${mode}-password-email`}
-            maxLength={254}
-            name="email"
-            placeholder="voce@empresa.com.br"
+          <TextField
+            autoComplete="name"
+            label="Nome ou nome da empresa"
+            maxLength={120}
+            minLength={2}
+            name="displayName"
+            placeholder="Como devemos chamar você?"
             required
-            type="email"
           />
-        </div>
+        ) : null}
+        <TextField
+          autoComplete="email"
+          label="E-mail"
+          maxLength={254}
+          name="email"
+          placeholder="voce@empresa.com.br"
+          required
+          type="email"
+        />
         {isLogin ? (
-          <div className="field">
-            <span className="flex items-center justify-between gap-3">
-              <label className="field__label" htmlFor={`${mode}-password`}>
-                Senha
-              </label>
+          <PasswordRevealField
+            autoComplete="current-password"
+            id={`${mode}-password`}
+            label="Senha"
+            labelAction={
               <Link
                 className="text-brand-strong text-xs font-semibold hover:underline"
                 href="/esqueci-senha"
               >
                 Esqueci minha senha
               </Link>
-            </span>
-            <input
-              autoComplete="current-password"
-              className="text-base"
-              id={`${mode}-password`}
-              maxLength={72}
-              minLength={8}
-              name="password"
-              required
-              type="password"
-            />
-          </div>
+            }
+            name="password"
+          />
         ) : (
           <>
             <PasswordRevealField
@@ -140,7 +120,7 @@ export function PasswordForm({
           idleLabel={isLogin ? "Entrar" : "Criar conta"}
           pendingLabel={isLogin ? "Entrando…" : "Criando conta…"}
         />
-      </form>
+      </Form>
       <p className="auth-shell__switch text-muted text-center text-sm leading-6">
         {isLogin ? "Ainda não tem uma conta?" : "Já possui uma conta?"}{" "}
         <Link

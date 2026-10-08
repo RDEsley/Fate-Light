@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 
 import { AuthShell } from "@/app/(auth)/_components/auth-shell";
+import { PasswordRevealField } from "@/app/(auth)/_components/password-reveal-field";
 import { updateRecoveredPassword } from "@/app/(auth)/actions";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { Form } from "@/components/ui/form";
 
 export const metadata: Metadata = { title: "Redefinir senha" };
 
@@ -29,35 +31,25 @@ export default async function ResetPasswordPage({
           tone="error"
         />
       ) : null}
-      <form action={updateRecoveredPassword} className="auth-shell__fields">
-        <label className="field">
-          <span className="field__label">Nova senha</span>
-          <input
-            autoComplete="new-password"
-            maxLength={72}
-            minLength={8}
-            name="password"
-            required
-            type="password"
-          />
-        </label>
-        <label className="field">
-          <span className="field__label">Confirmar nova senha</span>
-          <input
-            autoComplete="new-password"
-            maxLength={72}
-            minLength={8}
-            name="confirmPassword"
-            required
-            type="password"
-          />
-        </label>
+      <Form action={updateRecoveredPassword} className="auth-shell__fields">
+        <PasswordRevealField
+          autoComplete="new-password"
+          id="reset-password"
+          label="Nova senha"
+          name="password"
+        />
+        <PasswordRevealField
+          autoComplete="new-password"
+          id="reset-password-confirm"
+          label="Confirmar nova senha"
+          name="confirmPassword"
+        />
         <SubmitButton
           className="auth-shell__submit w-full"
           idleLabel="Atualizar senha"
           pendingLabel="Atualizando…"
         />
-      </form>
+      </Form>
     </AuthShell>
   );
 }

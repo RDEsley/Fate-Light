@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { PasswordRevealField } from "@/app/(auth)/_components/password-reveal-field";
 import { TurnstileField } from "@/app/(auth)/_components/turnstile-field";
 import { SubmitButton } from "@/app/_components/submit-button";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { Form } from "@/components/ui/form";
 import { Icon } from "@/components/ui/icon";
 import { publicEnvironment } from "@/config/env/public";
 import { initialActionState } from "@/lib/forms/action-state";
@@ -27,14 +27,7 @@ export function ChangePasswordForm() {
         </div>
       </div>
 
-      <form action={formAction} className="space-y-4">
-        {state.message ? (
-          <FeedbackBanner
-            message={state.message}
-            tone={state.status === "error" ? "error" : "success"}
-          />
-        ) : null}
-
+      <Form action={formAction} className="grid gap-4" state={state}>
         <div className="change-password-fields">
           <PasswordRevealField
             autoComplete="current-password"
@@ -64,7 +57,7 @@ export function ChangePasswordForm() {
         <div className="change-password-actions">
           <SubmitButton idleLabel="Atualizar senha" pendingLabel="Atualizando…" />
         </div>
-      </form>
+      </Form>
     </section>
   );
 }

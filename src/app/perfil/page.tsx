@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { AccountShell } from "@/app/_components/account-shell";
 import { SettingsTabs } from "@/app/_components/settings-tabs";
 import { MotionSettings } from "@/components/motion-settings";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { StatusToast } from "@/components/ui/toaster";
 import { Icon } from "@/components/ui/icon";
 import { fallbackAlertOffsets } from "@/features/alerts/offsets";
 import { requireAccountPage } from "@/lib/auth/page-guard";
@@ -86,7 +86,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
         <div className="settings-layout__content">
           {status === "workspace-created" ? (
-            <FeedbackBanner
+            <StatusToast
               message="Workspace criado. Seus aceites e preferências foram registrados na mesma operação."
               tone="success"
             />

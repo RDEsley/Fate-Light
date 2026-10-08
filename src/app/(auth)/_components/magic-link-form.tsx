@@ -3,6 +3,8 @@ import type { Route } from "next";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
 import { publicEnvironment } from "@/config/env/public";
 
 import { requestMagicLink } from "../actions";
@@ -44,7 +46,7 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
         />
       ) : null}
 
-      <form action={requestMagicLink} className="space-y-4">
+      <Form action={requestMagicLink} className="grid gap-4">
         <input name="mode" type="hidden" value={mode} />
         <input name="next" type="hidden" value={nextPath ?? ""} />
         <div className="absolute -left-[10000px]" aria-hidden="true">
@@ -59,43 +61,28 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
         </div>
 
         {!isLogin ? (
-          <div className="field">
-            <label className="field__label" htmlFor={`${mode}-display-name`}>
-              Nome ou nome da empresa
-            </label>
-            <input
-              autoComplete="name"
-              className="text-base"
-              id={`${mode}-display-name`}
-              maxLength={120}
-              minLength={2}
-              name="displayName"
-              placeholder="Como devemos chamar você?"
-              required
-              type="text"
-            />
-            <span className="field__hint">
-              Usaremos esse nome para preparar seu primeiro acesso.
-            </span>
-          </div>
+          <TextField
+            autoComplete="name"
+            help="Usaremos esse nome para preparar seu primeiro acesso."
+            label="Nome ou nome da empresa"
+            maxLength={120}
+            minLength={2}
+            name="displayName"
+            placeholder="Como devemos chamar você?"
+            required
+          />
         ) : null}
 
-        <div className="field">
-          <label className="field__label" htmlFor={`${mode}-email`}>
-            E-mail
-          </label>
-          <input
-            autoComplete="email"
-            className="text-base"
-            id={`${mode}-email`}
-            inputMode="email"
-            maxLength={254}
-            name="email"
-            placeholder="voce@empresa.com.br"
-            required
-            type="email"
-          />
-        </div>
+        <TextField
+          autoComplete="email"
+          inputMode="email"
+          label="E-mail"
+          maxLength={254}
+          name="email"
+          placeholder="voce@empresa.com.br"
+          required
+          type="email"
+        />
 
         <TurnstileField siteKey={publicEnvironment.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
         <SubmitButton
@@ -103,7 +90,7 @@ export function MagicLinkForm({ mode, nextPath, status }: MagicLinkFormProps) {
           idleLabel={isLogin ? "Receber link de acesso" : "Criar minha conta"}
           pendingLabel="Enviando link…"
         />
-      </form>
+      </Form>
 
       <div className="my-4 flex items-center gap-3" aria-hidden="true">
         <span className="border-line h-px flex-1 border-t" />

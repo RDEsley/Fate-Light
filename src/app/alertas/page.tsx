@@ -6,7 +6,10 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { Icon } from "@/components/ui/icon";
 import { DateField } from "@/components/ui/form-controls";
 import { SelectField } from "@/components/ui/select-field";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { FormActions, TextField } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
+import { FormPanel } from "@/components/ui/form-panel";
+import { StatusToast } from "@/components/ui/toaster";
 import { getAttentionItems } from "@/features/alerts/attention";
 import { addDays, isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
@@ -37,7 +40,7 @@ export default async function AlertsPage({
       actions={
         <Link
           className="border-line bg-surface hover:bg-brand-soft inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-bold"
-          href="/configuracoes/empresa#alertas"
+          href="/perfil#alertas"
         >
           <Icon className="size-4" name="settings" /> Config. de alertas
         </Link>
@@ -46,7 +49,7 @@ export default async function AlertsPage({
       title="Central de alertas"
     >
       {status ? (
-        <FeedbackBanner
+        <StatusToast
           message={
             status === "created"
               ? "Alerta criado. Ele já está no seu radar."
@@ -59,42 +62,39 @@ export default async function AlertsPage({
           tone={status === "created" || status === "resolved" ? "success" : "error"}
         />
       ) : null}
-      <details className="panel-card form-disclosure mb-5">
-        <summary className="flex cursor-pointer items-center justify-between gap-3 font-black">
-          <span className="flex items-center gap-2">
-            <span className="bg-brand-soft text-brand-strong grid size-9 place-items-center rounded-xl">
-              <Icon className="size-4" name="plus" />
-            </span>
-            Criar alerta avulso
-          </span>
-          <span className="text-muted text-xs">Lembrete interno</span>
-        </summary>
-        <form action={createManualAlert} className="form-grid mt-4 sm:grid-cols-2">
-          <label className="field sm:col-span-2">
-            <span className="field__label">Título</span>
-            <input maxLength={120} name="title" required />
-          </label>
-          <DateField label="Data do alerta" name="dueOn" required />
-          <SelectField
-            defaultValue="warning"
-            label="Prioridade"
-            name="severity"
-            options={[
-              { label: "Atenção", value: "warning" },
-              { label: "Urgente", value: "danger" },
-            ]}
-          />
-          <label className="field sm:col-span-2">
-            <span className="field__label">
-              Observação <span className="field__optional">opcional</span>
-            </span>
-            <textarea maxLength={1000} name="notes" rows={2} />
-          </label>
-          <div className="sm:col-span-2 sm:justify-self-end">
-            <SubmitButton idleLabel="Criar alerta" pendingLabel="Criando…" />
+      <FormPanel
+        className="mb-5"
+        description="Lembrete interno com data"
+        title="Criar alerta avulso"
+      >
+        <Form action={createManualAlert} className="grid gap-4">
+          <div className="form-grid sm:grid-cols-2 lg:grid-cols-12">
+            <TextField
+              className="sm:col-span-2 lg:col-span-6"
+              label="Título"
+              maxLength={120}
+              minLength={2}
+              name="title"
+              required
+            />
+            <DateField className="lg:col-span-3" label="Data do alerta" name="dueOn" required />
+            <SelectField
+              className="lg:col-span-3"
+              defaultValue="warning"
+              label="Prioridade"
+              name="severity"
+              options={[
+                { label: "Atenção", value: "warning" },
+                { label: "Urgente", value: "danger" },
+              ]}
+            />
           </div>
-        </form>
-      </details>
+          <TextField label="Observação" maxLength={1000} multiline name="notes" optional rows={2} />
+          <FormActions>
+            <SubmitButton idleLabel="Criar alerta" pendingLabel="Criando…" />
+          </FormActions>
+        </Form>
+      </FormPanel>
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard color="negative" label="Atrasados" value={urgent.length} />
         <SummaryCard color="warning" label="Esta semana" value={thisWeek.length} />

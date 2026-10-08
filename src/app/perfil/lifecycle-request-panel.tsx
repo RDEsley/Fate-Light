@@ -4,8 +4,9 @@ import { useActionState, useState } from "react";
 
 import { SubmitButton } from "@/app/_components/submit-button";
 import { DangerAction, DangerZone } from "@/components/ui/danger-zone";
-import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { CheckboxField } from "@/components/ui/field";
 import { FieldError } from "@/components/ui/field-error";
+import { Form } from "@/components/ui/form";
 import { Icon } from "@/components/ui/icon";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -53,13 +54,7 @@ export function LifecycleRequestPanel({ requests }: { requests: LifecycleRequest
           </div>
         </div>
 
-        <form action={exportAction} className="grid gap-3">
-          {exportState.message ? (
-            <FeedbackBanner
-              message={exportState.message}
-              tone={exportState.status === "error" ? "error" : "success"}
-            />
-          ) : null}
+        <Form action={exportAction} className="grid gap-3" state={exportState}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-muted max-w-xl text-sm leading-5">
               <strong className="text-foreground">Exportar meus dados.</strong> Registra o pedido
@@ -68,7 +63,7 @@ export function LifecycleRequestPanel({ requests }: { requests: LifecycleRequest
             </p>
             <SubmitButton idleLabel="Solicitar exportação" pendingLabel="Registrando…" />
           </div>
-        </form>
+        </Form>
 
         <div className="border-line mt-5 border-t pt-5">
           <h3 className="text-sm font-black">Acompanhamento</h3>
@@ -100,22 +95,16 @@ export function LifecycleRequestPanel({ requests }: { requests: LifecycleRequest
         summary="Excluir minha conta"
         title="Encerrar a conta"
       >
-        <form action={deletionAction} className="grid gap-3">
-          {deletionState.message ? (
-            <FeedbackBanner
-              message={deletionState.message}
-              tone={deletionState.status === "error" ? "error" : "success"}
-            />
-          ) : null}
+        <Form action={deletionAction} className="grid gap-4" state={deletionState}>
           <DangerAction
             description="Esta etapa apenas registra a solicitação. Ela não apaga dados, não suspende a conta e não inicia contagem de retenção."
             title="Solicitar exclusão da conta"
             action={
               <SubmitButton
-                className="danger-action"
                 disabled={!unlocked}
                 idleLabel="Solicitar exclusão"
                 pendingLabel="Registrando…"
+                variant="danger"
               />
             }
           />
@@ -133,11 +122,10 @@ export function LifecycleRequestPanel({ requests }: { requests: LifecycleRequest
             />
             {confirmation && !unlocked ? <FieldError message="A frase ainda não confere." /> : null}
           </label>
-          <label className="flex items-start gap-3 text-sm leading-6">
-            <input className="mt-1" name="acknowledged" required type="checkbox" />
+          <CheckboxField name="acknowledged" required>
             Entendo que esta etapa registra o pedido, sem executar exclusão automática.
-          </label>
-        </form>
+          </CheckboxField>
+        </Form>
       </DangerZone>
     </>
   );
