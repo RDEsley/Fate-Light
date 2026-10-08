@@ -43,7 +43,8 @@ projeto. O versionamento segue SemVer.
 ### Security
 
 - Next.js e `eslint-config-next` atualizados para 16.3.8 e correções compatíveis do `npm audit`
-  aplicadas. Restam avisos em `braces`, alcançável só pelas ferramentas de lint.
+  aplicadas. `braces` segue sem versão corrigida: a exceção, restrita ao lint, fica explícita
+  em `scripts/audit-dependencies.mjs`, que passa a ser o gate de auditoria do CI.
 
 ## [0.8.6] - 2026-09-09
 
