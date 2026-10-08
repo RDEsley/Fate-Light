@@ -3,18 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import {
-  deleteClientService,
-  setClientServiceState,
-} from "@/app/_actions/mvp";
+import { deleteClientService, setClientServiceState } from "@/app/_actions/mvp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon, type IconName } from "@/components/ui/icon";
-import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
+import { formatCurrency, formatDatePtBr, formatPercent } from "@/features/mvp/format";
 import { billingFrequencyLabel } from "@/features/mvp/recurrence";
-import {
-  currentServiceOwnRevenue,
-  promotionalStatusLabel,
-} from "@/features/mvp/service-pricing";
+import { currentServiceOwnRevenue, promotionalStatusLabel } from "@/features/mvp/service-pricing";
 
 import {
   ServiceApplicationForm,
@@ -23,9 +17,21 @@ import {
 } from "./service-application-form";
 
 const stateBadges: Record<string, { className: string; icon: IconName; label: string }> = {
-  active: { className: "service-state service-state--active", icon: "check", label: "Ativo" },
-  paused: { className: "service-state service-state--paused", icon: "pause", label: "Pausado" },
-  ended: { className: "service-state service-state--ended", icon: "archive", label: "Encerrado" },
+  active: {
+    className: "service-state service-state--active",
+    icon: "check",
+    label: "Ativo",
+  },
+  paused: {
+    className: "service-state service-state--paused",
+    icon: "pause",
+    label: "Pausado",
+  },
+  ended: {
+    className: "service-state service-state--ended",
+    icon: "archive",
+    label: "Encerrado",
+  },
 };
 
 function StateForm({
@@ -78,8 +84,8 @@ export function ServiceCard({
 
   if (editing) {
     return (
-      <article className="border-brand/40 rounded-xl border-2 p-5 lg:col-span-2">
-        <div className="section-heading mb-4">
+      <article className="service-card service-card--editing">
+        <div className="section-heading mb-5">
           <span className="section-heading__icon bg-brand-soft text-brand-strong">
             <Icon name="edit" />
           </span>
@@ -113,92 +119,98 @@ export function ServiceCard({
     (service.additionalFeeIsRevenue ? 0 : Number(service.additionalFee));
 
   return (
-    <article className="border-line rounded-xl border p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="font-semibold">{service.name}</h3>
-          {entityName ? (
-            <span className="entity-chip mt-1">
-              <Icon className="size-3.5" name="building" /> {entityName}
-            </span>
-          ) : null}
+    <article className="service-card">
+      <div className="service-card__body">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="service-card__title">{service.name}</h3>
+            {entityName ? (
+              <span className="entity-chip mt-1">
+                <Icon className="size-3.5" name="building" /> {entityName}
+              </span>
+            ) : null}
+          </div>
+          <span className={badge.className}>
+            <Icon className="size-3.5" name={badge.icon} /> {badge.label}
+          </span>
         </div>
-        <span className={badge.className}>
-          <Icon className="size-3.5" name={badge.icon} /> {badge.label}
-        </span>
+        {service.description ? (
+          <p className="text-muted mt-2 text-sm">{service.description}</p>
+        ) : null}
+        <dl className="service-card__facts">
+          <div>
+            <dt>Valor cheio</dt>
+            <dd>{formatCurrency(service.listPrice)}</dd>
+          </div>
+          <div>
+            <dt>{additionalRevenue > 0 ? "A receber" : "Valor atual"}</dt>
+            <dd className="text-positive font-black">
+              {formatCurrency(pricing.amount + additionalRevenue)}
+            </dd>
+            {additionalRevenue > 0 ? (
+              <small>
+                {formatCurrency(pricing.amount)} + {formatCurrency(additionalRevenue)} de adicional
+              </small>
+            ) : pricing.promoActive ? (
+              <small>{promoLabel}</small>
+            ) : service.discountType !== "none" ? (
+              <small>
+                desconto de{" "}
+                {service.discountType === "percentage"
+                  ? formatPercent(service.discountValue)
+                  : formatCurrency(service.discountValue)}
+              </small>
+            ) : null}
+          </div>
+          <div>
+            <dt>Cobrança</dt>
+            <dd>{billingFrequencyLabel(service.billingType)}</dd>
+            {service.billingType === "single" && service.installmentCount > 1 ? (
+              <small>{service.installmentCount} parcelas</small>
+            ) : null}
+          </div>
+          <div>
+            <dt>Próximo vencimento</dt>
+            <dd>
+              {service.status === "paused"
+                ? "Pausado"
+                : service.nextDueDate
+                  ? formatDatePtBr(service.nextDueDate)
+                  : "Sem próxima data"}
+            </dd>
+          </div>
+          <div>
+            <dt>Tempo contratado</dt>
+            <dd>{duration}</dd>
+          </div>
+          <div>
+            <dt>Repasses</dt>
+            <dd>{formatCurrency(passThrough)}</dd>
+            {passThrough > 0 ? (
+              <small>
+                {service.additionalFeeIsRevenue
+                  ? "verba de mídia"
+                  : "mídia + adicional de terceiro"}
+              </small>
+            ) : null}
+          </div>
+        </dl>
+        {service.promotionalPrice !== null ? (
+          <p className="service-note service-note--promo mt-3">
+            {pricing.promoActive
+              ? promoLabel
+              : `${service.promotionalPrice === 0 ? "Gratuito" : formatCurrency(service.promotionalPrice)} por ${service.promotionalCycles} ciclos · promoção concluída`}
+          </p>
+        ) : null}
+        {service.nextAdjustmentDate ? (
+          <p className="service-note mt-2">
+            Revisar preço em {formatDatePtBr(service.nextAdjustmentDate)}
+            {service.adjustmentRate !== null
+              ? ` · sugestão de ${formatPercent(service.adjustmentRate)}`
+              : ""}
+          </p>
+        ) : null}
       </div>
-      {service.description ? (
-        <p className="text-muted mt-2 text-sm">{service.description}</p>
-      ) : null}
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <dt className="text-muted">Valor cheio</dt>
-          <dd>{formatCurrency(service.listPrice)}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">{additionalRevenue > 0 ? "A receber" : "Valor atual"}</dt>
-          <dd className="text-positive font-black">
-            {formatCurrency(pricing.amount + additionalRevenue)}
-          </dd>
-          {additionalRevenue > 0 ? (
-            <small className="text-muted">
-              {formatCurrency(pricing.amount)} + {formatCurrency(additionalRevenue)} de adicional
-            </small>
-          ) : pricing.promoActive ? (
-            <small className="text-muted">{promoLabel}</small>
-          ) : service.discountType !== "none" ? (
-            <small className="text-muted">
-              desconto de{" "}
-              {service.discountType === "percentage"
-                ? `${service.discountValue}%`
-                : formatCurrency(service.discountValue)}
-            </small>
-          ) : null}
-        </div>
-        <div>
-          <dt className="text-muted">Cobrança</dt>
-          <dd>{billingFrequencyLabel(service.billingType)}</dd>
-          {service.billingType === "single" && service.installmentCount > 1 ? (
-            <small className="text-muted">{service.installmentCount} parcelas</small>
-          ) : null}
-        </div>
-        <div>
-          <dt className="text-muted">Próximo vencimento</dt>
-          <dd>
-            {service.status === "paused"
-              ? "Pausado"
-              : service.nextDueDate
-                ? formatDatePtBr(service.nextDueDate)
-                : "Sem próxima data"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted">Tempo contratado</dt>
-          <dd>{duration}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">Repasses</dt>
-          <dd>{formatCurrency(passThrough)}</dd>
-          {passThrough > 0 ? (
-            <small className="text-muted">
-              {service.additionalFeeIsRevenue ? "verba de mídia" : "mídia + adicional de terceiro"}
-            </small>
-          ) : null}
-        </div>
-      </dl>
-      {service.promotionalPrice !== null ? (
-        <p className="service-note service-note--promo mt-3">
-          {pricing.promoActive
-            ? promoLabel
-            : `${service.promotionalPrice === 0 ? "Gratuito" : formatCurrency(service.promotionalPrice)} por ${service.promotionalCycles} ciclos · promoção concluída`}
-        </p>
-      ) : null}
-      {service.nextAdjustmentDate ? (
-        <p className="service-note mt-2">
-          Revisar preço em {formatDatePtBr(service.nextAdjustmentDate)}
-          {service.adjustmentRate !== null ? ` · sugestão de ${service.adjustmentRate}%` : ""}
-        </p>
-      ) : null}
 
       <div className="service-actions">
         {service.status !== "ended" ? (

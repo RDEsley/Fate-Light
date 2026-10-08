@@ -200,10 +200,7 @@ export default async function ChargesPage({
             <option value="cancelled">Canceladas</option>
           </select>
         </label>
-        <button
-          className="bg-brand text-brand-contrast border-brand-strong min-h-11 rounded-xl border-2 px-5 text-sm font-black"
-          type="submit"
-        >
+        <button className="button button--primary" type="submit">
           Filtrar
         </button>
       </form>
