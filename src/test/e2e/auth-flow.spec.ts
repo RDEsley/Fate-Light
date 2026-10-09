@@ -361,6 +361,10 @@ test.describe("authenticated MVP journey", () => {
     await alertPanel.locator(":scope > summary").click();
     await alertPanel.getByLabel("O que lembrar").fill("Ligar para o cliente");
     await alertPanel.getByRole("button", { name: "Amanhã" }).click();
+    // Cliente e repetição são opcionais e ficam recolhidos.
+    await alertPanel.locator("summary").filter({ hasText: "Personalizar lembrete" }).click();
+    await selectClient(alertPanel, "Cliente MVP");
+    await alertPanel.getByRole("radio", { name: "Todo mês" }).check();
     await alertPanel.getByRole("button", { exact: true, name: "Criar alerta" }).click();
     await expect(page.getByText(/alerta criado/i)).toBeVisible();
     // Os cartões do topo filtram a lista e mostram qual está ativo.
@@ -369,6 +373,7 @@ test.describe("authenticated MVP journey", () => {
     await expect(weekFilter).toHaveAttribute("aria-pressed", "true");
     const reminder = page.locator("article").filter({ hasText: "Ligar para o cliente" });
     await expect(reminder).toBeVisible();
+    await expect(reminder).toContainText("Cliente MVP");
     await page.getByRole("button", { name: /^Atrasados/ }).click();
     await expect(reminder).toHaveCount(0);
     await page.getByRole("button", { name: "Limpar filtro" }).first().click();
@@ -377,8 +382,11 @@ test.describe("authenticated MVP journey", () => {
       "true",
     );
     await reminder.getByRole("button", { name: "Resolver" }).click();
-    await expect(page.getByText(/alerta resolvido/i)).toBeVisible();
-    await expect(reminder).toHaveCount(0);
+    await expect(page.getByText(/o próximo já está agendado/i)).toBeVisible();
+    // A série continua: a ocorrência do mês seguinte nasce sozinha, com o mesmo cliente.
+    await expect(reminder).toHaveCount(1);
+    await expect(reminder).toContainText("Cliente MVP");
+    await expect(reminder).toContainText(/Em \d+ dias/);
 
     await page.getByRole("button", { name: "Abrir menu do perfil" }).click();
     await page.getByRole("link", { name: "Perfil e sistema" }).click();
