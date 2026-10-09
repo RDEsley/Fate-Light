@@ -505,6 +505,7 @@ export default async function ClientDetailsPage({
                   description: service.description,
                   discountType: service.discount_type as "fixed" | "none" | "percentage",
                   discountValue: Number(service.discount_value),
+                  hasPayments: (chargeTotals.get(service.id)?.paidCharges ?? 0) > 0,
                   id: service.id,
                   installmentCount: service.installment_count,
                   listPrice: Number(service.list_price),

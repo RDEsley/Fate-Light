@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(15);
 
 insert into auth.users (id, email)
 values ('85858585-8585-4585-8585-858585858585', 'repricing@example.test');
@@ -158,6 +158,43 @@ select results_eq(
     where id = current_setting('test.repricing_service')::uuid$$,
   array[true],
   'Desligar o lembrete remove a data da revisão em vez de falhar'
+);
+
+-- Redividir as parcelas enquanto nada foi pago, e travar depois do primeiro pagamento.
+select results_eq(
+  $$select public.set_client_service_installments(
+    current_setting('test.repricing_service')::uuid, 5
+  )$$,
+  $$values ('updated'::text)$$,
+  'Redivide o serviço em cinco parcelas sem pagamento registrado'
+);
+select results_eq(
+  $$select count(*), sum(company_revenue) from public.charges
+    where client_service_id = current_setting('test.repricing_service')::uuid
+      and status = 'pending'$$,
+  $$values (5::bigint, 1500::numeric)$$,
+  'As cinco parcelas novas somam o mesmo total'
+);
+update public.charges
+set status = 'paid', paid_at = statement_timestamp(), payment_method = 'Pix'
+where id = (
+  select id from public.charges
+  where client_service_id = current_setting('test.repricing_service')::uuid
+  order by due_date, id
+  limit 1
+);
+select results_eq(
+  $$select public.set_client_service_installments(
+    current_setting('test.repricing_service')::uuid, 2
+  )$$,
+  $$values ('locked'::text)$$,
+  'Depois de um pagamento as parcelas não mudam mais'
+);
+select results_eq(
+  $$select count(*) from public.charges
+    where client_service_id = current_setting('test.repricing_service')::uuid$$,
+  array[5::bigint],
+  'A recusa não mexe nas cobranças existentes'
 );
 
 select * from finish();

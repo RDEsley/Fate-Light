@@ -1777,6 +1777,10 @@ export type Database = {
         Args: { p_confirmation: string }
         Returns: string[]
       }
+      set_client_service_installments: {
+        Args: { p_installment_count: number; p_service_id: string }
+        Returns: string
+      }
       settle_charge_and_schedule_next: {
         Args: { p_charge_id: string; p_payment_method: string }
         Returns: string

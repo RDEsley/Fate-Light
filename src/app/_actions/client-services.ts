@@ -143,6 +143,27 @@ export async function editClientService(
   if (error) return actionError(databaseErrorMessage(error));
   if (data === "not_found") return actionError("Serviço não encontrado neste workspace.");
 
+  // As parcelas só mudam em cobrança única e enquanto nenhuma foi paga; a função confere
+  // as duas coisas e não faz nada quando a quantidade é a mesma.
+  if (values.data.billingType === "single") {
+    const installments = await supabase.rpc("set_client_service_installments", {
+      p_installment_count: values.data.installmentCount,
+      p_service_id: serviceId.data,
+    });
+    if (installments.error) {
+      return rejectSubmission(formData, databaseErrorMessage(installments.error), {
+        installmentCount: databaseErrorMessage(installments.error),
+      });
+    }
+    if (installments.data === "locked") {
+      return rejectSubmission(
+        formData,
+        "As parcelas não mudam depois do primeiro pagamento. O restante foi salvo.",
+        { installmentCount: "Já existe parcela paga neste serviço." },
+      );
+    }
+  }
+
   revalidatePath(`/clientes/${clientId.data}`);
   revalidatePath("/cobrancas");
   revalidatePath("/dashboard");
