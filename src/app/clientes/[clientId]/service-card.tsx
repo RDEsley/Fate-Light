@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { deleteClientService, setClientServiceState } from "@/app/_actions/mvp";
@@ -213,14 +212,6 @@ export function ServiceCard({
       </div>
 
       <div className="service-actions">
-        {service.status !== "ended" ? (
-          <Link
-            className="service-action"
-            href={`/clientes/${clientId}?action=new-charge&serviceId=${service.id}#cobranca-avulsa`}
-          >
-            <Icon className="size-4" name="plus" /> Cobrança
-          </Link>
-        ) : null}
         {service.status !== "ended" ? (
           <button className="service-action" onClick={() => setEditing(true)} type="button">
             <Icon className="size-4" name="edit" /> Editar

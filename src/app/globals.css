@@ -3573,6 +3573,27 @@ summary::-webkit-details-marker {
   line-height: 1.4;
 }
 
+/* Valor de agora em destaque; o que vem depois (fim da promoção, total parcelado) ao lado. */
+.price-summary__amount {
+  display: grid;
+  flex: none;
+  justify-items: end;
+  gap: 0.1rem;
+}
+
+.price-summary__then {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.price-summary__value small {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 .price-summary__value {
   color: var(--brand-strong);
   font-size: 1.4rem;

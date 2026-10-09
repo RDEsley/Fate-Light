@@ -202,10 +202,10 @@ test.describe("authenticated MVP journey", () => {
       .locator("..")
       .locator("dd")
       .innerText();
-    await adsCard.getByRole("link", { exact: true, name: "Cobrança" }).click();
+    // O cartão do serviço não tem mais atalho de cobrança: a avulsa nasce no painel próprio.
+    await expect(adsCard.getByRole("link", { exact: true, name: "Cobrança" })).toHaveCount(0);
     let chargePanel = page.locator("#nova-cobranca-avulsa");
-    await expect(chargePanel).toBeVisible();
-    await expect(chargePanel.getByText(/não altera a agenda automática/i)).toBeVisible();
+    await chargePanel.locator("summary").filter({ hasText: "Nova cobrança avulsa" }).click();
     await chargePanel.getByLabel("Descrição").fill("Mensalidade Ads");
     await selectField(chargePanel, "clientEntityId", "Padaria do Bairro");
     await fillDate(chargePanel.getByLabel("Vencimento", { exact: true }), dateOffset(0));
