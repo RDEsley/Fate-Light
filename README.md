@@ -107,7 +107,7 @@ Tudo fica ligado ao contexto certo, evitando clientes em uma planilha, domínios
 | 💳 **Cobranças**  | Vencimentos, pagamentos, recorrência automática e acompanhamento por cliente           |
 | 🧾 **Despesas**   | Despesas avulsas ou recorrentes, categorias, clientes e comprovantes privados          |
 | 🌐 **Domínios**   | Registro de domínios, registrador, vencimento e vínculo com clientes                   |
-| 🔔 **Alertas**    | Central com filtros por prazo e tipo, lembretes próprios e adiamento                   |
+| 🔔 **Alertas**    | Central com filtros por prazo e tipo, lembretes com cliente, repetição e adiamento     |
 | 🕘 **Histórico**  | Linha do tempo pesquisável de pagamentos, atrasos, serviços e alterações               |
 | 📥 **Importação** | Importação de Excel/CSV com prévia, validação e proteção contra duplicidade            |
 | 🔐 **Conta**      | Autenticação, confirmação de e-mail, recuperação de senha, perfil e privacidade        |
