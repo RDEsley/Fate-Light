@@ -5,11 +5,24 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-08
+
 ### Added
 
 - Lembretes podem ser vinculados a um cliente e repetir toda semana, todo mês ou todo ano. Ao
   resolver um lembrete que se repete, a próxima ocorrência é agendada sozinha, a partir da data
   original.
+
+### Fixed
+
+- Lista do seletor de cliente abria atrás do campo seguinte dentro de um bloco recolhido.
+
+### Security
+
+- O guarda do modo visitante trata como ação qualquer destino com esquema que não seja http(s),
+  e não só `javascript:` (alerta de code scanning).
+- Dependências atualizadas: Supabase JS 2.117.2, Zod 4.6.5, Vitest 5.0.3, jsdom 30.1.2,
+  PostCSS 8.5.29, CLI do Supabase 2.119.0 e tipos do Node 24.19.1.
 
 ## [0.11.0] - 2026-10-08
 
