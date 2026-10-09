@@ -54,7 +54,7 @@ select lives_ok(
   'Owner cria alerta no próprio workspace'
 );
 select results_eq(
-  $select count(*) from public.manual_alerts$,
+  $$select count(*) from public.manual_alerts$$,
   array[1::bigint],
   'Owner enxerga seu alerta'
 );
@@ -68,17 +68,17 @@ where user_id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 
 set local role authenticated;
 select lives_ok(
-  $insert into public.manual_alerts (workspace_id, title, due_on, severity, client_id, recurrence) select workspace_id, 'Enviar relatório', current_date, 'warning', 'dddddddd-0001-4ddd-8ddd-dddddddddddd', 'monthly' from public.workspace_members where user_id = auth.uid()$,
+  $$insert into public.manual_alerts (workspace_id, title, due_on, severity, client_id, recurrence) select workspace_id, 'Enviar relatório', current_date, 'warning', 'dddddddd-0001-4ddd-8ddd-dddddddddddd', 'monthly' from public.workspace_members where user_id = auth.uid()$$,
   'Owner cria lembrete mensal vinculado a um cliente do próprio workspace'
 );
 select throws_ok(
-  $insert into public.manual_alerts (workspace_id, title, due_on, severity, recurrence) select workspace_id, 'Repetição inválida', current_date, 'warning', 'daily' from public.workspace_members where user_id = auth.uid()$,
+  $$insert into public.manual_alerts (workspace_id, title, due_on, severity, recurrence) select workspace_id, 'Repetição inválida', current_date, 'warning', 'daily' from public.workspace_members where user_id = auth.uid()$$,
   '23514',
   null,
   'Repetição fora das opções é recusada'
 );
 select throws_ok(
-  $update public.manual_alerts set recurrence = 'none'$,
+  $$update public.manual_alerts set recurrence = 'none'$$,
   '42501',
   null,
   'Vínculo e repetição não mudam depois de criados'
@@ -110,7 +110,7 @@ select results_eq(
   'Workspace B não altera alertas do workspace A'
 );
 select throws_ok(
-  $insert into public.manual_alerts (workspace_id, title, due_on, severity, client_id) select workspace_id, 'Cliente alheio', current_date, 'warning', 'dddddddd-0001-4ddd-8ddd-dddddddddddd' from public.workspace_members where user_id = auth.uid()$,
+  $$insert into public.manual_alerts (workspace_id, title, due_on, severity, client_id) select workspace_id, 'Cliente alheio', current_date, 'warning', 'dddddddd-0001-4ddd-8ddd-dddddddddddd' from public.workspace_members where user_id = auth.uid()$$,
   '23503',
   null,
   'Lembrete não aponta para cliente de outro workspace'
@@ -120,7 +120,7 @@ reset role;
 select set_config('request.jwt.claim.sub', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', true);
 delete from public.clients where id = 'dddddddd-0001-4ddd-8ddd-dddddddddddd';
 select results_eq(
-  $select count(*) from public.manual_alerts where title = 'Enviar relatório' and client_id is null and recurrence = 'monthly'$,
+  $$select count(*) from public.manual_alerts where title = 'Enviar relatório' and client_id is null and recurrence = 'monthly'$$,
   array[1::bigint],
   'Excluir o cliente mantém o lembrete, apenas sem o vínculo'
 );

@@ -3272,6 +3272,12 @@ summary::-webkit-details-marker {
     background-color 200ms ease;
 }
 
+/* A lista suspensa de um campo interno precisa passar por cima do que vem depois do bloco. */
+.form-more:focus-within {
+  position: relative;
+  z-index: 5;
+}
+
 .form-more[open] {
   border-color: color-mix(in srgb, var(--violet) 22%, var(--line));
   background: #fbfcf9;
