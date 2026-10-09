@@ -5,6 +5,12 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+### Added
+
+- Lembretes podem ser vinculados a um cliente e repetir toda semana, todo mês ou todo ano. Ao
+  resolver um lembrete que se repete, a próxima ocorrência é agendada sozinha, a partir da data
+  original.
+
 ## [0.11.0] - 2026-10-08
 
 ### Added
