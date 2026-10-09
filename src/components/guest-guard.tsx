@@ -28,11 +28,18 @@ export function blockedForGuest() {
   return true;
 }
 
-/** Busca e filtros são formulários GET comuns: só mudam a URL e continuam liberados. */
+/** Destino com esquema explícito que não seja uma página: javascript:, data:, blob: e afins. */
+const nonPageScheme = /^(?!https?:)[a-z][a-z0-9+.-]*:/i;
+
+/**
+ * Busca e filtros são formulários GET comuns: só mudam a URL e continuam liberados. As
+ * ações que o React monta no navegador chegam com um destino `javascript:`; qualquer
+ * esquema que não seja http(s) é tratado como ação, não como navegação.
+ */
 function isNavigation(form: HTMLFormElement, submitter: HTMLElement | null) {
   const action = submitter?.getAttribute("formaction") ?? form.getAttribute("action") ?? "";
   const method = submitter?.getAttribute("formmethod") ?? form.getAttribute("method") ?? "get";
-  return method.toLowerCase() === "get" && !action.startsWith("javascript:");
+  return method.toLowerCase() === "get" && !nonPageScheme.test(action.trim());
 }
 
 /**
