@@ -35,4 +35,28 @@ describe("manual alert form", () => {
       "false",
     );
   });
+
+  it("guarda cliente e repetição em um bloco recolhido, sem repetir por padrão", () => {
+    render(
+      <ManualAlertForm
+        clients={[
+          { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "Padaria", status: "active" },
+        ]}
+        today="2026-10-08"
+      />,
+    );
+
+    const more = screen.getByText("Personalizar lembrete").closest("details");
+    expect(more).not.toHaveAttribute("open");
+    expect(screen.getByRole("radio", { name: "Não repetir" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Todo mês" })).not.toBeChecked();
+    expect(screen.getByRole("combobox", { name: /^cliente/i })).not.toBeRequired();
+  });
+
+  it("não mostra o campo de cliente enquanto não há clientes cadastrados", () => {
+    render(<ManualAlertForm today="2026-10-08" />);
+
+    expect(screen.queryByRole("combobox", { name: /^cliente/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Repetir" })).toBeInTheDocument();
+  });
 });

@@ -6,7 +6,9 @@ import { SubmitButton } from "@/app/_components/submit-button";
 import { ChoiceChips } from "@/components/ui/choice-chips";
 import { FormActions, TextField } from "@/components/ui/field";
 import { Form } from "@/components/ui/form";
-import { DateField } from "@/components/ui/form-controls";
+import { ClientCombobox, DateField, type ClientOption } from "@/components/ui/form-controls";
+import { FormMore } from "@/components/ui/form-panel";
+import { alertRecurrences } from "@/features/alerts/board";
 import { addDays } from "@/features/mvp/format";
 
 import { createManualAlert } from "./actions";
@@ -20,9 +22,16 @@ const shortcuts = [
 
 /**
  * Novo lembrete. A data começa vazia, como todo campo de data obrigatório; os atalhos só
- * a preenchem — quem cria um lembrete quase sempre pensa em "daqui a tanto tempo".
+ * a preenchem — quem cria um lembrete quase sempre pensa em "daqui a tanto tempo". Cliente
+ * e repetição são opcionais e ficam recolhidos: a maioria dos lembretes não usa nenhum.
  */
-export function ManualAlertForm({ today }: { today: string }) {
+export function ManualAlertForm({
+  clients = [],
+  today,
+}: {
+  clients?: ClientOption[];
+  today: string;
+}) {
   const [date, setDate] = useState("");
 
   return (
@@ -73,6 +82,29 @@ export function ManualAlertForm({ today }: { today: string }) {
           ]}
         />
       </div>
+      <FormMore
+        description="Vincular a um cliente ou repetir o lembrete"
+        title="Personalizar lembrete"
+      >
+        <div className="form-grid sm:grid-cols-2">
+          {clients.length ? (
+            <ClientCombobox
+              clients={clients}
+              defaultFilter="all"
+              hint="O lembrete mostra o cliente e leva direto à ficha dele."
+              label="Cliente"
+              name="clientId"
+              optional
+            />
+          ) : null}
+          <ChoiceChips
+            defaultValue="none"
+            label="Repetir"
+            name="recurrence"
+            options={alertRecurrences}
+          />
+        </div>
+      </FormMore>
       <TextField
         label="Observação"
         maxLength={1000}

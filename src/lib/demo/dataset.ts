@@ -632,9 +632,11 @@ export function buildDemoDataset(today: string) {
   const manualAlerts: Row<"manual_alerts">[] = [
     {
       ...audit,
+      client_id: client(2),
       due_on: day(-1),
       id: id(10, 1),
       notes: "Consolidar resultados de tráfego e redes da Clínica Bem Viver.",
+      recurrence: "none",
       resolved_at: null,
       severity: "danger",
       state: "open",
@@ -642,9 +644,11 @@ export function buildDemoDataset(today: string) {
     },
     {
       ...audit,
+      client_id: client(1),
       due_on: day(4),
       id: id(10, 2),
       notes: null,
+      recurrence: "annual",
       resolved_at: null,
       severity: "warning",
       state: "open",

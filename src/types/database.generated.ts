@@ -1057,11 +1057,13 @@ export type Database = {
       }
       manual_alerts: {
         Row: {
+          client_id: string | null
           created_at: string
           created_by: string
           due_on: string
           id: string
           notes: string | null
+          recurrence: string
           resolved_at: string | null
           severity: string
           state: string
@@ -1071,11 +1073,13 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           created_by?: string
           due_on: string
           id?: string
           notes?: string | null
+          recurrence?: string
           resolved_at?: string | null
           severity?: string
           state?: string
@@ -1085,11 +1089,13 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           created_by?: string
           due_on?: string
           id?: string
           notes?: string | null
+          recurrence?: string
           resolved_at?: string | null
           severity?: string
           state?: string
@@ -1099,6 +1105,20 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "manual_alerts_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "manual_alerts_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "manual_alerts_workspace_id_fkey"
             columns: ["workspace_id"]

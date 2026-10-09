@@ -9,6 +9,7 @@ import { Icon, type IconName } from "@/components/ui/icon";
 import { RecordCell, RecordGroup, RecordList, RecordRow } from "@/components/ui/record-row";
 import {
   alertBucketLabels,
+  alertRecurrences,
   alertSourceOrder,
   alertSources,
   type AlertBucket,
@@ -227,6 +228,12 @@ function AlertListRow({ row }: { row: AlertRow }) {
             <dd>{row.urgent ? "Urgente" : "Atenção"}</dd>
           </div>
         ) : null}
+        {row.recurrence !== "none" ? (
+          <div>
+            <dt>Repetição</dt>
+            <dd>{alertRecurrences.find(({ value }) => value === row.recurrence)?.label}</dd>
+          </div>
+        ) : null}
       </dl>
       {row.manualId && row.notes ? (
         <p className="helper-note">
@@ -249,6 +256,11 @@ function AlertListRow({ row }: { row: AlertRow }) {
             <Icon className="size-4" name={sourceIcons[row.source]} /> {kind.open}
           </Link>
         )}
+        {row.manualId && row.clientId ? (
+          <Link className="service-action" href={`/clientes/${row.clientId}` as Route}>
+            <Icon className="size-4" name="user" /> Abrir cliente
+          </Link>
+        ) : null}
         <a
           className="service-action"
           href={row.calendarUrl}

@@ -1,4 +1,5 @@
 import { addDays, daysBetween } from "@/features/mvp/format";
+import { addBillingPeriod } from "@/features/mvp/recurrence";
 
 import type { AttentionItem } from "./attention";
 
@@ -6,9 +7,43 @@ export type AlertSource = AttentionItem["source"];
 /** Faixas de prazo da central. São uma partição: cada alerta cai em exatamente uma. */
 export type AlertBucket = "later" | "overdue" | "week";
 
+/** Mesmos nomes das frequências de cobrança, para as duas agendas falarem a mesma língua. */
+export const alertRecurrenceValues = ["none", "weekly", "monthly", "annual"] as const;
+export type AlertRecurrence = (typeof alertRecurrenceValues)[number];
+
+export const alertRecurrences: { label: string; value: AlertRecurrence }[] = [
+  { label: "Não repetir", value: "none" },
+  { label: "Toda semana", value: "weekly" },
+  { label: "Todo mês", value: "monthly" },
+  { label: "Todo ano", value: "annual" },
+];
+
+export function parseAlertRecurrence(value: unknown): AlertRecurrence {
+  return alertRecurrenceValues.find((option) => option === value) ?? "none";
+}
+
+/** Quantas ocorrências, no máximo, são puladas para um lembrete resolvido com muito atraso. */
+const maxSkippedOccurrences = 600;
+
+/**
+ * Data da próxima ocorrência de um lembrete que se repete. Conta sempre a partir da data
+ * original — "todo dia 31" não vira "todo dia 28" depois de fevereiro — e pula o que já
+ * passou: resolver com atraso não pode criar um lembrete que nasce vencido.
+ */
+export function nextAlertDate(dueOn: string, recurrence: AlertRecurrence, today: string) {
+  if (recurrence === "none") return null;
+  for (let step = 1; step <= maxSkippedOccurrences; step += 1) {
+    const next = addBillingPeriod(dueOn, recurrence, step);
+    if (next > today) return next;
+  }
+  return null;
+}
+
 export type AlertRow = {
   bucket: AlertBucket;
   calendarUrl: string;
+  /** Cliente a que o lembrete avulso foi vinculado. */
+  clientId: string | null;
   date: string;
   deadline: { label: string; tone: "danger" | "neutral" | "warning" };
   href: string;
@@ -17,6 +52,7 @@ export type AlertRow = {
   manualId?: string;
   notes: string | null;
   owner: string | null;
+  recurrence: AlertRecurrence;
   source: AlertSource;
   subject: string;
   /** Lembrete marcado como urgente por quem o criou. */
@@ -82,6 +118,7 @@ export function toAlertRows(items: AttentionItem[], today: string): AlertRow[] {
     .map((item) => ({
       bucket: alertBucket(item.date, today),
       calendarUrl: googleCalendarUrl(item.title, item.meta, item.date),
+      clientId: item.clientId ?? null,
       date: item.date,
       deadline: alertDeadline(item.date, today),
       href: item.href,
@@ -89,6 +126,7 @@ export function toAlertRows(items: AttentionItem[], today: string): AlertRow[] {
       manualId: item.source === "manual" ? item.id.replace("manual-", "") : undefined,
       notes: item.notes ?? null,
       owner: item.owner ?? null,
+      recurrence: parseAlertRecurrence(item.recurrence),
       source: item.source,
       subject: item.subject,
       urgent: item.source === "manual" && item.severity === "danger",
