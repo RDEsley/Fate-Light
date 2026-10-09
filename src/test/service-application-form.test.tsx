@@ -73,7 +73,10 @@ describe("formulário de serviço do cliente", () => {
     await user.click(screen.getByRole("button", { name: "Aplicar serviço" }));
 
     expect(actions.applyServiceToClient).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Nome exibido no cliente")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Nome exibido no cliente")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
     expect(screen.getByRole("textbox", { name: "Valor cheio" })).toHaveAttribute(
       "aria-invalid",
       "true",
@@ -135,10 +138,52 @@ describe("formulário de serviço do cliente", () => {
     render(<ServiceApplicationForm catalog={catalog} clientId={clientId} service={service} />);
 
     expect(screen.queryByLabelText("Início do serviço")).not.toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: "Quantidade de parcelas" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("textbox", { name: "Quantidade de parcelas" }),
+    ).not.toBeInTheDocument();
     expect(document.querySelector('input[name="startDate"]')).toHaveValue("2026-07-20");
     expect(document.querySelector('input[name="installmentCount"]')).toHaveValue("3");
     expect(screen.getByLabelText("Próximo vencimento")).toHaveValue("20/09/2026");
     expect(screen.getByRole("button", { name: "Salvar alterações" })).toBeInTheDocument();
+    // As parcelas já geradas aparecem só para consulta, e o resumo mostra a fatia e o total.
+    expect(screen.getByLabelText("Parcelas")).toBeDisabled();
+    const summary = document.querySelector(".price-summary")!;
+    expect(summary).toHaveTextContent(/3x de\s*R\$\s1\.996,67/);
+    expect(summary).toHaveTextContent(/total R\$\s5\.990,00/);
+  });
+
+  it("mostra no resumo o preço promocional e o valor que vem depois", () => {
+    render(
+      <ServiceApplicationForm
+        catalog={catalog}
+        clientId={clientId}
+        service={{
+          ...service,
+          billingType: "monthly",
+          installmentCount: 1,
+          listPrice: 700,
+          promotionalCycles: 2,
+          promotionalPrice: 500,
+        }}
+      />,
+    );
+
+    const summary = document.querySelector(".price-summary")!;
+    expect(summary.querySelector(".price-summary__value")).toHaveTextContent(/R\$\s500,00/);
+    expect(summary.querySelector(".price-summary__then")).toHaveTextContent(/depois R\$\s700,00/);
+  });
+
+  it("deixa as parcelas à vista na criação quando a cobrança é única", async () => {
+    const user = userEvent.setup();
+    render(<ServiceApplicationForm catalog={catalog} clientId={clientId} />);
+
+    expect(screen.queryByRole("textbox", { name: "Parcelas" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Periodicidade" }));
+    await user.click(screen.getByRole("option", { name: /uma única vez/i }));
+
+    const more = screen.getByText("Personalizar preço e agenda").closest("details")!;
+    const installments = screen.getByRole("textbox", { name: "Parcelas" });
+    expect(more).not.toContainElement(installments);
+    expect(installments).toHaveValue("1");
   });
 });

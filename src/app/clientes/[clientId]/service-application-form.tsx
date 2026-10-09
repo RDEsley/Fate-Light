@@ -169,7 +169,10 @@ export function ServiceApplicationForm({
     service?.adjustmentRate ? String(service.adjustmentRate) : "",
   );
 
+  const [installments, setInstallments] = useState(String(service?.installmentCount ?? 1));
+
   const single = billingType === "single";
+  const installmentCount = single ? Math.max(1, Number(installments) || 1) : 1;
   const price = centsToNumber(listPriceCents);
   const finalPrice = Math.max(
     0,
@@ -204,6 +207,7 @@ export function ServiceApplicationForm({
     promoActive
       ? `${promoValue === 0 ? "Grátis" : formatCurrency(promoValue)} nas ${cycles} primeira${cycles === 1 ? "" : "s"}`
       : null,
+    installmentCount > 1 ? `${installmentCount} parcelas mensais` : null,
     adjustment ? `Reajuste a cada ${adjustmentInterval || "?"} meses` : null,
     mediaBudget > 0 ? `Mídia ${formatCurrency(mediaBudget)}` : null,
     additionalFee > 0 && additionalNature === "passthrough"
@@ -330,6 +334,35 @@ export function ServiceApplicationForm({
           name="nextDueDate"
           required
         />
+        {/* Parcelas só existem em cobrança única. Ficam à vista, e não no bloco recolhido,
+            porque mudam o valor de cada cobrança. */}
+        {single && !editing ? (
+          <IntegerField
+            className="xl:col-span-3"
+            defaultValue={installments}
+            hint="Divide o valor em parcelas mensais a partir do primeiro vencimento."
+            label="Parcelas"
+            max={120}
+            min={1}
+            name="installmentCount"
+            onValueChange={setInstallments}
+            required
+          />
+        ) : (
+          <input name="installmentCount" type="hidden" value={service?.installmentCount ?? 1} />
+        )}
+        {single && editing && installmentCount > 1 ? (
+          <div className="field xl:col-span-4">
+            <div className="field__head">
+              <span className="field__label">Parcelas</span>
+            </div>
+            <input
+              aria-label="Parcelas"
+              disabled
+              value={`${installmentCount} parcelas já geradas`}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div aria-live="polite" className="price-summary">
@@ -353,18 +386,30 @@ export function ServiceApplicationForm({
             </span>
           ) : null}
         </div>
-        <strong className="price-summary__value">
-          {formatCurrency(previewOwnRevenue + additionalRevenue)}
-        </strong>
+        <div className="price-summary__amount">
+          <strong className="price-summary__value">
+            {installmentCount > 1 ? <small>{installmentCount}x de </small> : null}
+            {formatCurrency((previewOwnRevenue + additionalRevenue) / installmentCount)}
+          </strong>
+          {promoActive ? (
+            <span className="price-summary__then">
+              depois {formatCurrency(finalPrice + additionalRevenue)}
+            </span>
+          ) : installmentCount > 1 ? (
+            <span className="price-summary__then">
+              total {formatCurrency(previewOwnRevenue + additionalRevenue)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <FormMore
         defaultOpen={editing}
-        description="Desconto, parcelas, promoção, reajuste e repasses"
+        description="Desconto, promoção, reajuste e repasses"
         title="Personalizar preço e agenda"
       >
-        <FormSection title="Desconto e parcelas">
-          <div className={`form-grid sm:grid-cols-2 ${single && !editing ? "lg:grid-cols-3" : ""}`}>
+        <FormSection title="Desconto">
+          <div className="form-grid sm:grid-cols-2">
             <SelectField
               label="Tipo de desconto"
               name="discountType"
@@ -401,20 +446,6 @@ export function ServiceApplicationForm({
                 onCentsChange={(cents) => setDiscountValue(centsToNumber(cents))}
                 required
               />
-            )}
-            {single && !editing ? (
-              <IntegerField
-                className="sm:col-span-2 lg:col-span-1"
-                defaultValue={1}
-                hint="Divide a cobrança única em parcelas mensais a partir do primeiro vencimento."
-                label="Quantidade de parcelas"
-                max={120}
-                min={1}
-                name="installmentCount"
-                required
-              />
-            ) : (
-              <input name="installmentCount" type="hidden" value={service?.installmentCount ?? 1} />
             )}
           </div>
         </FormSection>

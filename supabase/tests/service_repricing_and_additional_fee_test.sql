@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(11);
 
 insert into auth.users (id, email)
 values ('85858585-8585-4585-8585-858585858585', 'repricing@example.test');
@@ -125,6 +125,41 @@ select results_eq(
       and status = 'pending'$$,
   array[0::numeric(15,2)],
   'A cobrança do ciclo promocional segue gratuita depois da edição'
+);
+
+-- A data da revisão acompanha o lembrete de reajuste na edição do serviço.
+select results_eq(
+  $$select public.update_client_service(
+    current_setting('test.repricing_service')::uuid,
+    'Site institucional renomeado', null,
+    1500, 'none', 0, 0, 0, true,
+    'single', current_date,
+    null, null, 6, 5, null
+  )$$,
+  $$values ('updated'::text)$$,
+  'Liga o lembrete de reajuste na edição'
+);
+select results_eq(
+  $$select next_adjustment_date from public.client_services
+    where id = current_setting('test.repricing_service')::uuid$$,
+  array[(current_date + interval '6 months')::date],
+  'Ligar o lembrete agenda a revisão a partir de hoje'
+);
+select results_eq(
+  $$with edited as (
+      select public.update_client_service(
+        current_setting('test.repricing_service')::uuid,
+        'Site institucional renomeado', null,
+        1500, 'none', 0, 0, 0, true,
+        'single', current_date,
+        null, null, null, null, null
+      ) as result
+    )
+    select edited.result = 'updated' and service.next_adjustment_date is null
+    from edited, public.client_services as service
+    where service.id = current_setting('test.repricing_service')::uuid$$,
+  array[true],
+  'Desligar o lembrete remove a data da revisão em vez de falhar'
 );
 
 select * from finish();
