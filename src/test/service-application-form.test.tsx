@@ -145,11 +145,25 @@ describe("formulário de serviço do cliente", () => {
     expect(document.querySelector('input[name="installmentCount"]')).toHaveValue("3");
     expect(screen.getByLabelText("Próximo vencimento")).toHaveValue("20/09/2026");
     expect(screen.getByRole("button", { name: "Salvar alterações" })).toBeInTheDocument();
-    // As parcelas já geradas aparecem só para consulta, e o resumo mostra a fatia e o total.
-    expect(screen.getByLabelText("Parcelas")).toBeDisabled();
+    // Sem pagamento, as parcelas podem mudar; o resumo mostra a fatia e o total.
+    expect(screen.getByRole("textbox", { name: "Parcelas" })).toBeEnabled();
     const summary = document.querySelector(".price-summary")!;
     expect(summary).toHaveTextContent(/3x de\s*R\$\s1\.996,67/);
     expect(summary).toHaveTextContent(/total R\$\s5\.990,00/);
+  });
+
+  it("trava as parcelas quando o serviço já tem pagamento", () => {
+    render(
+      <ServiceApplicationForm
+        catalog={catalog}
+        clientId={clientId}
+        service={{ ...service, hasPayments: true }}
+      />,
+    );
+
+    expect(screen.getByLabelText("Parcelas")).toBeDisabled();
+    expect(screen.getByLabelText("Parcelas")).toHaveValue("3 parcelas · travado após pagamento");
+    expect(document.querySelector('input[name="installmentCount"]')).toHaveValue("3");
   });
 
   it("mostra no resumo o preço promocional e o valor que vem depois", () => {

@@ -38,6 +38,8 @@ export type ClientServiceValues = {
   description: string | null;
   discountType: "fixed" | "none" | "percentage";
   discountValue: number;
+  /** Já existe cobrança paga: a quantidade de parcelas fica travada. */
+  hasPayments?: boolean;
   id: string;
   installmentCount: number;
   listPrice: number;
@@ -336,11 +338,15 @@ export function ServiceApplicationForm({
         />
         {/* Parcelas só existem em cobrança única. Ficam à vista, e não no bloco recolhido,
             porque mudam o valor de cada cobrança. */}
-        {single && !editing ? (
+        {single && !service?.hasPayments ? (
           <IntegerField
-            className="xl:col-span-3"
+            className={editing ? "xl:col-span-4" : "xl:col-span-3"}
             defaultValue={installments}
-            hint="Divide o valor em parcelas mensais a partir do primeiro vencimento."
+            hint={
+              editing
+                ? "Pode mudar enquanto nenhuma parcela foi paga: as pendentes são recriadas a partir do próximo vencimento."
+                : "Divide o valor em parcelas mensais a partir do primeiro vencimento."
+            }
             label="Parcelas"
             max={120}
             min={1}
@@ -351,7 +357,7 @@ export function ServiceApplicationForm({
         ) : (
           <input name="installmentCount" type="hidden" value={service?.installmentCount ?? 1} />
         )}
-        {single && editing && installmentCount > 1 ? (
+        {single && service?.hasPayments ? (
           <div className="field xl:col-span-4">
             <div className="field__head">
               <span className="field__label">Parcelas</span>
@@ -359,7 +365,7 @@ export function ServiceApplicationForm({
             <input
               aria-label="Parcelas"
               disabled
-              value={`${installmentCount} parcelas já geradas`}
+              value={`${installmentCount} ${installmentCount === 1 ? "parcela" : "parcelas"} · travado após pagamento`}
             />
           </div>
         ) : null}
