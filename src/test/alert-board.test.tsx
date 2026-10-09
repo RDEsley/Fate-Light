@@ -13,6 +13,8 @@ import {
   alertBucket,
   alertDeadline,
   googleCalendarUrl,
+  nextAlertDate,
+  parseAlertRecurrence,
   toAlertRows,
 } from "@/features/alerts/board";
 
@@ -87,6 +89,25 @@ describe("alert board rules", () => {
       owner: "Loja Verde Folha",
       urgent: false,
     });
+  });
+
+  it("calcula a próxima ocorrência a partir da data original e nunca no passado", () => {
+    expect(nextAlertDate("2026-10-05", "none", today)).toBeNull();
+    expect(nextAlertDate("2026-10-08", "weekly", today)).toBe("2026-10-15");
+    expect(nextAlertDate("2026-10-05", "monthly", today)).toBe("2026-11-05");
+    expect(nextAlertDate("2026-10-05", "annual", today)).toBe("2027-10-05");
+    // Resolvido com atraso: pula as ocorrências que já passaram.
+    expect(nextAlertDate("2026-09-01", "weekly", today)).toBe("2026-10-13");
+    expect(nextAlertDate("2026-07-31", "monthly", today)).toBe("2026-10-31");
+    // "Todo dia 31" continua no dia 31 depois de passar por um mês curto.
+    expect(nextAlertDate("2026-01-31", "monthly", "2026-02-10")).toBe("2026-02-28");
+    expect(nextAlertDate("2026-01-31", "monthly", "2026-03-01")).toBe("2026-03-31");
+  });
+
+  it("trata repetição desconhecida como lembrete que não se repete", () => {
+    expect(parseAlertRecurrence("monthly")).toBe("monthly");
+    expect(parseAlertRecurrence("daily")).toBe("none");
+    expect(parseAlertRecurrence(undefined)).toBe("none");
   });
 
   it("monta o evento de dia inteiro do Google Agenda", () => {
@@ -177,5 +198,36 @@ describe("AlertBoard", () => {
       "target",
       "_blank",
     );
+  });
+
+  it("mostra o cliente e a repetição do lembrete e leva à ficha dele", () => {
+    const linked = item({
+      clientId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      date: "2026-10-12",
+      id: "manual-22222222-2222-4222-8222-222222222222",
+      owner: "Padaria Pão Dourado",
+      recurrence: "monthly",
+      source: "manual",
+      subject: "Enviar relatório mensal",
+    });
+    render(<AlertBoard rows={toAlertRows([linked], today)} total={1} />);
+
+    expect(screen.getByText("Padaria Pão Dourado")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Enviar relatório mensal" }));
+
+    expect(screen.getByText("Repetição")).toBeInTheDocument();
+    expect(screen.getByText("Todo mês")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Abrir cliente" })).toHaveAttribute(
+      "href",
+      "/clientes/cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    );
+  });
+
+  it("não oferece repetição nem ficha do cliente onde elas não existem", () => {
+    renderBoard();
+
+    fireEvent.click(screen.getByRole("button", { name: "Enviar relatório" }));
+    expect(screen.queryByText("Repetição")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Abrir cliente" })).not.toBeInTheDocument();
   });
 });

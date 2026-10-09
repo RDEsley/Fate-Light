@@ -15,10 +15,15 @@ import { ManualAlertForm } from "./manual-alert-form";
 
 export const metadata: Metadata = { title: "Alertas" };
 
-const statusMessages: Record<string, { message: string; tone: "error" | "success" }> = {
+const statusMessages: Record<string, { message: string; tone: "error" | "success" | "warning" }> = {
   created: { message: "Alerta criado. Ele já está no seu radar.", tone: "success" },
   error: { message: "Não foi possível salvar o alerta. Tente novamente.", tone: "error" },
   invalid: { message: "Revise o título, a data e a prioridade.", tone: "error" },
+  "repeat-error": {
+    message: "Alerta resolvido, mas a próxima ocorrência não foi agendada. Crie-a de novo.",
+    tone: "warning",
+  },
+  repeated: { message: "Alerta resolvido. O próximo já está agendado.", tone: "success" },
   resolved: { message: "Alerta resolvido e retirado da lista aberta.", tone: "success" },
   snoozed: { message: "Alerta adiado. A nova data já vale no radar.", tone: "success" },
 };
@@ -30,7 +35,15 @@ export default async function AlertsPage({
 }) {
   const { status } = await searchParams;
   const context = await requireWorkspaceContext();
-  const attention = await getAttentionItems(context);
+  const [attention, { data: clients }] = await Promise.all([
+    getAttentionItems(context),
+    context.supabase
+      .from("clients")
+      .select("id, name, trade_name, commercial_status")
+      .eq("workspace_id", context.workspaceId)
+      .is("archived_at", null)
+      .order("name"),
+  ]);
   const today = isoDateInTimeZone(context.workspaceTimezone);
   const rows = toAlertRows(attention.items, today);
   const feedback = status ? (statusMessages[status] ?? statusMessages.error) : null;
@@ -47,7 +60,15 @@ export default async function AlertsPage({
     >
       {feedback ? <StatusToast message={feedback.message} tone={feedback.tone} /> : null}
       <FormPanel className="mb-5" description="Lembrete interno com data" title="Criar alerta">
-        <ManualAlertForm today={today} />
+        <ManualAlertForm
+          clients={(clients ?? []).map((client) => ({
+            id: client.id,
+            name: client.name,
+            status: client.commercial_status,
+            tradeName: client.trade_name,
+          }))}
+          today={today}
+        />
       </FormPanel>
 
       {attention.total > rows.length ? (

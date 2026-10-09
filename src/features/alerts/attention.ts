@@ -8,6 +8,8 @@ import { addDays, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/forma
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export type AttentionItem = {
+  /** Cliente vinculado a um lembrete avulso. */
+  clientId?: string | null;
   /** Data do vencimento em ISO. Quem agrupa por prazo lê daqui, nunca do texto de `meta`. */
   date: string;
   href: Route;
@@ -17,6 +19,8 @@ export type AttentionItem = {
   notes?: string | null;
   /** "Cliente · Empresa" de quem é o registro; ausente em lembrete e despesa da própria empresa. */
   owner?: string | null;
+  /** Repetição de um lembrete avulso (`none` quando não se repete). */
+  recurrence?: string;
   severity: "danger" | "warning";
   source: "adjustment" | "charge" | "domain" | "expense" | "manual";
   /** O registro em si, sem o prefixo de situação que `title` carrega. */
@@ -104,7 +108,9 @@ export const getAttentionItems = cache(async function getAttentionItems(
       .limit(50),
     context.supabase
       .from("manual_alerts")
-      .select("id, title, notes, due_on, severity", { count: "exact" })
+      .select("id, title, notes, due_on, severity, client_id, recurrence, clients(name)", {
+        count: "exact",
+      })
       .eq("workspace_id", context.workspaceId)
       .eq("state", "open")
       .order("due_on")
@@ -116,8 +122,11 @@ export const getAttentionItems = cache(async function getAttentionItems(
       date: alert.due_on,
       href: `/alertas#manual-${alert.id}` as Route,
       id: `manual-${alert.id}`,
+      clientId: alert.client_id,
       meta: `${alert.notes ? `${alert.notes} · ` : ""}${formatDatePtBr(alert.due_on)}`,
       notes: alert.notes,
+      owner: alert.clients?.name ?? null,
+      recurrence: alert.recurrence,
       severity: alert.severity as "danger" | "warning",
       source: "manual" as const,
       subject: alert.title,
