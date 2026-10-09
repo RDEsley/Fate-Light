@@ -96,7 +96,7 @@ export function AlertBoard({ rows, total }: { rows: AlertRow[]; total: number })
               type="button"
             >
               <span className="alert-filter__icon">
-                <Icon className="size-4" name={selected ? "check" : card.icon} />
+                <Icon className="size-4" name={card.icon} />
               </span>
               <span className="alert-filter__label">
                 {card.value === "all" ? "Total aberto" : alertBucketLabels[card.value]}

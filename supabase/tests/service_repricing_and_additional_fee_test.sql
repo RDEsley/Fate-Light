@@ -145,19 +145,17 @@ select results_eq(
   array[(current_date + interval '6 months')::date],
   'Ligar o lembrete agenda a revisão a partir de hoje'
 );
+select public.update_client_service(
+  current_setting('test.repricing_service')::uuid,
+  'Site institucional renomeado', null,
+  1500, 'none', 0, 0, 0, true,
+  'single', current_date,
+  null, null, null, null, null
+);
 select results_eq(
-  $$with edited as (
-      select public.update_client_service(
-        current_setting('test.repricing_service')::uuid,
-        'Site institucional renomeado', null,
-        1500, 'none', 0, 0, 0, true,
-        'single', current_date,
-        null, null, null, null, null
-      ) as result
-    )
-    select edited.result = 'updated' and service.next_adjustment_date is null
-    from edited, public.client_services as service
-    where service.id = current_setting('test.repricing_service')::uuid$$,
+  $$select next_adjustment_date is null and adjustment_interval_months is null
+    from public.client_services
+    where id = current_setting('test.repricing_service')::uuid$$,
   array[true],
   'Desligar o lembrete remove a data da revisão em vez de falhar'
 );
