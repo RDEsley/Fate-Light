@@ -47,6 +47,18 @@ describe("calendar file", () => {
     expect(file.endsWith("END:VCALENDAR\r\n")).toBe(true);
   });
 
+  it("dobra linhas longas em 75 bytes sem partir caractere acentuado e sem METHOD", () => {
+    const title = "Renovação do domínio da padaria com observação comprida ".repeat(3).trim();
+    const file = buildCalendarFile([{ date: "2026-12-31", id: "x", title }]);
+    const encoder = new TextEncoder();
+
+    for (const line of file.split("\r\n"))
+      expect(encoder.encode(line).length).toBeLessThanOrEqual(75);
+    expect(file).not.toContain("METHOD:");
+    // Desdobrar (tirar a quebra seguida de espaço) devolve o texto original.
+    expect(file.replaceAll("\r\n ", "")).toContain(`SUMMARY:${title}`);
+  });
+
   it("trata a mesma data como já levada e uma data nova como pendente", () => {
     expect(calendarKey({ date: "2026-10-05", id: "a" })).toBe("a|2026-10-05");
     expect(calendarKey({ date: "2026-10-06", id: "a" })).not.toBe("a|2026-10-05");
@@ -96,5 +108,20 @@ describe("CalendarExport", () => {
     const boxes = within(screen.getByRole("dialog")).getAllByRole("checkbox") as HTMLInputElement[];
     expect(boxes.map((box) => box.checked)).toEqual([false, true]);
     expect(within(screen.getByRole("dialog")).getByText("Na agenda")).toBeInTheDocument();
+  });
+
+  it("abre um alerta por vez no Google e o marca sem baixar arquivo", () => {
+    render(<CalendarExport rows={rows} />);
+    fireEvent.click(screen.getByRole("button", { name: /adicionar à agenda/i }));
+
+    const link = screen.getByRole("link", { name: "Abrir Alerta b no Google Agenda" });
+    expect(link).toHaveAttribute("target", "_blank");
+    link.addEventListener("click", (event) => event.preventDefault());
+    act(() => fireEvent.click(link));
+
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(JSON.parse(window.localStorage.getItem("fate-light:calendar-alerts") ?? "[]")).toEqual([
+      "b|2026-10-10",
+    ]);
   });
 });

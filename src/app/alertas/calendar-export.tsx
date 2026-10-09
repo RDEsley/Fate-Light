@@ -81,7 +81,7 @@ export function CalendarExport({ rows }: { rows: AlertRow[] }) {
         <Icon className="size-4" name="calendar" /> Adicionar à agenda
       </button>
       <Modal
-        description="Baixe um arquivo com os alertas escolhidos e importe no Google Agenda. Reimportar não duplica eventos."
+        description="Baixe um arquivo com os alertas escolhidos e importe na agenda, ou abra um por um no Google. Reimportar não duplica eventos."
         footer={
           <>
             <button className="modal-cancel" onClick={() => setOpen(false)} type="button">
@@ -147,6 +147,17 @@ export function CalendarExport({ rows }: { rows: AlertRow[] }) {
                   </span>
                 ) : null}
               </label>
+              {/* Um por um, sem arquivo: abre o evento pronto no Google e já marca o alerta. */}
+              <a
+                aria-label={`Abrir ${row.subject} no Google Agenda`}
+                className="calendar-pick__open"
+                href={row.calendarUrl}
+                onClick={() => markInCalendar([calendarKey(row)])}
+                rel="noreferrer noopener"
+                target="_blank"
+              >
+                Abrir no Google
+              </a>
             </li>
           ))}
         </ul>

@@ -4793,7 +4793,25 @@ summary.action-row__head {
   border-top: 1px solid var(--line);
 }
 
+.calendar-pick li {
+  display: flex;
+  align-items: center;
+}
+
+.calendar-pick__open {
+  flex: none;
+  margin-right: 0.6rem;
+  color: var(--brand-strong);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
 .calendar-pick label {
+  min-width: 0;
+  flex: 1;
   display: flex;
   cursor: pointer;
   align-items: center;
