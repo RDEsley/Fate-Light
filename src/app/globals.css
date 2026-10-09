@@ -398,49 +398,122 @@ summary::-webkit-details-marker {
   }
 }
 
+/* Bichinho do carregamento: pula, fecha os olhos no ar e achata ao cair; a sombra no chão
+   encolhe enquanto ele sobe. Corpo, olhos e sombra seguem o mesmo relógio. */
 .cartoon-loader {
+  --loader-cycle: 900ms;
+
   position: relative;
   display: block;
+  width: 3.4rem;
+  height: 4.6rem;
+}
+
+.cartoon-loader__body {
+  position: absolute;
+  bottom: 0.45rem;
+  left: 0.2rem;
   width: 3rem;
   height: 2.5rem;
-  border: 2px solid rgb(8 127 115 / 0.28);
-  border-radius: 42% 58% 48% 52%;
+  border: 2px solid rgb(8 127 115 / 0.32);
+  border-radius: 46% 54% 44% 56% / 58% 58% 42% 42%;
   background: var(--brand-soft);
-  box-shadow: 3px 3px 0 rgb(37 50 58 / 0.1);
-  animation: cartoon-loader-bob 880ms ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+  animation: cartoon-loader-jump var(--loader-cycle) cubic-bezier(0.3, 0, 0.3, 1) infinite;
 }
 
-.cartoon-loader::before,
-.cartoon-loader::after {
+/* Orelhinhas. */
+.cartoon-loader__body::before,
+.cartoon-loader__body::after {
   position: absolute;
-  top: 50%;
-  width: 0.38rem;
-  height: 0.38rem;
+  top: -0.42rem;
+  width: 0.7rem;
+  height: 0.8rem;
+  border: 2px solid rgb(8 127 115 / 0.32);
+  border-bottom: 0;
+  border-radius: 60% 60% 0 0;
+  background: var(--brand-soft);
+  content: "";
+}
+
+.cartoon-loader__body::before {
+  left: 0.35rem;
+  transform: rotate(-14deg);
+}
+
+.cartoon-loader__body::after {
+  right: 0.35rem;
+  transform: rotate(14deg);
+}
+
+/* Olhos: abertos no chão, fechados durante o salto. */
+.cartoon-loader__body i {
+  position: absolute;
+  top: 0.95rem;
+  width: 0.4rem;
+  height: 0.4rem;
   border-radius: 999px;
   background: var(--brand-strong);
-  content: "";
-  transform: translateY(-50%);
-  animation: cartoon-loader-dot 720ms ease-in-out infinite alternate;
+  animation: cartoon-loader-blink var(--loader-cycle) linear infinite;
 }
 
-.cartoon-loader::before {
-  left: 0.78rem;
+.cartoon-loader__body i:first-child {
+  left: 0.75rem;
 }
 
-.cartoon-loader::after {
-  right: 0.78rem;
-  animation-delay: 180ms;
+.cartoon-loader__body i:last-child {
+  right: 0.75rem;
 }
 
-@keyframes cartoon-loader-bob {
-  to {
-    transform: translateY(-0.22rem) rotate(-2deg);
+.cartoon-loader__shadow {
+  position: absolute;
+  bottom: 0;
+  left: 0.45rem;
+  width: 2.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: rgb(37 50 58 / 0.16);
+  animation: cartoon-loader-shadow var(--loader-cycle) cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+
+@keyframes cartoon-loader-jump {
+  0%,
+  100% {
+    transform: translateY(0) scale(1.14, 0.84);
+  }
+  14% {
+    transform: translateY(-0.35rem) scale(0.94, 1.08);
+  }
+  50% {
+    transform: translateY(-1.55rem) scale(1, 1);
+  }
+  86% {
+    transform: translateY(-0.35rem) scale(0.95, 1.07);
   }
 }
 
-@keyframes cartoon-loader-dot {
-  to {
-    transform: translateY(-0.8rem) scale(0.82);
+@keyframes cartoon-loader-blink {
+  0%,
+  12%,
+  88%,
+  100% {
+    transform: scaleY(1);
+  }
+  22%,
+  78% {
+    transform: scaleY(0.14);
+  }
+}
+
+@keyframes cartoon-loader-shadow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scaleX(0.55);
   }
 }
 
@@ -6106,6 +6179,9 @@ html[data-system-motion="off"] .landing-hero__word,
 html[data-system-motion="off"] .landing-hero__period,
 html[data-system-motion="off"] .landing-feather,
 html[data-system-motion="off"] .landing-water-cursor,
+html[data-system-motion="off"] .cartoon-loader__body,
+html[data-system-motion="off"] .cartoon-loader__body i,
+html[data-system-motion="off"] .cartoon-loader__shadow,
 html[data-system-motion="off"] .cartoon-loader {
   animation: none;
 }
