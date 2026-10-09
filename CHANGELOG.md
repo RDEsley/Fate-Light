@@ -5,6 +5,15 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-09
+
+### Changed
+
+- Durante o carregamento das telas do sistema, o menu lateral e a barra do topo continuam no
+  lugar e utilizáveis; só a área de conteúdo espera.
+- Nova animação de carregamento: o mascote pula, fecha os olhos no ar, achata ao cair e tem
+  sombra que encolhe com o salto.
+
 ## [0.14.1] - 2026-10-09
 
 ### Added
