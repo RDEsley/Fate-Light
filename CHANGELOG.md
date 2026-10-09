@@ -5,6 +5,18 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-09
+
+### Added
+
+- "Adicionar à agenda" na central de alertas: escolha vários alertas e baixe um arquivo de
+  agenda (.ics) para importar no Google Agenda. Reimportar não duplica eventos, e o que já foi
+  levado fica marcado como "Na agenda" neste navegador.
+
+### Changed
+
+- O botão "Antecedência" da central passa a se chamar "Config. alertas".
+
 ## [0.13.0] - 2026-10-09
 
 ### Added
