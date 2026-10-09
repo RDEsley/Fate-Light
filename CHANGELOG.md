@@ -22,7 +22,8 @@ projeto. O versionamento segue SemVer.
 - O guarda do modo visitante trata como ação qualquer destino com esquema que não seja http(s),
   e não só `javascript:` (alerta de code scanning).
 - Dependências atualizadas: Supabase JS 2.117.2, Zod 4.6.5, Vitest 5.0.3, jsdom 30.1.2,
-  PostCSS 8.5.29, CLI do Supabase 2.119.0 e tipos do Node 24.19.1.
+  PostCSS 8.5.29 e tipos do Node 24.19.1. A CLI do Supabase segue em 2.117.0: a 2.119 muda o
+  formato dos tipos gerados e será adotada à parte.
 
 ## [0.11.0] - 2026-10-08
 
