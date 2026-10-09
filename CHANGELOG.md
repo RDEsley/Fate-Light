@@ -5,6 +5,20 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-08
+
+### Changed
+
+- Resumo do serviço mostra o preço promocional em destaque e o valor que vem depois; em
+  cobrança única parcelada, a fatia de cada parcela e o total.
+- Parcelas ficam à vista ao criar um serviço de cobrança única, fora do bloco recolhido.
+- O cartão do serviço perdeu o atalho "Cobrança": a avulsa já tem painel próprio na ficha.
+
+### Fixed
+
+- Desligar o lembrete de reajuste ao editar um serviço mantinha "Revisar preço em…": a edição
+  não atualizava a data da revisão. Ligar o lembrete na edição também passa a agendá-la.
+
 ## [0.12.0] - 2026-10-08
 
 ### Added
