@@ -28,6 +28,39 @@ const navigation: { href: Route; icon: IconName; label: string }[] = [
   { href: "/importar", icon: "upload", label: "Importar dados" },
 ];
 
+const shellKey = "fate-light:shell";
+
+export type ShellIdentity = {
+  attentionTotal: number;
+  fullName: string;
+  guest: boolean;
+  workspaceName: string;
+};
+
+let shellCache: { raw: string | null; value: ShellIdentity | null } | null = null;
+
+/** Quem está usando o sistema, como visto na última tela aberta nesta aba. */
+export function readShellIdentity(): ShellIdentity | null {
+  try {
+    const raw = window.sessionStorage.getItem(shellKey);
+    // Mesma referência enquanto o texto não muda: o React compara por identidade.
+    if (shellCache?.raw === raw) return shellCache.value;
+    const parsed = raw ? (JSON.parse(raw) as Partial<ShellIdentity>) : null;
+    const value = parsed
+      ? {
+          attentionTotal: Number(parsed.attentionTotal) || 0,
+          fullName: String(parsed.fullName ?? ""),
+          guest: Boolean(parsed.guest),
+          workspaceName: String(parsed.workspaceName ?? ""),
+        }
+      : null;
+    shellCache = { raw, value };
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 export function AppFrame({
   actions,
   attentionItems,
@@ -36,6 +69,7 @@ export function AppFrame({
   description,
   fullName,
   guest = false,
+  loading = false,
   title,
   workspaceName,
 }: {
@@ -47,6 +81,8 @@ export function AppFrame({
   fullName: string;
   /** Modo visitante: dados fictícios, nenhuma ação é enviada. */
   guest?: boolean;
+  /** Moldura da tela de carregamento: só menu e barra do topo, sem título nem tutorial. */
+  loading?: boolean;
   title: string;
   workspaceName: string;
 }) {
@@ -69,6 +105,19 @@ export function AppFrame({
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [attentionItems]);
+
+  // A tela de carregamento reaproveita estes dados para manter nome e contador no lugar.
+  useEffect(() => {
+    if (loading) return;
+    try {
+      window.sessionStorage.setItem(
+        shellKey,
+        JSON.stringify({ attentionTotal, fullName, guest, workspaceName }),
+      );
+    } catch {
+      // Sem armazenamento da sessão a moldura de carregamento só fica sem nome.
+    }
+  }, [attentionTotal, fullName, guest, loading, workspaceName]);
 
   const toggleCollapsed = () => {
     setCollapsed((current) => {
@@ -332,6 +381,7 @@ export function AppFrame({
           <div
             className="mb-6 flex flex-wrap items-start justify-between gap-4"
             data-animate="enter"
+            hidden={loading}
           >
             <div className="max-w-3xl">
               <p className="text-brand-strong flex items-center gap-2 text-xs font-black tracking-[0.13em] uppercase">
@@ -369,7 +419,7 @@ export function AppFrame({
           <Icon className="size-4" name="menu" /> Mais
         </button>
       </nav>
-      <ProductTour />
+      {loading ? null : <ProductTour />}
     </main>
   );
 }
