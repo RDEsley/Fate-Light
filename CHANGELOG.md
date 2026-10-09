@@ -5,6 +5,13 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-09
+
+### Added
+
+- A quantidade de parcelas de um serviço de cobrança única pode ser alterada na edição enquanto
+  nenhuma parcela foi paga; depois do primeiro pagamento o campo fica travado.
+
 ## [0.12.1] - 2026-10-08
 
 ### Changed
