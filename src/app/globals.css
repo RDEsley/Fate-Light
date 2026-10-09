@@ -4655,11 +4655,10 @@ summary.action-row__head {
   transform: translateY(-1px);
 }
 
-/* Selecionado: borda cheia na cor do cartão, fundo suave e o ícone vira um "check". */
+/* Selecionado: só a borda na cor do cartão e um fundo bem leve. */
 .alert-filter[aria-pressed="true"] {
-  border-color: var(--alert-accent);
-  background: color-mix(in srgb, var(--alert-soft) 62%, var(--surface));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--alert-soft) 90%, transparent);
+  border-color: color-mix(in srgb, var(--alert-accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--alert-soft) 28%, var(--surface));
 }
 
 .alert-filter__icon {
@@ -4674,11 +4673,6 @@ summary.action-row__head {
   transition:
     background-color 160ms ease,
     color 160ms ease;
-}
-
-.alert-filter[aria-pressed="true"] .alert-filter__icon {
-  background: var(--alert-accent);
-  color: white;
 }
 
 .alert-filter__label {
