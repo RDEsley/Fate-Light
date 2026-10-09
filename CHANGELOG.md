@@ -5,6 +5,18 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-10-09
+
+### Added
+
+- No diálogo "Adicionar à agenda", cada alerta tem "Abrir no Google" para levar um por vez,
+  sem arquivo.
+
+### Fixed
+
+- Arquivo de agenda mais compatível: linhas dobradas em 75 bytes, como a norma exige, e sem o
+  campo METHOD, que alguns importadores recusam.
+
 ## [0.14.0] - 2026-10-09
 
 ### Added
