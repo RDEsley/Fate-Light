@@ -16,9 +16,12 @@ import {
   type AlertRow,
   type AlertSource,
 } from "@/features/alerts/board";
+import { calendarKey } from "@/features/alerts/calendar";
 import { formatDatePtBr } from "@/features/mvp/format";
 
 import { resolveManualAlert, snoozeManualAlert } from "./actions";
+import { useCalendarMarks } from "./calendar-export";
+import { markInCalendar } from "./calendar-store";
 
 type BucketFilter = AlertBucket | "all";
 type SourceFilter = AlertSource | "all";
@@ -173,7 +176,13 @@ export function AlertBoard({ rows, total }: { rows: AlertRow[]; total: number })
 
 function AlertListRow({ row }: { row: AlertRow }) {
   const kind = alertSources[row.source];
-  const subtitle = [row.urgent ? "Urgente" : null, row.owner, row.manualId ? row.notes : null]
+  const inCalendar = useCalendarMarks().includes(calendarKey(row));
+  const subtitle = [
+    row.urgent ? "Urgente" : null,
+    inCalendar ? "Na agenda" : null,
+    row.owner,
+    row.manualId ? row.notes : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -212,6 +221,16 @@ function AlertListRow({ row }: { row: AlertRow }) {
           <dt>Tipo</dt>
           <dd>{kind.label}</dd>
         </div>
+        {inCalendar ? (
+          <div>
+            <dt>Agenda</dt>
+            <dd>
+              <span className="calendar-mark">
+                <Icon className="size-3.5" name="check" /> Na agenda
+              </span>
+            </dd>
+          </div>
+        ) : null}
         <div>
           <dt>{row.manualId ? "Data do lembrete" : "Vencimento"}</dt>
           <dd>{formatDatePtBr(row.date)}</dd>
@@ -264,10 +283,12 @@ function AlertListRow({ row }: { row: AlertRow }) {
         <a
           className="service-action"
           href={row.calendarUrl}
+          onClick={() => markInCalendar([calendarKey(row)])}
           rel="noreferrer noopener"
           target="_blank"
         >
-          <Icon className="size-4" name="calendar" /> Adicionar ao Google Agenda
+          <Icon className="size-4" name="calendar" />{" "}
+          {inCalendar ? "Abrir de novo no Google Agenda" : "Adicionar ao Google Agenda"}
         </a>
       </div>
     </RecordRow>

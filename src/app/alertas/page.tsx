@@ -11,6 +11,7 @@ import { isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 import { AlertBoard } from "./alert-board";
+import { CalendarExport } from "./calendar-export";
 import { ManualAlertForm } from "./manual-alert-form";
 
 export const metadata: Metadata = { title: "Alertas" };
@@ -51,9 +52,12 @@ export default async function AlertsPage({
   return (
     <AccountShell
       actions={
-        <Link className="button button--secondary" href="/perfil#alertas">
-          <Icon className="size-4" name="settings" /> Antecedência
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {rows.length ? <CalendarExport rows={rows} /> : null}
+          <Link className="button button--secondary" href="/perfil#alertas">
+            <Icon className="size-4" name="settings" /> Config. alertas
+          </Link>
+        </div>
       }
       description="Veja o que venceu e o que está chegando antes de virar um problema."
       title="Central de alertas"
