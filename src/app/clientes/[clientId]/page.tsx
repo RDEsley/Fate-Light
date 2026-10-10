@@ -21,11 +21,15 @@ import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { archiveClient, deleteClient, restoreClient } from "../actions";
 import { ClientStatusMessage } from "../status-message";
 import { ChargeForm } from "./charge-form";
+import { ClientChargeHistory } from "./client-charge-history";
 import { ConsolidateClientPanel } from "./consolidate-client-panel";
 import { TransferClientPanel } from "./transfer-client-panel";
 import { ServiceApplicationForm } from "./service-application-form";
 import { ServiceCard } from "./service-card";
 import { ClientStatusSwitcher } from "./status-switcher";
+
+/** Linhas do histórico carregadas na ficha; o restante fica em Cobranças. */
+const historyLimit = 150;
 
 export const metadata: Metadata = { title: "Detalhes do cliente" };
 
@@ -104,10 +108,11 @@ export default async function ClientDetailsPage({
     context.supabase
       .from("charges")
       .select(
-        "client_service_id, client_entity_id, company_revenue, additional_fee, additional_fee_is_revenue, status, due_date",
+        "id, client_service_id, client_entity_id, description, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, due_date, paid_at, payment_method, delay_reason, cancel_reason, cancel_reason_code",
       )
       .eq("client_id", clientId.data)
-      .eq("workspace_id", context.workspaceId),
+      .eq("workspace_id", context.workspaceId)
+      .order("due_date", { ascending: false }),
     context.supabase
       .from("charges")
       .select(
@@ -215,6 +220,10 @@ export default async function ClientDetailsPage({
   const visibleServices = focusedEntityId
     ? (services ?? []).filter((service) => service.client_entity_id === focusedEntityId)
     : (services ?? []);
+  // O histórico respeita o recorte de empresa/marca escolhido no topo da ficha.
+  const historyCharges = (charges ?? []).filter(
+    (charge) => !focusedEntityId || charge.client_entity_id === focusedEntityId,
+  );
   const visiblePendingCharges = focusedEntityId
     ? (pendingCharges ?? []).filter((charge) => charge.client_entity_id === focusedEntityId)
     : (pendingCharges ?? []);
@@ -620,6 +629,63 @@ export default async function ClientDetailsPage({
               services={chargeServices}
             />
           </FormPanel>
+        </section>
+      ) : null}
+
+      {historyCharges.length ? (
+        <section className="panel-card mt-4" id="historico-cobrancas">
+          <div className="section-heading mb-4">
+            <span className="section-heading__icon bg-violet-soft text-violet">
+              <Icon name="history" />
+            </span>
+            <div>
+              <h2>Histórico de cobranças</h2>
+              <p>Tudo o que já foi cobrado deste cliente: pago, pendente e cancelado.</p>
+            </div>
+          </div>
+          <ClientChargeHistory
+            columns={chargeListColumns}
+            entries={historyCharges.slice(0, historyLimit).map((charge) => ({
+              id: charge.id,
+              node: (
+                <ChargeRow
+                  charge={{
+                    additionalFee: charge.additional_fee,
+                    additionalFeeIsRevenue: charge.additional_fee_is_revenue,
+                    cancelReason: charge.cancel_reason,
+                    cancelReasonCode: charge.cancel_reason_code,
+                    clientId: client.id,
+                    companyRevenue: charge.company_revenue,
+                    delayReason: charge.delay_reason,
+                    description: charge.description,
+                    dueDate: charge.due_date,
+                    entityName: charge.client_entity_id
+                      ? entityNames.get(charge.client_entity_id)
+                      : null,
+                    grossTotal: charge.gross_total,
+                    id: charge.id,
+                    mediaBudget: charge.media_budget,
+                    paidAt: charge.paid_at,
+                    paymentMethod: charge.payment_method,
+                    status: charge.status,
+                  }}
+                  anchorPrefix="history"
+                  context="history"
+                  headingLevel={3}
+                  returnTo={clientReturnTo}
+                  today={today}
+                />
+              ),
+              revenue: ownRevenue(charge),
+              status:
+                charge.status === "paid" || charge.status === "cancelled"
+                  ? charge.status
+                  : "pending",
+              year: charge.due_date.slice(0, 4),
+            }))}
+            head={chargeListLabels}
+            hidden={Math.max(0, historyCharges.length - historyLimit)}
+          />
         </section>
       ) : null}
 

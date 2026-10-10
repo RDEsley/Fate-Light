@@ -63,6 +63,7 @@ export type ChargeRowData = {
  */
 export function ChargeRow({
   charge,
+  anchorPrefix = "charge",
   context = "list",
   defaultOpen = false,
   headingLevel = 2,
@@ -71,7 +72,9 @@ export function ChargeRow({
 }: {
   charge: ChargeRowData;
   /** Na ficha do cliente o nome dele é redundante e a exclusão volta para a ficha. */
-  context?: "client" | "list";
+  /** Prefixo do id da linha, para a mesma cobrança poder aparecer em duas listas da página. */
+  anchorPrefix?: string;
+  context?: "client" | "history" | "list";
   defaultOpen?: boolean;
   headingLevel?: 2 | 3;
   returnTo: string;
@@ -90,7 +93,7 @@ export function ChargeRow({
     company_revenue: charge.companyRevenue,
   });
   const owner =
-    context === "client"
+    context !== "list"
       ? (charge.entityName ?? null)
       : [charge.clientName ?? "Cliente", charge.entityName].filter(Boolean).join(" · ");
   const lateDays = status === "overdue" ? daysBetween(charge.dueDate, today) : 0;
@@ -110,9 +113,9 @@ export function ChargeRow({
       }
       defaultOpen={defaultOpen}
       headingLevel={headingLevel}
-      id={`charge-${charge.id}`}
+      id={`${anchorPrefix}-${charge.id}`}
       quickAction={
-        charge.status === "pending" ? (
+        charge.status === "pending" && context !== "history" ? (
           <SettleChargeButton
             amountLabel={amountLabel}
             chargeId={charge.id}
@@ -176,9 +179,7 @@ export function ChargeRow({
         <div className="delay-reason-note">
           <Icon className="size-4" name="x" />
           <span>
-            <strong>
-              {cancellationLabels.get(charge.cancelReasonCode ?? "") ?? "Cancelada"}:
-            </strong>{" "}
+            <strong>{cancellationLabels.get(charge.cancelReasonCode ?? "") ?? "Cancelada"}:</strong>{" "}
             {charge.cancelReason}
           </span>
         </div>
@@ -223,7 +224,11 @@ export function ChargeRow({
           </form>
         ) : (
           <form action={deleteOperationalRecord}>
-            <input name="clientId" type="hidden" value={context === "client" ? charge.clientId : ""} />
+            <input
+              name="clientId"
+              type="hidden"
+              value={context === "list" ? "" : charge.clientId}
+            />
             <input name="id" type="hidden" value={charge.id} />
             <input name="recordType" type="hidden" value="charge" />
             <ConfirmDialog

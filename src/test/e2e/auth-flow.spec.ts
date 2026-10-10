@@ -244,9 +244,19 @@ test.describe("authenticated MVP journey", () => {
     await settleCharge(page, "Pendência operacional");
     await clickMainNav(page, "clientes");
     await page.getByRole("link", { name: "Cliente MVP", exact: true }).click();
-    await expect(page.locator("article").filter({ hasText: "Pendência operacional" })).toHaveCount(
-      0,
-    );
+    // Paga, ela sai das pendentes e passa a constar no histórico de cobranças da ficha.
+    await expect(
+      page.locator("#cobrancas-pendentes article").filter({ hasText: "Pendência operacional" }),
+    ).toHaveCount(0);
+    const history = page.locator("#historico-cobrancas");
+    await expect(
+      history.locator("article").filter({ hasText: "Pendência operacional" }),
+    ).toContainText("Paga");
+    await history.getByRole("button", { name: /^Pendentes/ }).click();
+    await expect(
+      history.locator("article").filter({ hasText: "Pendência operacional" }),
+    ).toHaveCount(0);
+    await history.getByRole("button", { name: /^Todas/ }).click();
 
     // Criar, pagar e excluir cobrança paga — Dashboard deixa de somar.
     chargePanel = page.locator("#nova-cobranca-avulsa");
