@@ -5,6 +5,18 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-10
+
+### Added
+
+- Histórico de cobranças na ficha do cliente: tudo o que já foi cobrado dele (pago, pendente e
+  cancelado), com filtros por situação e ano e o total recebido no recorte.
+
+### Fixed
+
+- Serviço recorrente ativo que ficou sem cobrança pendente não voltava ao ciclo: salvar o
+  serviço com o próximo vencimento agora repõe a cobrança que falta, sem duplicar.
+
 ## [0.15.0] - 2026-10-09
 
 ### Changed

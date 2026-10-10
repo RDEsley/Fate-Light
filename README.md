@@ -412,7 +412,7 @@ As instruções completas estão em:
 
 ## 📍 Status do projeto
 
-**Versão atual:** `0.15.0`
+**Versão atual:** `0.16.0`
 
 O Fate Light está em fase de preparação para a **V1**.
 
