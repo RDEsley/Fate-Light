@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(17);
 
 insert into auth.users (id, email)
 values ('85858585-8585-4585-8585-858585858585', 'repricing@example.test');
@@ -195,6 +195,40 @@ select results_eq(
     where client_service_id = current_setting('test.repricing_service')::uuid$$,
   array[5::bigint],
   'A recusa não mexe nas cobranças existentes'
+);
+
+-- Serviço recorrente que ficou sem cobrança pendente volta ao ciclo ao ser salvo.
+update public.charges
+set status = 'paid', paid_at = statement_timestamp(), payment_method = 'Pix'
+where client_service_id = current_setting('test.promo_service')::uuid
+  and status = 'pending';
+select public.update_client_service(
+  current_setting('test.promo_service')::uuid,
+  'Gestão promocional', null,
+  1000, 'none', 0, 0, 0, true,
+  'monthly', current_date + 30,
+  0, 4, null, null, null
+);
+select results_eq(
+  $$select count(*), min(due_date), sum(company_revenue) from public.charges
+    where client_service_id = current_setting('test.promo_service')::uuid
+      and status = 'pending'$$,
+  $$values (1::bigint, current_date + 30, 0::numeric)$$,
+  'Salvar o serviço repõe a cobrança do próximo vencimento'
+);
+select public.update_client_service(
+  current_setting('test.promo_service')::uuid,
+  'Gestão promocional', null,
+  1000, 'none', 0, 0, 0, true,
+  'monthly', current_date + 30,
+  0, 4, null, null, null
+);
+select results_eq(
+  $$select count(*) from public.charges
+    where client_service_id = current_setting('test.promo_service')::uuid
+      and status = 'pending'$$,
+  array[1::bigint],
+  'Salvar de novo não duplica a cobrança do ciclo'
 );
 
 select * from finish();
