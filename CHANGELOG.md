@@ -5,6 +5,14 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-10
+
+### Added
+
+- Página pública `/apoiar`, com link no rodapé da página inicial: doação voluntária por Pix ao
+  desenvolvedor, com valor sugerido ou livre, QR Code e código para copiar. O código é gerado no
+  navegador; o sistema não registra a doação nem fica sabendo quem doou.
+
 ## [0.16.0] - 2026-10-10
 
 ### Added
