@@ -104,7 +104,9 @@ export default function Home() {
                       <Icon name={item.icon} />
                     </span>
                     <div className="min-w-0">
-                      <h2 className="text-[0.95rem] font-semibold tracking-[-0.015em]">{item.title}</h2>
+                      <h2 className="text-[0.95rem] font-semibold tracking-[-0.015em]">
+                        {item.title}
+                      </h2>
                       <p className="text-muted mt-1 text-sm leading-6">{item.description}</p>
                     </div>
                   </article>
@@ -121,6 +123,9 @@ export default function Home() {
           </Link>
           <Link className="hover:text-brand-strong hover:underline" href="/privacidade">
             Política de Privacidade
+          </Link>
+          <Link className="hover:text-brand-strong hover:underline" href="/apoiar">
+            Apoiar o projeto
           </Link>
         </footer>
       </div>
