@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { Modal } from "@/components/ui/modal";
 
-import { JarArt, WaveArt } from "./donation-art";
+import { HeartArt, WaveArt } from "./donation-art";
 import {
   cardHidden,
   countVisit,
@@ -150,7 +150,7 @@ export function DonationInvite({ compact = false }: { compact?: boolean }) {
           </>
         ) : (
           <>
-            <JarArt className="mx-auto size-36" />
+            <HeartArt className="mx-auto size-36" />
             <p className="mt-3 text-sm leading-6">
               Se um dia quiser apoiar, abra o menu da sua conta e escolha{" "}
               <strong>Apoiar o Fate Light</strong>.
