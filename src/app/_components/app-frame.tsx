@@ -9,6 +9,8 @@ import { signOut } from "@/app/(auth)/actions";
 import { leaveGuestMode } from "@/app/(auth)/guest-actions";
 import { BrandMark } from "@/components/brand-mark";
 import { GuestGuard } from "@/components/guest-guard";
+import { DonationInvite } from "@/features/support/donation-invite";
+import { restoreCard } from "@/features/support/invite";
 import { DisclosureAutoScroll } from "@/components/ui/disclosure-auto-scroll";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { AttentionItem } from "@/features/alerts/attention";
@@ -198,6 +200,8 @@ export function AppFrame({
         </nav>
 
         <div className="border-line mt-3 border-t pt-3">
+          {/* O visitante da demonstração e a moldura de carregamento não recebem o convite. */}
+          {guest || loading ? null : <DonationInvite compact={collapsed} />}
           <button
             aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
             className="text-muted hover:bg-brand-soft hidden min-h-11 w-full items-center gap-3 rounded-xl px-3 font-bold lg:flex"
@@ -337,10 +341,12 @@ export function AppFrame({
                   icon="building"
                   label="Configurações da empresa"
                 />
+                <ProfileLink href="/apoiar" icon="sparkles" label="Apoiar o Fate Light" />
                 <form
                   action={guest ? leaveGuestMode : signOut}
                   className="border-t pt-1"
                   data-guest-allowed=""
+                  onSubmit={guest ? undefined : restoreCard}
                 >
                   <button
                     className="text-negative hover:bg-negative-soft flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold"

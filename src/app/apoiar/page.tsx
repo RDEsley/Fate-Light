@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrandMark } from "@/components/brand-mark";
+import { JarArt } from "@/features/support/donation-art";
 import { DonationPanel } from "@/features/support/donation-panel";
 
 export const metadata: Metadata = {
@@ -20,7 +21,8 @@ export default function SupportPage() {
           </Link>
         </div>
 
-        <h1 className="mt-8 text-3xl font-black tracking-tight">Apoiar o Fate Light</h1>
+        <JarArt className="mx-auto mt-6 size-36" />
+        <h1 className="mt-4 text-3xl font-black tracking-tight">Apoiar o Fate Light</h1>
         <p className="text-muted mt-3 text-sm leading-7">
           Usar o Fate Light não custa nada. Se ele ajuda a sua rotina e você quiser retribuir o
           trabalho de quem o desenvolve e mantém, pode doar qualquer valor por Pix.
