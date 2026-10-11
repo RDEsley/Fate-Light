@@ -7,7 +7,7 @@ atual publicada. O suporte a uma versão 1.0 será definido no respectivo releas
 
 | Versão     | Suporte                  |
 | ---------- | ------------------------ |
-| `0.17.0`   | Atual publicada          |
+| `0.18.0`   | Atual publicada          |
 | Anteriores | Sem manutenção planejada |
 
 ## Relatar uma vulnerabilidade
