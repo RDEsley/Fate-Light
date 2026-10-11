@@ -8,13 +8,38 @@ import { publicEnvironment } from "@/config/env/public";
 
 import "./globals.css";
 
+const appTitle = "Fate Light — Clareza financeira. Caminho certo.";
+const appDescription =
+  "Clientes, serviços, cobranças e despesas em um workspace claro para freelancers e pequenos negócios.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnvironment.NEXT_PUBLIC_APP_URL),
   title: {
     default: "Fate Light",
     template: "%s | Fate Light",
   },
-  description: "Fate Light — Clareza financeira. Caminho Certo.",
+  description: appDescription,
+  openGraph: {
+    type: "website",
+    siteName: "Fate Light",
+    title: appTitle,
+    description: appDescription,
+    url: publicEnvironment.NEXT_PUBLIC_APP_URL,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Fate Light — Clareza financeira. Caminho certo.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: appTitle,
+    description: appDescription,
+    images: ["/opengraph-image"],
+  },
   icons: {
     apple: "/favicons/favicon-180x180.png",
     icon: [
