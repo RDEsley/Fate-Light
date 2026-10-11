@@ -23,4 +23,15 @@ describe("Home", () => {
     expect(document.querySelector(".landing-hero__period")).toHaveTextContent(".");
     expect(document.querySelectorAll(".landing-feather")).toHaveLength(2);
   });
+
+  it("não trava a altura na tela, para a página rolar no celular", () => {
+    render(<Home />);
+
+    // A tela única, sem rolagem, só vale no desktop e é decidida no CSS (`.landing-page`).
+    const main = screen.getByRole("main");
+    expect(main).toHaveClass("landing-page");
+    expect(main).not.toHaveClass("h-dvh");
+    expect(main).not.toHaveClass("overflow-hidden");
+    expect(document.querySelector(".landing-page__inner")).toBeInTheDocument();
+  });
 });
