@@ -5,6 +5,8 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-10
+
 ### Added
 
 - Convite de doação: cartão dispensável no rodapé do menu e janela em duas etapas que abre sozinha
