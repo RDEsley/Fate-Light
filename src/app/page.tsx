@@ -33,13 +33,13 @@ const highlights: { description: string; icon: IconName; title: string; wide?: b
 
 export default function Home() {
   return (
-    <main className="landing-page text-foreground relative h-dvh overflow-hidden">
+    <main className="landing-page text-foreground relative">
       <LandingWaterCursor />
       <span aria-hidden="true" className="landing-bg landing-bg--one" />
       <span aria-hidden="true" className="landing-bg landing-bg--two" />
       <span aria-hidden="true" className="landing-bg landing-bg--three" />
 
-      <div className="relative z-[2] mx-auto flex h-full w-full max-w-7xl flex-col px-4 py-4 sm:px-7 lg:px-10">
+      <div className="landing-page__inner relative z-[2] mx-auto flex w-full max-w-7xl flex-col px-4 py-4 sm:px-7 lg:px-10">
         <header className="flex shrink-0 items-center justify-between">
           <BrandMark />
           <div className="flex items-center gap-2">

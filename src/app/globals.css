@@ -529,7 +529,30 @@ summary::-webkit-details-marker {
 
 /* Landing pública: CTAs e painel de preview operacional */
 .landing-page {
+  min-height: 100dvh;
+  /* Os brilhos de fundo saem pelas laterais; o corte é só horizontal para a página rolar. */
+  overflow-x: clip;
   background: var(--canvas);
+}
+
+.landing-page__inner {
+  min-height: 100dvh;
+}
+
+/*
+ * Tela única, sem rolagem, só quando o conteúdo cabe: desktop largo e alto. No celular (e em
+ * janelas baixas) o painel de preview fica abaixo do título e a página precisa rolar.
+ */
+@media (min-width: 64rem) and (min-height: 44rem) {
+  .landing-page {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .landing-page__inner {
+    height: 100%;
+    min-height: 0;
+  }
 }
 
 .landing-bg {

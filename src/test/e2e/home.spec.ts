@@ -15,6 +15,21 @@ test("abre o acesso seguro sem violações automáticas de acessibilidade", asyn
   expect(accessibilityResults.violations).toEqual([]);
 });
 
+test("a página inicial rola no celular até o rodapé", async ({ page }) => {
+  await page.setViewportSize({ height: 640, width: 360 });
+  await page.goto("/");
+
+  const footerLink = page.getByRole("link", { name: "Apoiar o projeto" });
+  await expect(footerLink).not.toBeInViewport();
+  const scrollable = await page.evaluate(
+    () => document.documentElement.scrollHeight > window.innerHeight,
+  );
+  expect(scrollable).toBe(true);
+
+  await page.mouse.wheel(0, 5000);
+  await expect(footerLink).toBeInViewport();
+});
+
 test("a página de apoio mostra o Pix do desenvolvedor com acessibilidade", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Apoiar o projeto" }).click();
