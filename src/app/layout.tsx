@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     url: publicEnvironment.NEXT_PUBLIC_APP_URL,
     images: [
       {
-        url: "/opengraph-image",
+        url: "/share-image",
         width: 1200,
-        height: 630,
+        height: 1200,
         alt: "Fate Light — Clareza financeira. Caminho certo.",
       },
     ],
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: appTitle,
     description: appDescription,
-    images: ["/opengraph-image"],
+    images: ["/share-image"],
   },
   icons: {
     apple: "/favicons/favicon-180x180.png",
