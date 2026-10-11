@@ -5,6 +5,8 @@ import { useId, useState } from "react";
 import { Field } from "@/components/ui/field";
 
 import { donation, donationCode, formatDonation, parseDonation } from "./donation";
+import { WaveArt } from "./donation-art";
+import { settleInvite } from "./invite";
 import { PixQrCode } from "./pix-qr-code";
 
 type Choice = "bank" | "custom" | `${number}`;
@@ -19,6 +21,7 @@ export function DonationPanel() {
   const [choice, setChoice] = useState<Choice>("bank");
   const [custom, setCustom] = useState("");
   const [copied, setCopied] = useState<"done" | "failed" | "idle">("idle");
+  const [thanked, setThanked] = useState(false);
 
   const amount =
     choice === "custom" ? parseDonation(custom) : choice === "bank" ? null : Number(choice);
@@ -37,6 +40,8 @@ export function DonationPanel() {
     try {
       await navigator.clipboard.writeText(code);
       setCopied("done");
+      setThanked(true);
+      settleInvite();
     } catch {
       // Sem permissão de área de transferência o código continua visível para copiar à mão.
       setCopied("failed");
@@ -119,6 +124,17 @@ export function DonationPanel() {
       <p aria-live="polite" className="text-muted -mt-2 text-center text-sm">
         {copied === "failed" ? "Não deu para copiar. Selecione o código acima e copie." : ""}
       </p>
+
+      {thanked ? (
+        <div className="bg-brand-soft flex items-center gap-3 rounded-xl p-3" role="status">
+          <WaveArt className="block h-[4.6rem] w-[5.25rem] shrink-0" />
+          <p className="text-sm leading-6">
+            <strong>Muito obrigado!</strong> Agora é só colar o código no Pix do seu banco. O Fate
+            Light não fica sabendo se o pagamento foi feito, então o agradecimento já fica aqui: sua
+            ajuda faz diferença de verdade.
+          </p>
+        </div>
+      ) : null}
 
       <ol className="text-muted list-decimal space-y-1 pl-5 text-sm leading-6">
         <li>No app do seu banco, abra o Pix e escolha “Ler QR Code” ou “Pix Copia e Cola”.</li>
