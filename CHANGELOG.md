@@ -5,6 +5,20 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-11
+
+### Changed
+
+- Quem recusa o convite de doação vê um coração de agradecimento no lugar do potinho, que
+  continua na página de apoio.
+
+### Fixed
+
+- A página inicial não rolava no celular: ela ficava travada na altura da tela e o painel de
+  resumo, abaixo do título, ficava cortado. A tela única agora só vale em janelas largas e altas.
+- O link no topo de `/apoiar` levava à página inicial mesmo para quem estava dentro do sistema.
+  Com conta aberta ou como visitante, ele agora volta ao painel.
+
 ## [0.18.0] - 2026-10-10
 
 ### Added
