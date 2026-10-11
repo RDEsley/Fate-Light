@@ -4,20 +4,37 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { JarArt } from "@/features/support/donation-art";
 import { DonationPanel } from "@/features/support/donation-panel";
+import { hasGuestCookie } from "@/lib/demo/session";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Apoiar o Fate Light",
   description: "Doação voluntária por Pix ao desenvolvedor do Fate Light.",
 };
 
-export default function SupportPage() {
+/**
+ * A página é pública (a landing também aponta para ela), mas quem chega de dentro do sistema,
+ * com conta ou como visitante, volta para o painel e não para a landing.
+ */
+async function resolveBackLink() {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase.auth.getClaims();
+  const insideApp = typeof data?.claims?.sub === "string" || (await hasGuestCookie());
+  return insideApp
+    ? ({ href: "/dashboard", label: "Voltar ao painel" } as const)
+    : ({ href: "/", label: "Voltar ao início" } as const);
+}
+
+export default async function SupportPage() {
+  const back = await resolveBackLink();
+
   return (
     <main className="min-h-screen px-4 py-5 sm:px-7 sm:py-8">
       <div className="mx-auto max-w-xl">
         <div className="flex items-center justify-between gap-4">
           <BrandMark />
-          <Link className="text-brand-strong text-sm font-bold hover:underline" href="/">
-            Voltar ao início
+          <Link className="text-brand-strong text-sm font-bold hover:underline" href={back.href}>
+            {back.label}
           </Link>
         </div>
 
