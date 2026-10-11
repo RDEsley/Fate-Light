@@ -5,6 +5,15 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+### Added
+
+- Convite de doação: cartão dispensável no rodapé do menu e janela em duas etapas que abre sozinha
+  uma única vez, a partir da quinta visita, com os botões travados por dois segundos. Dispensar o
+  cartão abre a janela mais uma vez e o esconde; ele volta depois de sair da conta. Não aparece no
+  modo visitante. A contagem de visitas fica só no navegador.
+- Agradecimento em `/apoiar` ao copiar o código Pix, animações na página e no convite, e o item
+  “Apoiar o Fate Light” no menu da conta.
+
 ## [0.17.0] - 2026-10-10
 
 ### Added
