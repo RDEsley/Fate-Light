@@ -27,18 +27,18 @@ export const metadata: Metadata = {
     url: publicEnvironment.NEXT_PUBLIC_APP_URL,
     images: [
       {
-        url: "/share-image",
-        width: 1200,
-        height: 1200,
-        alt: "Fate Light — Clareza financeira. Caminho certo.",
+        url: "/favicons/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Logo original do Fate Light",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: appTitle,
     description: appDescription,
-    images: ["/share-image"],
+    images: ["/favicons/logo.png"],
   },
   icons: {
     apple: "/favicons/favicon-180x180.png",
