@@ -3,7 +3,13 @@ import Link from "next/link";
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
-    <Link aria-label="Fate Light — ir para o dashboard" className="brand-mark" href="/dashboard">
+    // Versão completa: o nome vem do texto visível (a regra de acessibilidade exige que o rótulo
+    // contenha o que se vê). Só a versão compacta, sem texto, precisa de aria-label.
+    <Link
+      aria-label={compact ? "Fate Light — ir para o dashboard" : undefined}
+      className="brand-mark"
+      href="/dashboard"
+    >
       <span className="brand-mark__image">
         <Image alt="" fill priority sizes="48px" src="/favicons/logo.png" />
       </span>

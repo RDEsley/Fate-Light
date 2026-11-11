@@ -318,7 +318,6 @@ export function AppFrame({
 
             <details className="group relative">
               <summary
-                aria-label="Abrir menu do perfil"
                 className="hover:bg-brand-soft flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-1.5 sm:px-2"
                 role="button"
               >
@@ -329,6 +328,8 @@ export function AppFrame({
                   {fullName}
                 </span>
                 <Icon className="text-muted hidden size-4 md:block" name="chevron-down" />
+                {/* Depois do texto visível, para o nome acessível conter o que se vê. */}
+                <span className="sr-only">Abrir menu do perfil</span>
               </summary>
               <div className="panel-card absolute top-[calc(100%+0.65rem)] right-0 z-40 w-64 p-2!">
                 <div className="border-b px-3 py-2">
