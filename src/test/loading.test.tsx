@@ -37,7 +37,7 @@ describe("Loading", () => {
 
     expect(screen.getByRole("navigation", { name: "Navegação principal" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /cobranças/i, current: "page" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Abrir menu do perfil" })).toHaveTextContent(
+    expect(screen.getByRole("button", { name: /abrir menu do perfil/i })).toHaveTextContent(
       "Pessoa Exemplo",
     );
     expect(screen.getByRole("status")).toHaveTextContent(/carregando/i);
