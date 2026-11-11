@@ -5,6 +5,17 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+### Security
+
+- Next.js 16.4.6, zod 4.6.7 e undici 8.12.4 corrigem os avisos altos e críticos que derrubavam
+  `npm run security:audit`; a exceção do `braces`, que deixou de aparecer, foi removida.
+
+### Changed
+
+- Dependências de produção e de desenvolvimento atualizadas (React 19.3.1, Supabase JS 2.118.0,
+  Playwright 1.65.0, Vitest 5.1.0 e demais correções) e actions do CI (`setup-node` 7.1.0,
+  `upload-artifact` 7.0.2).
+
 ## [0.19.0] - 2026-10-11
 
 ### Changed

@@ -5,12 +5,7 @@ import { execSync } from "node:child_process";
  * continuar barrando qualquer aviso alto ou crítico novo sem ficar vermelho para sempre
  * por um que não tem correção publicada. Remova a entrada assim que houver versão corrigida.
  */
-const acceptedAdvisories = new Map([
-  [
-    "GHSA-vfj7-8cjw-p6xm",
-    "braces <=3.0.3 sem versão corrigida; chega só por @next/eslint-plugin-next (lint), fora do app em produção.",
-  ],
-]);
+const acceptedAdvisories = new Map([]);
 
 const blockingSeverities = new Set(["critical", "high"]);
 
