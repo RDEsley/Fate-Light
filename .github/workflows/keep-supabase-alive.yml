@@ -1,0 +1,102 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Cron do GitHub usa UTC: 00:23, 06:23, 12:23 e 18:23 em Brasília (UTC-3).
+    # Evita o minuto 00, quando execuções agendadas atrasam ou são descartadas.
+    - cron: "23 3,9,15,21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-supabase-alive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_PING_PATH: ${{ secrets.SUPABASE_PING_PATH }}
+
+    steps:
+      - name: Validar configuração
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_URL:-}" || { echo '::error::SUPABASE_URL não configurada'; exit 1; }
+          test -n "${SUPABASE_ANON_KEY:-}" || { echo '::error::SUPABASE_ANON_KEY não configurada'; exit 1; }
+
+      - name: Consultar banco do Supabase
+        run: |
+          set -euo pipefail
+
+          # legal_documents é a única tabela legível pela chave pública (policy
+          # legal_documents_select_current_public); a consulta chega ao Postgres de verdade.
+          base_url="${SUPABASE_URL%/}"
+          ping_path="${SUPABASE_PING_PATH:-rest/v1/legal_documents?select=id&limit=1}"
+          ping_path="${ping_path#/}"
+          endpoint="${base_url}/${ping_path}"
+          response_file="$(mktemp)"
+
+          cleanup() {
+            rm -f "${response_file}"
+          }
+          trap cleanup EXIT
+
+          set +e
+          http_status=$(curl \
+            --silent \
+            --show-error \
+            --fail-with-body \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --connect-timeout 15 \
+            --max-time 45 \
+            --output "${response_file}" \
+            --write-out '%{http_code}' \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H 'Accept: application/json' \
+            -H 'Cache-Control: no-cache' \
+            "${endpoint}")
+          curl_exit=$?
+          set -e
+
+          if [ "${curl_exit}" -ne 0 ]; then
+            echo "::error::Falha ao consultar o Supabase (curl exit ${curl_exit}, HTTP ${http_status:-000})."
+            if [ -s "${response_file}" ]; then
+              echo 'Resposta do Supabase:'
+              cat "${response_file}"
+            fi
+            exit 1
+          fi
+
+          if [[ ! "${http_status}" =~ ^2[0-9][0-9]$ ]]; then
+            echo "::error::Supabase respondeu com HTTP ${http_status}."
+            if [ -s "${response_file}" ]; then
+              echo 'Resposta do Supabase:'
+              cat "${response_file}"
+            fi
+            exit 1
+          fi
+
+          # Resposta vazia ("[]") não prova que o banco respondeu; exige ao menos uma linha.
+          if ! grep -q '"id"' "${response_file}"; then
+            echo '::error::A consulta não devolveu linhas; confira a policy de legal_documents.'
+            exit 1
+          fi
+
+          echo "Consulta real ao banco concluída com sucesso (HTTP ${http_status})."
+
+      - name: Diagnóstico da falha
+        if: failure()
+        run: |
+          set -u
+          host=$(echo "${SUPABASE_URL}" | cut -d/ -f3)
+          echo "Host: ${host}"
+          nslookup "${host}" || true
