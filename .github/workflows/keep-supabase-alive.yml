@@ -36,6 +36,14 @@ jobs:
 
           # legal_documents é a única tabela legível pela chave pública (policy
           # legal_documents_select_current_public); a consulta chega ao Postgres de verdade.
+          # Secrets colados à mão costumam trazer espaço, quebra de linha ou aspas.
+          clean() { printf '%s' "$1" | tr -d '[:space:]"'"'"; }
+          SUPABASE_URL="$(clean "${SUPABASE_URL}")"
+          SUPABASE_ANON_KEY="$(clean "${SUPABASE_ANON_KEY}")"
+          if [[ ! "${SUPABASE_URL}" =~ ^https://[a-z0-9-]+\.supabase\.co/?$ ]]; then
+            echo '::error::SUPABASE_URL inválida: use https://<ref-do-projeto>.supabase.co, sem caminho.'
+            exit 1
+          fi
           base_url="${SUPABASE_URL%/}"
           ping_path="${SUPABASE_PING_PATH:-rest/v1/legal_documents?select=id&limit=1}"
           ping_path="${ping_path#/}"
