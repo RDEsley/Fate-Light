@@ -2,32 +2,53 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
-import { Icon, type IconName } from "@/components/ui/icon";
 
 type AuthShellProps = {
   children: ReactNode;
-  eyebrow: string;
+  /** Contexto curto acima do título; login e cadastro dispensam, o título já diz tudo. */
+  eyebrow?: string;
   title: string;
   description?: string;
 };
 
-const highlights: { detail: string; icon: IconName; label: string }[] = [
-  {
-    icon: "check",
-    label: "Acesso protegido",
-    detail: "Sessão segura e workspace isolado.",
-  },
-  {
-    icon: "history",
-    label: "Histórico auditável",
-    detail: "Movimentações com rastreio claro.",
-  },
-  {
-    icon: "dashboard",
-    label: "Operação unificada",
-    detail: "Clientes, cobranças e vencimentos juntos.",
-  },
-];
+const scenePath = "M40 310C90 310 100 250 150 240C200 230 210 170 260 160C310 150 320 90 350 60";
+const milestones = [
+  [150, 240],
+  [260, 160],
+] as const;
+
+/**
+ * Cena do painel lateral: um caminho que se desenha até um ponto de luz, resolvendo dois
+ * marcos no trajeto. SVG animado por CSS em vez de vídeo: não pesa no carregamento, fica
+ * nítido em qualquer tela e para quando o usuário pede menos movimento.
+ */
+function PathScene() {
+  return (
+    <svg aria-hidden="true" className="auth-scene" fill="none" viewBox="0 0 400 360">
+      <defs>
+        <radialGradient id="auth-scene-glow">
+          <stop offset="0%" stopColor="var(--brand)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="var(--brand)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <path className="auth-scene__track" d={scenePath} />
+      <path className="auth-scene__path" d={scenePath} pathLength={1} />
+      <circle className="auth-scene__start" cx="40" cy="310" r="5" />
+      {milestones.map(([x, y], index) => (
+        <g
+          className="auth-scene__milestone"
+          key={x}
+          style={{ animationDelay: `${0.9 + index * 0.8}s` }}
+        >
+          <circle cx={x} cy={y} r="11" />
+          <path d={`M${x - 4.5} ${y}l3 3 6-6.5`} />
+        </g>
+      ))}
+      <circle className="auth-scene__glow" cx="350" cy="60" fill="url(#auth-scene-glow)" r="42" />
+      <circle className="auth-scene__light" cx="350" cy="60" r="9" />
+    </svg>
+  );
+}
 
 export function AuthShell({ children, description, eyebrow, title }: AuthShellProps) {
   return (
@@ -35,35 +56,15 @@ export function AuthShell({ children, description, eyebrow, title }: AuthShellPr
       <div className="auth-shell__ambient" aria-hidden="true">
         <span className="auth-shell__orb auth-shell__orb--a" />
         <span className="auth-shell__orb auth-shell__orb--b" />
-        <span className="auth-shell__orb auth-shell__orb--c" />
       </div>
 
       <div className="auth-shell__stage">
         <aside className="auth-shell__showcase">
-          <div className="auth-shell__mesh" aria-hidden="true" />
           <div className="auth-shell__showcase-inner">
             <BrandMark />
             <div className="auth-shell__showcase-body">
-              <p className="auth-shell__kicker">Fate Light</p>
-              <h2 className="auth-shell__showcase-title">
-                A rotina financeira com a clareza de um produto sério.
-              </h2>
-              <p className="auth-shell__showcase-copy">
-                Feito para operar no dia a dia — com foco, rastreio e zero ruído.
-              </p>
-              <ul className="auth-shell__highlights" aria-label="Diferenciais">
-                {highlights.map(({ detail, icon, label }) => (
-                  <li className="auth-shell__highlight" key={label}>
-                    <span aria-hidden="true" className="auth-shell__highlight-icon">
-                      <Icon className="size-4" name={icon} />
-                    </span>
-                    <span>
-                      <strong>{label}</strong>
-                      <small>{detail}</small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <PathScene />
+              <p className="auth-shell__showcase-title">Cada vencimento no seu lugar.</p>
             </div>
             <p className="auth-shell__credit">Desenvolvido pela Fate Eight Tech.</p>
           </div>
@@ -81,8 +82,7 @@ export function AuthShell({ children, description, eyebrow, title }: AuthShellPr
 
           <div className="auth-shell__workspace-main">
             <div className="auth-shell__card">
-              <div className="auth-shell__card-accent" aria-hidden="true" />
-              <p className="auth-shell__eyebrow">{eyebrow}</p>
+              {eyebrow ? <p className="auth-shell__eyebrow">{eyebrow}</p> : null}
               <h1 className="auth-shell__title">{title}</h1>
               {description ? <p className="auth-shell__description">{description}</p> : null}
               <div className="auth-shell__card-body">{children}</div>

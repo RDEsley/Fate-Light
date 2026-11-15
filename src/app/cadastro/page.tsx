@@ -17,7 +17,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
   const { status } = await searchParams;
 
   return (
-    <AuthShell eyebrow="Criar conta" title="Crie seu workspace.">
+    <AuthShell title="Crie seu workspace.">
       <PasswordForm mode="signup" nextPath="/onboarding" status={status} />
     </AuthShell>
   );
