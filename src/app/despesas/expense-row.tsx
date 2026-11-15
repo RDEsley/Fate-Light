@@ -1,7 +1,6 @@
 import {
   deleteOperationalRecord,
   deletePaidFinancialRecord,
-  markExpensePaid,
   stopExpenseRecurrence,
 } from "@/app/_actions/mvp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -12,12 +11,16 @@ import {
 import { RecordCell, RecordRow } from "@/components/ui/record-row";
 import { daysBetween, formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 
+import { EditExpenseButton } from "./edit-expense-button";
+import { SettleExpenseButton } from "./settle-expense-button";
+
 /** Colunas da lista de despesas em tela larga; a lista e as linhas usam a mesma medida. */
 export const expenseColumns = "minmax(0, 1fr) 7.5rem 5.5rem 6.25rem 8rem 5.5rem 1rem";
 export const expenseColumnLabels = ["Despesa", "Vencimento", "Tipo", "Situação", "Valor", "", ""];
 
 export type ExpenseRowData = {
   amount: number | string;
+  category: string;
   categoryLabel: string;
   clientName?: string | null;
   description: string;
@@ -28,6 +31,7 @@ export type ExpenseRowData = {
   id: string;
   /** Faz parte de uma série mensal (fixa com recorrência). */
   monthly: boolean;
+  notes?: string | null;
   paidAt?: string | null;
   recurrenceActive: boolean;
   status: string;
@@ -39,10 +43,12 @@ export type ExpenseRowData = {
  * nos detalhes.
  */
 export function ExpenseRow({
+  categoryOptions,
   defaultOpen = false,
   expense,
   today,
 }: {
+  categoryOptions: { label: string; value: string }[];
   defaultOpen?: boolean;
   expense: ExpenseRowData;
   today: string;
@@ -73,23 +79,12 @@ export function ExpenseRow({
       id={`expense-${expense.id}`}
       quickAction={
         paid ? null : (
-          <form action={markExpensePaid}>
-            <input name="id" type="hidden" value={expense.id} />
-            <ConfirmDialog
-              className="button button--primary button--small"
-              confirmLabel="Marcar como paga"
-              confirmation={
-                seriesRunning
-                  ? `${formatCurrency(expense.amount)} · o pagamento é registrado hoje e a próxima ocorrência mensal é criada automaticamente.`
-                  : `${formatCurrency(expense.amount)} · o pagamento é registrado com a data de hoje.`
-              }
-              icon="wallet"
-              label="Pagar"
-              title={`Pagar ${expense.description}`}
-              tone="default"
-              triggerLabel={`Pagar ${expense.description}`}
-            />
-          </form>
+          <SettleExpenseButton
+            amountLabel={formatCurrency(expense.amount)}
+            description={expense.description}
+            expenseId={expense.id}
+            monthly={seriesRunning}
+          />
         )
       }
       status={
@@ -129,6 +124,7 @@ export function ExpenseRow({
           </div>
         ) : null}
       </dl>
+      {expense.notes ? <p className="service-note">{expense.notes}</p> : null}
 
       {paid ? (
         <FiscalDocumentPanel
@@ -139,6 +135,20 @@ export function ExpenseRow({
       ) : null}
 
       <div className="record-actions">
+        {paid ? null : (
+          <EditExpenseButton
+            categoryOptions={categoryOptions}
+            expense={{
+              amount: expense.amount,
+              category: expense.category,
+              description: expense.description,
+              dueDate: expense.dueDate,
+              id: expense.id,
+              monthly: seriesRunning,
+              notes: expense.notes,
+            }}
+          />
+        )}
         {seriesRunning ? (
           <form action={stopExpenseRecurrence}>
             <input name="id" type="hidden" value={expense.id} />

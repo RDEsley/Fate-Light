@@ -12,7 +12,9 @@ vi.mock("@/app/_actions/mvp", () => ({
   reactivateDomain: vi.fn(),
   recordChargeDelayReason: vi.fn(),
   stopExpenseRecurrence: vi.fn(),
+  updateCharge: vi.fn(),
   updateDomain: vi.fn(),
+  updateExpense: vi.fn(),
 }));
 vi.mock("@/app/_actions/fiscal-documents", () => ({
   deleteFiscalDocument: vi.fn(),
@@ -44,8 +46,14 @@ const charge = {
   status: "pending",
 };
 
+const categoryOptions = [
+  { label: "Ferramentas", value: "tools" },
+  { label: "Outros", value: "other" },
+];
+
 const expense = {
   amount: 249,
+  category: "tools",
   categoryLabel: "Ferramentas",
   description: "Ferramenta de automação",
   dueDate: "2026-10-06",
@@ -229,6 +237,7 @@ describe("charge row", () => {
     expect(screen.queryByRole("button", { name: /receber/i })).not.toBeInTheDocument();
     expect(screen.getByText("05/10/2026 · Pix")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Excluir paga" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^editar/i })).not.toBeInTheDocument();
 
     rerender(
       <ChargeRow
@@ -253,7 +262,7 @@ describe("charge row", () => {
 
 describe("expense row", () => {
   it("avisa que pagar uma despesa mensal já agenda a próxima", () => {
-    render(<ExpenseRow expense={expense} today={today} />);
+    render(<ExpenseRow categoryOptions={categoryOptions} expense={expense} today={today} />);
 
     expect(screen.getByText("Vencida")).toBeInTheDocument();
     expect(screen.getByText("há 2 dias")).toBeInTheDocument();
@@ -265,16 +274,39 @@ describe("expense row", () => {
   });
 
   it("oferece parar a série e excluir nos detalhes da despesa pendente", () => {
-    render(<ExpenseRow defaultOpen expense={expense} today={today} />);
+    render(
+      <ExpenseRow categoryOptions={categoryOptions} defaultOpen expense={expense} today={today} />,
+    );
 
     expect(screen.getByText("Série mensal ativa")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Parar mensal" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Excluir" })).toBeInTheDocument();
   });
 
+  it("edita a despesa a pagar já preenchida e mostra as observações", () => {
+    render(
+      <ExpenseRow
+        categoryOptions={categoryOptions}
+        defaultOpen
+        expense={{ ...expense, notes: "Plano anual negociado" }}
+        today={today}
+      />,
+    );
+
+    expect(screen.getByText("Plano anual negociado")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: `Editar ${expense.description}` }));
+    const dialog = within(screen.getByRole("dialog"));
+    expect(dialog.getByLabelText(/descrição/i)).toHaveValue(expense.description);
+    expect(dialog.getByLabelText(/vencimento/i)).toHaveValue("06/10/2026");
+    expect(dialog.getByRole("note")).toHaveTextContent(/próxima ocorrência/i);
+    const form = dialog.getByRole("button", { name: "Salvar alterações" }).closest("form")!;
+    expect(form.querySelector('input[name="id"]')).toHaveValue(expense.id);
+  });
+
   it("troca pagar por excluir e notas fiscais quando a despesa já foi paga", () => {
     render(
       <ExpenseRow
+        categoryOptions={categoryOptions}
         defaultOpen
         expense={{
           ...expense,

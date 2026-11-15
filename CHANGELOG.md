@@ -5,6 +5,26 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-15
+
+### Added
+
+- Data do pagamento ao receber cobrança ou pagar despesa, já preenchida com hoje; a receita e o
+  custo caem no mês em que o dinheiro de fato entrou ou saiu (ADR-0023).
+- "Receber vencidas" na ficha do cliente quita de uma vez as cobranças vencidas listadas.
+- Despesa a pagar pode ser editada (descrição, valor, vencimento, categoria e observações).
+- A edição da cobrança permite trocar a empresa/marca do cliente.
+
+### Changed
+
+- Login e cadastro mais limpos: o painel lateral mostra só a marca, uma animação leve em SVG e uma
+  frase.
+- Pagar despesa usa um diálogo próprio, como o de receber cobrança.
+
+### Fixed
+
+- As observações da despesa passam a aparecer nos detalhes.
+
 ## [0.20.0] - 2026-11-15
 
 ### Added

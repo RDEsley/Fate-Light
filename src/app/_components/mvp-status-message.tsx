@@ -14,6 +14,7 @@ const messages: Record<string, string> = {
   invalid: "Revise os campos informados.",
   "delay-recorded": "Motivo do atraso registrado no histórico.",
   paid: "Pagamento registrado. A cobrança foi para o bloco das resolvidas e o próximo ciclo já está agendado.",
+  "payment-date-invalid": "A data do pagamento não pode estar no futuro.",
   "paid-deleted":
     "Registro pago excluído. A receita ou o custo saiu do dashboard e as notas fiscais anexadas foram removidas.",
   "paid-deleted-storage-pending":
@@ -21,6 +22,7 @@ const messages: Record<string, string> = {
   "expense-next-scheduled":
     "Despesa marcada como paga e próxima ocorrência mensal criada automaticamente.",
   "expense-already-settled": "Esta despesa já estava paga. Nenhuma nova ocorrência foi criada.",
+  "expense-updated": "Despesa atualizada.",
   "expense-not-recurring": "Esta despesa não faz parte de uma série mensal.",
   "expense-recurrence-stopped":
     "Recorrência mensal encerrada. Novas ocorrências deixam de ser criadas automaticamente.",

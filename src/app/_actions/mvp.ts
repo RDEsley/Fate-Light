@@ -11,16 +11,19 @@ import {
   chargeSchema,
   delayReasonSchema,
   domainSchema,
+  expenseEditSchema,
   expenseSchema,
   financialReturnToSchema,
   identifierSchema,
   optional,
+  paidOnSchema,
   operationalDeletionSchema,
   paidFinancialDeletionSchema,
   paymentSchema,
   serviceScheduleSchema,
   serviceStateSchema,
 } from "@/features/mvp/schemas";
+import { isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { revalidateFinancialSurfaces } from "@/lib/cache/revalidate-financial-surfaces";
 import { revalidatePath } from "next/cache";
@@ -33,6 +36,15 @@ function statusRedirect(path: string, status: string): never {
 function resolveFinancialReturnTo(raw: FormDataEntryValue | null, fallback: string): string {
   const parsed = financialReturnToSchema.safeParse(String(raw ?? "").trim());
   return parsed.success ? parsed.data : fallback;
+}
+
+/**
+ * Data do pagamento só vale até hoje no fuso do workspace. O banco repete a regra; aqui ela
+ * vira mensagem antes da ida ao banco. Vazia significa "agora" e não é enviada.
+ */
+function acceptedPaidOn(paidOn: string, workspaceTimezone: string): string | null | undefined {
+  if (!paidOn) return undefined;
+  return paidOn <= isoDateInTimeZone(workspaceTimezone) ? paidOn : null;
 }
 
 function parsePaidDeleteResult(data: unknown): {
@@ -352,7 +364,23 @@ export async function updateCharge(_state: ActionState, formData: FormData): Pro
   }
   const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
   const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
+  // A empresa/marca só muda quando o formulário a oferece (cliente com empresas ativas). Sem
+  // o campo, o vínculo atual fica como está — inclusive com empresa já arquivada.
+  let entityChange: { client_entity_id: string | null } | null = null;
+  if (formData.has("clientEntityId")) {
+    const clientId = identifierSchema.safeParse(formData.get("clientId"));
+    const entityId = String(formData.get("clientEntityId") ?? "").trim();
+    const entity = clientId.success
+      ? await resolveClientEntity(supabase, workspaceId, clientId.data, entityId)
+      : {};
+    if (!clientId.success || entity.id === undefined) {
+      return rejectSubmission(formData, foreignEntityMessage, {
+        clientEntityId: foreignEntityMessage,
+      });
+    }
+    entityChange = { client_entity_id: entity.id };
+  }
+  let request = supabase
     .from("charges")
     .update({
       additional_fee: values.data.additionalFee,
@@ -362,12 +390,14 @@ export async function updateCharge(_state: ActionState, formData: FormData): Pro
       due_date: values.data.dueDate,
       media_budget: values.data.mediaBudget,
       notes: optional(values.data.notes),
+      ...entityChange,
     })
     .eq("id", values.data.id)
     .eq("workspace_id", workspaceId)
-    .eq("status", "pending")
-    .select("id, client_id")
-    .maybeSingle();
+    .eq("status", "pending");
+  // A empresa foi validada contra este cliente; a cobrança precisa ser dele.
+  if (entityChange) request = request.eq("client_id", String(formData.get("clientId")));
+  const { data, error } = await request.select("id, client_id").maybeSingle();
   if (error) return rejectSubmission(formData, databaseErrorMessage(error));
   if (!data) {
     return rejectSubmission(
@@ -385,13 +415,17 @@ export async function updateCharge(_state: ActionState, formData: FormData): Pro
 export async function markChargePaid(formData: FormData) {
   const values = paymentSchema.safeParse({
     id: formData.get("id"),
+    paidOn: formData.get("paidOn") ?? "",
     paymentMethod: formData.get("paymentMethod"),
   });
   const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
   if (!values.success) statusRedirect(returnTo, "invalid");
-  const { supabase } = await requireWorkspaceContext();
+  const { supabase, workspaceTimezone } = await requireWorkspaceContext();
+  const paidOn = acceptedPaidOn(values.data.paidOn, workspaceTimezone);
+  if (paidOn === null) statusRedirect(returnTo, "payment-date-invalid");
   const { error } = await supabase.rpc("settle_charge_and_schedule_next", {
     p_charge_id: values.data.id,
+    p_paid_on: paidOn,
     p_payment_method: values.data.paymentMethod,
   });
   if (error) statusRedirect(returnTo, "error");
@@ -403,6 +437,57 @@ export async function markChargePaid(formData: FormData) {
   // Sem `focus`: a cobrança acabou de descer para o bloco das resolvidas, e arrastar a
   // tela até lá tiraria o usuário de onde ele estava trabalhando.
   statusRedirect(returnTo, "paid");
+}
+
+/** Teto da baixa em lote: a ficha lista no máximo 50 pendentes. */
+const bulkSettleLimit = 50;
+
+/**
+ * Recebe de uma vez as cobranças vencidas que o usuário viu na ficha do cliente. Só os ids
+ * enviados entram, e ainda assim apenas os que forem deste cliente, deste workspace e
+ * continuarem pendentes. A ordem é a do vencimento para a agenda de cada serviço avançar
+ * ciclo a ciclo, como avançaria pagando uma por uma.
+ */
+export async function settleChargesInBulk(formData: FormData) {
+  const clientId = identifierSchema.safeParse(formData.get("clientId"));
+  if (!clientId.success) statusRedirect("/clientes", "invalid");
+  const returnTo = `/clientes/${clientId.data}`;
+  const ids = identifierSchema
+    .array()
+    .min(1)
+    .max(bulkSettleLimit)
+    .safeParse([...new Set(formData.getAll("chargeId").map(String))]);
+  const payment = paymentSchema.omit({ id: true }).safeParse({
+    paidOn: formData.get("paidOn") ?? "",
+    paymentMethod: formData.get("paymentMethod"),
+  });
+  if (!ids.success || !payment.success) statusRedirect(returnTo, "invalid");
+  const { supabase, workspaceId, workspaceTimezone } = await requireWorkspaceContext();
+  const paidOn = acceptedPaidOn(payment.data.paidOn, workspaceTimezone);
+  if (paidOn === null) statusRedirect(returnTo, "payment-date-invalid");
+
+  const { data: charges, error } = await supabase
+    .from("charges")
+    .select("id")
+    .in("id", ids.data)
+    .eq("client_id", clientId.data)
+    .eq("workspace_id", workspaceId)
+    .eq("status", "pending")
+    .order("due_date");
+  if (error || !charges?.length) statusRedirect(returnTo, "error");
+
+  let settled = 0;
+  for (const charge of charges) {
+    const { error: settleError } = await supabase.rpc("settle_charge_and_schedule_next", {
+      p_charge_id: charge.id,
+      p_paid_on: paidOn,
+      p_payment_method: payment.data.paymentMethod,
+    });
+    if (settleError) break;
+    settled += 1;
+  }
+  revalidateFinancialSurfaces({ clientId: clientId.data, includeCharges: true });
+  statusRedirect(returnTo, settled === charges.length ? "bulk-paid" : "bulk-partial");
 }
 
 export async function recordChargeDelayReason(formData: FormData) {
@@ -527,14 +612,58 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
   statusRedirect("/despesas", "created");
 }
 
+/** Corrige uma despesa ainda não paga; a paga não é reescrita por aqui. */
+export async function updateExpense(_state: ActionState, formData: FormData): Promise<ActionState> {
+  const values = expenseEditSchema.safeParse({
+    amount: formData.get("amount"),
+    category: formData.get("category"),
+    description: formData.get("description"),
+    dueDate: formData.get("dueDate"),
+    id: formData.get("id"),
+    notes: formData.get("notes"),
+  });
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, expenseLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("expenses")
+    .update({
+      amount: values.data.amount,
+      category: values.data.category,
+      description: values.data.description,
+      due_date: values.data.dueDate,
+      notes: optional(values.data.notes),
+    })
+    .eq("id", values.data.id)
+    .eq("workspace_id", workspaceId)
+    .eq("status", "pending")
+    .select("id, client_id")
+    .maybeSingle();
+  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
+  if (!data) {
+    return rejectSubmission(
+      formData,
+      "Esta despesa não está mais a pagar. Recarregue a página para ver a situação atual.",
+    );
+  }
+  revalidateFinancialSurfaces({ clientId: data.client_id, includeExpenses: true });
+  statusRedirect(`/despesas?focus=${data.id}`, "expense-updated");
+}
+
 export async function markExpensePaid(formData: FormData) {
   const id = identifierSchema.safeParse(formData.get("id"));
   // A baixa também sai da central de alertas; o retorno volta para onde o clique nasceu.
   const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/despesas");
-  if (!id.success) statusRedirect(returnTo, "error");
-  const { supabase } = await requireWorkspaceContext();
+  const paidOnInput = paidOnSchema.safeParse(formData.get("paidOn") ?? "");
+  if (!id.success || !paidOnInput.success) statusRedirect(returnTo, "error");
+  const { supabase, workspaceTimezone } = await requireWorkspaceContext();
+  const paidOn = acceptedPaidOn(paidOnInput.data, workspaceTimezone);
+  if (paidOn === null) statusRedirect(returnTo, "payment-date-invalid");
   const { data, error } = await supabase.rpc("settle_expense_and_schedule_next", {
     p_expense_id: id.data,
+    p_paid_on: paidOn,
   });
   if (error || !data || typeof data !== "object") statusRedirect(returnTo, "error");
   const status =

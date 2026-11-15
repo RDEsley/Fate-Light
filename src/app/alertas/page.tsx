@@ -28,6 +28,10 @@ const statusMessages: Record<string, { message: string; tone: "error" | "success
     tone: "success",
   },
   invalid: { message: "Revise o título, a data e a prioridade.", tone: "error" },
+  "payment-date-invalid": {
+    message: "A data do pagamento não pode estar no futuro.",
+    tone: "error",
+  },
   paid: {
     message:
       "Pagamento registrado e alerta retirado da lista. Se havia próximo ciclo, ele já está agendado.",

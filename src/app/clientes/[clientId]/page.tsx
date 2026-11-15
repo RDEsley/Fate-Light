@@ -27,6 +27,7 @@ import { TransferClientPanel } from "./transfer-client-panel";
 import { ServiceApplicationForm } from "./service-application-form";
 import { ServiceCard } from "./service-card";
 import { ClientStatusSwitcher } from "./status-switcher";
+import { BulkSettleButton } from "./bulk-settle-button";
 
 /** Linhas do histórico carregadas na ficha; o restante fica em Cobranças. */
 const historyLimit = 150;
@@ -227,6 +228,8 @@ export default async function ClientDetailsPage({
   const visiblePendingCharges = focusedEntityId
     ? (pendingCharges ?? []).filter((charge) => charge.client_entity_id === focusedEntityId)
     : (pendingCharges ?? []);
+  // Mesma régua do selo "Vencida" da linha: venceu antes de hoje.
+  const overdueCharges = visiblePendingCharges.filter((charge) => charge.due_date < today);
   const focusedExpenses = focusedEntityId
     ? (expenseRows ?? []).filter((expense) => expense.client_entity_id === focusedEntityId)
     : [];
@@ -561,6 +564,19 @@ export default async function ClientDetailsPage({
               <h2>Cobranças pendentes</h2>
               <p>Receba aqui sem sair da ficha do cliente.</p>
             </div>
+            {overdueCharges.length > 1 ? (
+              <div className="ml-auto">
+                <BulkSettleButton
+                  charges={overdueCharges.map((charge) => ({
+                    amount: Number(charge.gross_total ?? 0),
+                    description: charge.description,
+                    dueDate: charge.due_date,
+                    id: charge.id,
+                  }))}
+                  clientId={client.id}
+                />
+              </div>
+            ) : null}
           </div>
           <RecordList columns={chargeListColumns} head={chargeListLabels}>
             {visiblePendingCharges.map((charge) => (
@@ -573,6 +589,7 @@ export default async function ClientDetailsPage({
                   companyRevenue: charge.company_revenue,
                   description: charge.description,
                   dueDate: charge.due_date,
+                  entityId: charge.client_entity_id,
                   entityName: charge.client_entity_id
                     ? entityNames.get(charge.client_entity_id)
                     : null,
@@ -583,6 +600,7 @@ export default async function ClientDetailsPage({
                   status: charge.status,
                 }}
                 context="client"
+                entities={entityOptions}
                 headingLevel={3}
                 key={charge.id}
                 returnTo={clientReturnTo}
@@ -662,6 +680,7 @@ export default async function ClientDetailsPage({
                     delayReason: charge.delay_reason,
                     description: charge.description,
                     dueDate: charge.due_date,
+                    entityId: charge.client_entity_id,
                     entityName: charge.client_entity_id
                       ? entityNames.get(charge.client_entity_id)
                       : null,
@@ -675,6 +694,7 @@ export default async function ClientDetailsPage({
                   }}
                   anchorPrefix="history"
                   context="history"
+                  entities={entityOptions}
                   headingLevel={3}
                   returnTo={clientReturnTo}
                   today={today}

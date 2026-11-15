@@ -6,7 +6,7 @@ import { updateCharge } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { TextField } from "@/components/ui/field";
 import { Form } from "@/components/ui/form";
-import { DateField } from "@/components/ui/form-controls";
+import { DateField, EntitySelect, type ClientEntityOption } from "@/components/ui/form-controls";
 import { Icon } from "@/components/ui/icon";
 import { Modal } from "@/components/ui/modal";
 import { MoneyField } from "@/components/ui/money-field";
@@ -17,6 +17,9 @@ import { initialActionState, submittedValues } from "@/lib/forms/action-state";
 export type EditableCharge = {
   additionalFee: number | string;
   additionalFeeIsRevenue: boolean;
+  clientId: string;
+  /** Empresa/marca atual; nula quando a cobrança é do cliente em geral. */
+  clientEntityId?: string | null;
   /** Cobrança gerada por um serviço; no recorrente, remarcar o ciclo atual move a agenda. */
   clientServiceId?: string | null;
   companyRevenue: number | string;
@@ -53,9 +56,12 @@ function validateCharge(formData: FormData): Record<string, string> {
  */
 export function EditChargeButton({
   charge,
+  entities = [],
   returnTo,
 }: {
   charge: EditableCharge;
+  /** Empresas/marcas ativas; só as do cliente da cobrança entram na escolha. */
+  entities?: ClientEntityOption[];
   returnTo: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -79,7 +85,12 @@ export function EditChargeButton({
       >
         {/* Montado só aberto: cada abertura começa dos valores atuais da cobrança. */}
         {open ? (
-          <EditChargeForm charge={charge} onCancel={() => setOpen(false)} returnTo={returnTo} />
+          <EditChargeForm
+            charge={charge}
+            entities={entities}
+            onCancel={() => setOpen(false)}
+            returnTo={returnTo}
+          />
         ) : null}
       </Modal>
     </>
@@ -88,10 +99,12 @@ export function EditChargeButton({
 
 function EditChargeForm({
   charge,
+  entities,
   onCancel,
   returnTo,
 }: {
   charge: EditableCharge;
+  entities: ClientEntityOption[];
   onCancel: () => void;
   returnTo: string;
 }) {
@@ -101,11 +114,18 @@ function EditChargeForm({
     persistedToCents(sent.text("additionalFee", String(charge.additionalFee))),
   );
   const hasAdditional = additionalCents !== null && additionalCents > 0;
+  const clientEntities = entities.filter((entity) => entity.clientId === charge.clientId);
+  // Empresa arquivada não está na lista: oferecer o campo a apagaria sem o usuário pedir.
+  const canChooseEntity =
+    clientEntities.length > 0 &&
+    (!charge.clientEntityId ||
+      clientEntities.some((entity) => entity.id === charge.clientEntityId));
 
   return (
     <Form action={formAction} className="grid gap-4" state={state} validate={validateCharge}>
       <input name="id" type="hidden" value={charge.id} />
       <input name="returnTo" type="hidden" value={returnTo} />
+      <input name="clientId" type="hidden" value={charge.clientId} />
 
       {charge.clientServiceId ? (
         <p className="helper-note" role="note">
@@ -128,6 +148,14 @@ function EditChargeForm({
           name="description"
           required
         />
+        {canChooseEntity ? (
+          <EntitySelect
+            className="sm:col-span-2"
+            clientId={charge.clientId}
+            defaultValue={sent.text("clientEntityId", charge.clientEntityId ?? "")}
+            entities={clientEntities}
+          />
+        ) : null}
         <DateField
           defaultValue={sent.text("dueDate", charge.dueDate)}
           label="Vencimento"

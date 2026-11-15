@@ -25,8 +25,12 @@ const messages: Record<string, string> = {
     "Cliente salvo, mas o total já recebido não pôde ser registrado. Lance-o como cobrança avulsa já paga.",
   "prior-revenue-updated": "Lançamento de histórico anterior atualizado.",
   "charge-created": "Cobrança criada neste cliente.",
+  "bulk-paid": "Cobranças vencidas recebidas. Os próximos ciclos já estão agendados.",
+  "bulk-partial":
+    "Parte das cobranças foi recebida e outra parte não. Confira as que continuam pendentes.",
   "charge-updated": "Cobrança atualizada.",
   paid: "Pagamento registrado neste cliente.",
+  "payment-date-invalid": "A data do pagamento não pode estar no futuro.",
   "paid-deleted": "Registro pago excluído. A receita saiu do histórico.",
   "paid-deleted-storage-pending":
     "Registro excluído, mas um anexo privado ficou pendente de limpeza.",
