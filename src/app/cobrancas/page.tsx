@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { RecordGroup, RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { newestResolvedFirst } from "@/features/charges/resolution-order";
+import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { isoDateInTimeZone } from "@/features/mvp/format";
 import {
   appendIdInFilter,
@@ -134,7 +135,22 @@ export default async function ChargesPage({
           hidden: null,
         }));
 
-  const { data: charges, error, count, hidden } = await chargesRequest;
+  const [{ data: charges, error, count, hidden }, { data: entityRows }] = await Promise.all([
+    chargesRequest,
+    // Empresas ativas de todos os clientes: a edição da cobrança oferece a troca.
+    context.supabase
+      .from("client_entities")
+      .select("id, client_id, display_name, entity_type")
+      .eq("workspace_id", context.workspaceId)
+      .is("archived_at", null)
+      .order("display_name"),
+  ]);
+  const entityOptions = (entityRows ?? []).map((entity) => ({
+    clientId: entity.client_id,
+    id: entity.id,
+    name: entity.display_name,
+    typeLabel: clientEntityTypeLabel(entity.entity_type),
+  }));
   const today = isoDateInTimeZone(context.workspaceTimezone);
   const totalPages = state === "all" ? 1 : Math.max(1, Math.ceil((count ?? 0) / pageSize));
   const chargeHref = (targetPage: number, targetState = state) => {
@@ -259,6 +275,7 @@ export default async function ChargesPage({
                       sizeBytes: document.size_bytes,
                     })),
                     dueDate: charge.due_date,
+                    entityId: charge.client_entity_id,
                     entityName: charge.client_entities?.display_name,
                     grossTotal: charge.gross_total,
                     id: charge.id,
@@ -270,6 +287,7 @@ export default async function ChargesPage({
                   }}
                   // O alerta leva até a cobrança: ela já chega aberta, com os detalhes à vista.
                   defaultOpen={parameters.focus === charge.id}
+                  entities={entityOptions}
                   returnTo="/cobrancas"
                   today={today}
                 />
