@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const nextPath = sanitizeNextPath(parameters.next);
 
   return (
-    <AuthShell eyebrow="Acesso" title="Bem-vindo de volta.">
+    <AuthShell title="Bem-vindo de volta.">
       <PasswordForm mode="login" nextPath={nextPath} status={parameters.status} />
       {/* Discreto de propósito: o caminho principal continua sendo criar a conta. */}
       <form action={enterGuestMode} className="auth-shell__guest">
