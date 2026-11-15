@@ -1,7 +1,6 @@
 import {
   deleteOperationalRecord,
   deletePaidFinancialRecord,
-  markExpensePaid,
   stopExpenseRecurrence,
 } from "@/app/_actions/mvp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -13,6 +12,7 @@ import { RecordCell, RecordRow } from "@/components/ui/record-row";
 import { daysBetween, formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 
 import { EditExpenseButton } from "./edit-expense-button";
+import { SettleExpenseButton } from "./settle-expense-button";
 
 /** Colunas da lista de despesas em tela larga; a lista e as linhas usam a mesma medida. */
 export const expenseColumns = "minmax(0, 1fr) 7.5rem 5.5rem 6.25rem 8rem 5.5rem 1rem";
@@ -79,23 +79,12 @@ export function ExpenseRow({
       id={`expense-${expense.id}`}
       quickAction={
         paid ? null : (
-          <form action={markExpensePaid}>
-            <input name="id" type="hidden" value={expense.id} />
-            <ConfirmDialog
-              className="button button--primary button--small"
-              confirmLabel="Marcar como paga"
-              confirmation={
-                seriesRunning
-                  ? `${formatCurrency(expense.amount)} · o pagamento é registrado hoje e a próxima ocorrência mensal é criada automaticamente.`
-                  : `${formatCurrency(expense.amount)} · o pagamento é registrado com a data de hoje.`
-              }
-              icon="wallet"
-              label="Pagar"
-              title={`Pagar ${expense.description}`}
-              tone="default"
-              triggerLabel={`Pagar ${expense.description}`}
-            />
-          </form>
+          <SettleExpenseButton
+            amountLabel={formatCurrency(expense.amount)}
+            description={expense.description}
+            expenseId={expense.id}
+            monthly={seriesRunning}
+          />
         )
       }
       status={

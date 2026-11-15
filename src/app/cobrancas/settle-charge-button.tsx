@@ -5,7 +5,10 @@ import { useState } from "react";
 import { markChargePaid } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ChoiceChips } from "@/components/ui/choice-chips";
+import { Form } from "@/components/ui/form";
 import { Modal } from "@/components/ui/modal";
+
+import { PaymentDateField } from "./payment-date-field";
 
 const paymentMethods = ["Pix", "Boleto", "Cartão", "Transferência", "Dinheiro", "Outro"];
 const paymentOptions = paymentMethods.map((method) => ({ label: method, value: method }));
@@ -46,7 +49,7 @@ export function SettleChargeButton({
         open={open}
         title={`Receber ${description}`}
       >
-        <form action={markChargePaid} className="grid gap-4">
+        <Form action={markChargePaid} className="grid gap-4">
           <input name="id" type="hidden" value={chargeId} />
           <input name="returnTo" type="hidden" value={returnTo} />
           <ChoiceChips
@@ -55,13 +58,14 @@ export function SettleChargeButton({
             name="paymentMethod"
             options={paymentOptions}
           />
+          <PaymentDateField />
           <div className="modal-panel__actions -mx-[1.15rem] mt-1 -mb-[0.35rem]">
             <button className="modal-cancel" onClick={close} type="button">
               Voltar
             </button>
             <SubmitButton idleLabel="Marcar como paga" pendingLabel="Registrando…" />
           </div>
-        </form>
+        </Form>
       </Modal>
     </>
   );
