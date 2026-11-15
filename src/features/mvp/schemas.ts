@@ -285,8 +285,12 @@ export const domainSchema = z.object({
     .pipe(z.string().max(120)),
 });
 
+/** Data do pagamento informada na baixa; vazia ou ausente significa "agora". */
+export const paidOnSchema = z.union([z.literal(""), z.string().date()]).default("");
+
 export const paymentSchema = z.object({
   id: identifierSchema,
+  paidOn: paidOnSchema,
   paymentMethod: z.string().trim().min(2).max(80),
 });
 

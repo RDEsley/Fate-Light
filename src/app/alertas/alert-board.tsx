@@ -4,10 +4,9 @@ import type { Route } from "next";
 import Link from "next/link";
 import { Fragment, useState } from "react";
 
-import { markExpensePaid } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { SettleChargeButton } from "@/app/cobrancas/settle-charge-button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SettleExpenseButton } from "@/app/despesas/settle-expense-button";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { RecordCell, RecordGroup, RecordList, RecordRow } from "@/components/ui/record-row";
 import {
@@ -203,20 +202,13 @@ function AlertQuickAction({ row }: { row: AlertRow }) {
   }
   if (row.source === "expense" && row.recordId) {
     return (
-      <form action={markExpensePaid}>
-        <input name="id" type="hidden" value={row.recordId} />
-        <input name="returnTo" type="hidden" value="/alertas" />
-        <ConfirmDialog
-          className="button button--primary button--small"
-          confirmLabel="Marcar como paga"
-          confirmation={`${amountLabel} · o pagamento é registrado com a data de hoje. Se a despesa se repete todo mês, a próxima ocorrência é criada automaticamente.`}
-          icon="wallet"
-          label="Pagar"
-          title={`Pagar ${row.subject}`}
-          tone="default"
-          triggerLabel={`Pagar ${row.subject}`}
-        />
-      </form>
+      <SettleExpenseButton
+        amountLabel={amountLabel}
+        description={row.subject}
+        expenseId={row.recordId}
+        monthly={false}
+        returnTo="/alertas"
+      />
     );
   }
   return (

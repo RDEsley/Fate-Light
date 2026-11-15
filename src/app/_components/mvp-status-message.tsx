@@ -14,6 +14,7 @@ const messages: Record<string, string> = {
   invalid: "Revise os campos informados.",
   "delay-recorded": "Motivo do atraso registrado no histórico.",
   paid: "Pagamento registrado. A cobrança foi para o bloco das resolvidas e o próximo ciclo já está agendado.",
+  "payment-date-invalid": "A data do pagamento não pode estar no futuro.",
   "paid-deleted":
     "Registro pago excluído. A receita ou o custo saiu do dashboard e as notas fiscais anexadas foram removidas.",
   "paid-deleted-storage-pending":

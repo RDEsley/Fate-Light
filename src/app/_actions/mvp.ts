@@ -16,12 +16,14 @@ import {
   financialReturnToSchema,
   identifierSchema,
   optional,
+  paidOnSchema,
   operationalDeletionSchema,
   paidFinancialDeletionSchema,
   paymentSchema,
   serviceScheduleSchema,
   serviceStateSchema,
 } from "@/features/mvp/schemas";
+import { isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { revalidateFinancialSurfaces } from "@/lib/cache/revalidate-financial-surfaces";
 import { revalidatePath } from "next/cache";
@@ -34,6 +36,15 @@ function statusRedirect(path: string, status: string): never {
 function resolveFinancialReturnTo(raw: FormDataEntryValue | null, fallback: string): string {
   const parsed = financialReturnToSchema.safeParse(String(raw ?? "").trim());
   return parsed.success ? parsed.data : fallback;
+}
+
+/**
+ * Data do pagamento só vale até hoje no fuso do workspace. O banco repete a regra; aqui ela
+ * vira mensagem antes da ida ao banco. Vazia significa "agora" e não é enviada.
+ */
+function acceptedPaidOn(paidOn: string, workspaceTimezone: string): string | null | undefined {
+  if (!paidOn) return undefined;
+  return paidOn <= isoDateInTimeZone(workspaceTimezone) ? paidOn : null;
 }
 
 function parsePaidDeleteResult(data: unknown): {
@@ -404,13 +415,17 @@ export async function updateCharge(_state: ActionState, formData: FormData): Pro
 export async function markChargePaid(formData: FormData) {
   const values = paymentSchema.safeParse({
     id: formData.get("id"),
+    paidOn: formData.get("paidOn") ?? "",
     paymentMethod: formData.get("paymentMethod"),
   });
   const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
   if (!values.success) statusRedirect(returnTo, "invalid");
-  const { supabase } = await requireWorkspaceContext();
+  const { supabase, workspaceTimezone } = await requireWorkspaceContext();
+  const paidOn = acceptedPaidOn(values.data.paidOn, workspaceTimezone);
+  if (paidOn === null) statusRedirect(returnTo, "payment-date-invalid");
   const { error } = await supabase.rpc("settle_charge_and_schedule_next", {
     p_charge_id: values.data.id,
+    p_paid_on: paidOn,
     p_payment_method: values.data.paymentMethod,
   });
   if (error) statusRedirect(returnTo, "error");
@@ -590,10 +605,14 @@ export async function markExpensePaid(formData: FormData) {
   const id = identifierSchema.safeParse(formData.get("id"));
   // A baixa também sai da central de alertas; o retorno volta para onde o clique nasceu.
   const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/despesas");
-  if (!id.success) statusRedirect(returnTo, "error");
-  const { supabase } = await requireWorkspaceContext();
+  const paidOnInput = paidOnSchema.safeParse(formData.get("paidOn") ?? "");
+  if (!id.success || !paidOnInput.success) statusRedirect(returnTo, "error");
+  const { supabase, workspaceTimezone } = await requireWorkspaceContext();
+  const paidOn = acceptedPaidOn(paidOnInput.data, workspaceTimezone);
+  if (paidOn === null) statusRedirect(returnTo, "payment-date-invalid");
   const { data, error } = await supabase.rpc("settle_expense_and_schedule_next", {
     p_expense_id: id.data,
+    p_paid_on: paidOn,
   });
   if (error || !data || typeof data !== "object") statusRedirect(returnTo, "error");
   const status =

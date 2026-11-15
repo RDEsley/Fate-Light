@@ -242,9 +242,16 @@ describe("AlertBoard", () => {
       .closest("form")!;
     expect(chargeForm.querySelector('input[name="id"]')).toHaveValue(chargeId);
     expect(chargeForm.querySelector('input[name="returnTo"]')).toHaveValue("/alertas");
+    // A data do pagamento vem preenchida com hoje e pode ser corrigida.
+    expect(within(dialog).getByLabelText(/data do pagamento/i)).not.toHaveValue("");
     fireEvent.click(within(dialog).getByRole("button", { name: "Voltar" }));
 
-    const expenseForm = screen.getByRole("button", { name: "Pagar Hospedagem" }).closest("form")!;
+    fireEvent.click(screen.getByRole("button", { name: "Pagar Hospedagem" }));
+    const expenseDialog = within(screen.getByRole("dialog"));
+    expect(expenseDialog.getByLabelText(/data do pagamento/i)).not.toHaveValue("");
+    const expenseForm = expenseDialog
+      .getByRole("button", { name: "Marcar como paga" })
+      .closest("form")!;
     expect(expenseForm.querySelector('input[name="id"]')).toHaveValue(expenseId);
     expect(expenseForm.querySelector('input[name="returnTo"]')).toHaveValue("/alertas");
     expect(screen.queryByRole("link", { name: /^Abrir cobrança:/ })).not.toBeInTheDocument();

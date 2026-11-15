@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
       throw new Error(`REDIRECT:${path}`);
     }),
     revalidatePath: vi.fn(),
+    rpc: vi.fn(),
     update: vi.fn(() => query),
   };
 });
@@ -30,12 +31,13 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("@/lib/auth/workspace-context", () => ({
   requireWorkspaceContext: vi.fn(async () => ({
-    supabase: { from: mocks.from },
+    supabase: { from: mocks.from, rpc: mocks.rpc },
     workspaceId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    workspaceTimezone: "America/Sao_Paulo",
   })),
 }));
 
-import { updateCharge, updateExpense } from "@/app/_actions/mvp";
+import { markChargePaid, markExpensePaid, updateCharge, updateExpense } from "@/app/_actions/mvp";
 import { EditChargeButton, type EditableCharge } from "@/app/cobrancas/edit-charge-button";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -197,6 +199,53 @@ describe("updateExpense", () => {
 
     expect(state.status).toBe("error");
     expect(state.message).toMatch(/não está mais a pagar/i);
+  });
+});
+
+describe("data do pagamento na baixa", () => {
+  beforeEach(() => {
+    mocks.rpc.mockReset().mockResolvedValue({ data: { status: "settled" }, error: null });
+    vi.useFakeTimers({ now: new Date("2026-11-15T15:00:00Z"), toFake: ["Date"] });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const settleForm = (paidOn: string) => {
+    const form = new FormData();
+    form.set("id", chargeId);
+    form.set("paymentMethod", "Pix");
+    form.set("paidOn", paidOn);
+    form.set("returnTo", "/alertas");
+    return form;
+  };
+
+  it("envia o dia informado para a baixa da cobrança", async () => {
+    await expect(markChargePaid(settleForm("2026-11-03"))).rejects.toThrow(
+      "REDIRECT:/alertas?status=paid",
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith("settle_charge_and_schedule_next", {
+      p_charge_id: chargeId,
+      p_paid_on: "2026-11-03",
+      p_payment_method: "Pix",
+    });
+  });
+
+  it("recusa pagamento no futuro sem chamar o banco", async () => {
+    await expect(markChargePaid(settleForm("2026-11-20"))).rejects.toThrow(
+      "REDIRECT:/alertas?status=payment-date-invalid",
+    );
+    await expect(markExpensePaid(settleForm("2026-11-20"))).rejects.toThrow(
+      "REDIRECT:/alertas?status=payment-date-invalid",
+    );
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("sem data, a despesa é paga agora", async () => {
+    const form = settleForm("");
+    await expect(markExpensePaid(form)).rejects.toThrow("REDIRECT:/alertas?status=paid");
+    expect(mocks.rpc).toHaveBeenCalledWith("settle_expense_and_schedule_next", {
+      p_expense_id: chargeId,
+      p_paid_on: undefined,
+    });
   });
 });
 
