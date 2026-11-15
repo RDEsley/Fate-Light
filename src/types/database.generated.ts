@@ -1782,7 +1782,11 @@ export type Database = {
         Returns: string
       }
       settle_charge_and_schedule_next: {
-        Args: { p_charge_id: string; p_payment_method: string }
+        Args: {
+          p_charge_id: string
+          p_paid_on?: string
+          p_payment_method: string
+        }
         Returns: string
       }
       settle_client_service_charges: {
@@ -1790,7 +1794,7 @@ export type Database = {
         Returns: number
       }
       settle_expense_and_schedule_next: {
-        Args: { p_expense_id: string }
+        Args: { p_expense_id: string; p_paid_on?: string }
         Returns: Json
       }
       stop_expense_recurrence: { Args: { p_expense_id: string }; Returns: Json }
