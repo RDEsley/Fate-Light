@@ -108,7 +108,7 @@ export default async function ClientDetailsPage({
     context.supabase
       .from("charges")
       .select(
-        "id, client_service_id, client_entity_id, description, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, due_date, paid_at, payment_method, delay_reason, cancel_reason, cancel_reason_code",
+        "id, client_service_id, client_entity_id, description, notes, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, due_date, paid_at, payment_method, delay_reason, cancel_reason, cancel_reason_code",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
@@ -116,7 +116,7 @@ export default async function ClientDetailsPage({
     context.supabase
       .from("charges")
       .select(
-        "id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, client_entity_id",
+        "id, client_service_id, description, notes, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, client_entity_id",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
@@ -569,6 +569,7 @@ export default async function ClientDetailsPage({
                   additionalFee: charge.additional_fee,
                   additionalFeeIsRevenue: charge.additional_fee_is_revenue,
                   clientId: client.id,
+                  clientServiceId: charge.client_service_id,
                   companyRevenue: charge.company_revenue,
                   description: charge.description,
                   dueDate: charge.due_date,
@@ -578,6 +579,7 @@ export default async function ClientDetailsPage({
                   grossTotal: charge.gross_total,
                   id: charge.id,
                   mediaBudget: charge.media_budget,
+                  notes: charge.notes,
                   status: charge.status,
                 }}
                 context="client"
@@ -655,6 +657,7 @@ export default async function ClientDetailsPage({
                     cancelReason: charge.cancel_reason,
                     cancelReasonCode: charge.cancel_reason_code,
                     clientId: client.id,
+                    clientServiceId: charge.client_service_id,
                     companyRevenue: charge.company_revenue,
                     delayReason: charge.delay_reason,
                     description: charge.description,
@@ -665,6 +668,7 @@ export default async function ClientDetailsPage({
                     grossTotal: charge.gross_total,
                     id: charge.id,
                     mediaBudget: charge.media_budget,
+                    notes: charge.notes,
                     paidAt: charge.paid_at,
                     paymentMethod: charge.payment_method,
                     status: charge.status,

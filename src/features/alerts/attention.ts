@@ -8,6 +8,8 @@ import { addDays, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/forma
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 export type AttentionItem = {
+  /** Valor da cobrança (bruto) ou da despesa, para a baixa direto da central. */
+  amount?: number | string | null;
   /** Cliente vinculado a um lembrete avulso. */
   clientId?: string | null;
   /** Data do vencimento em ISO. Quem agrupa por prazo lê daqui, nunca do texto de `meta`. */
@@ -23,6 +25,8 @@ export type AttentionItem = {
   recurrence?: string;
   severity: "danger" | "warning";
   source: "adjustment" | "charge" | "domain" | "expense" | "manual";
+  /** Id da cobrança ou despesa, para dar baixa sem abrir a lista de origem. */
+  recordId?: string;
   /** O registro em si, sem o prefixo de situação que `title` carrega. */
   subject: string;
   title: string;
@@ -68,9 +72,10 @@ export const getAttentionItems = cache(async function getAttentionItems(
   ] = await Promise.all([
     context.supabase
       .from("charges")
-      .select("id, description, due_date, clients(name), client_entities(display_name)", {
-        count: "exact",
-      })
+      .select(
+        "id, description, due_date, gross_total, clients(name), client_entities(display_name)",
+        { count: "exact" },
+      )
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .lte("due_date", limit)
@@ -78,7 +83,7 @@ export const getAttentionItems = cache(async function getAttentionItems(
       .limit(50),
     context.supabase
       .from("expenses")
-      .select("id, description, due_date, clients(name), client_entities(display_name)", {
+      .select("id, description, due_date, amount, clients(name), client_entities(display_name)", {
         count: "exact",
       })
       .eq("workspace_id", context.workspaceId)
@@ -134,9 +139,11 @@ export const getAttentionItems = cache(async function getAttentionItems(
     })),
     // O alerta funciona como guia: leva direto à cobrança citada, não à lista genérica.
     ...(charges ?? []).map((charge) => ({
+      amount: charge.gross_total,
       date: charge.due_date,
       href: `/cobrancas?focus=${charge.id}` as Route,
       id: `charge-${charge.id}`,
+      recordId: charge.id,
       meta: `${ownerLabel(charge.clients?.name, charge.client_entities?.display_name)} · ${formatDatePtBr(charge.due_date)}`,
       owner: ownerLabel(charge.clients?.name, charge.client_entities?.display_name),
       severity: charge.due_date <= today ? ("danger" as const) : ("warning" as const),
@@ -150,9 +157,11 @@ export const getAttentionItems = cache(async function getAttentionItems(
             : `Cobrança próxima: ${charge.description}`,
     })),
     ...(expenses ?? []).map((expense) => ({
+      amount: expense.amount,
       date: expense.due_date,
       href: `/despesas?focus=${expense.id}` as Route,
       id: `expense-${expense.id}`,
+      recordId: expense.id,
       meta: expense.client_entities?.display_name
         ? `${expense.client_entities.display_name} · vencimento ${formatDatePtBr(expense.due_date)}`
         : `Vencimento ${formatDatePtBr(expense.due_date)}`,

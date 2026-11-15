@@ -7,6 +7,7 @@ import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
 import { actionError, rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import {
   cancellationSchema,
+  chargeEditSchema,
   chargeSchema,
   delayReasonSchema,
   domainSchema,
@@ -328,6 +329,59 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
   statusRedirect(`${returnTo}?focus=${data.id}`, settled ? "created-paid" : "created");
 }
 
+/**
+ * Corrige uma cobrança ainda pendente: descrição, vencimento, valores e observações.
+ * Paga e cancelada ficam de fora — o que já foi liquidado não é reescrito. Remarcar a
+ * cobrança do ciclo atual de um serviço também move o "próximo vencimento" dele (trigger
+ * `charges_sync_service_cycle`), para o ciclo seguinte nascer a partir da data nova.
+ */
+export async function updateCharge(_state: ActionState, formData: FormData): Promise<ActionState> {
+  const values = chargeEditSchema.safeParse({
+    additionalFee: formData.get("additionalFee"),
+    additionalFeeIsRevenue: formData.get("additionalFeeNature") ?? "",
+    companyRevenue: formData.get("companyRevenue"),
+    description: formData.get("description"),
+    dueDate: formData.get("dueDate"),
+    id: formData.get("id"),
+    mediaBudget: formData.get("mediaBudget"),
+    notes: formData.get("notes"),
+  });
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, chargeLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
+  const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("charges")
+    .update({
+      additional_fee: values.data.additionalFee,
+      additional_fee_is_revenue: values.data.additionalFeeIsRevenue,
+      company_revenue: values.data.companyRevenue,
+      description: values.data.description,
+      due_date: values.data.dueDate,
+      media_budget: values.data.mediaBudget,
+      notes: optional(values.data.notes),
+    })
+    .eq("id", values.data.id)
+    .eq("workspace_id", workspaceId)
+    .eq("status", "pending")
+    .select("id, client_id")
+    .maybeSingle();
+  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
+  if (!data) {
+    return rejectSubmission(
+      formData,
+      "Esta cobrança não está mais pendente. Recarregue a página para ver a situação atual.",
+    );
+  }
+  revalidateFinancialSurfaces({ clientId: data.client_id, includeCharges: true });
+  statusRedirect(
+    returnTo === "/cobrancas" ? `/cobrancas?focus=${data.id}` : returnTo,
+    "charge-updated",
+  );
+}
+
 export async function markChargePaid(formData: FormData) {
   const values = paymentSchema.safeParse({
     id: formData.get("id"),
@@ -475,25 +529,27 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
 
 export async function markExpensePaid(formData: FormData) {
   const id = identifierSchema.safeParse(formData.get("id"));
-  if (!id.success) statusRedirect("/despesas", "error");
+  // A baixa também sai da central de alertas; o retorno volta para onde o clique nasceu.
+  const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/despesas");
+  if (!id.success) statusRedirect(returnTo, "error");
   const { supabase } = await requireWorkspaceContext();
   const { data, error } = await supabase.rpc("settle_expense_and_schedule_next", {
     p_expense_id: id.data,
   });
-  if (error || !data || typeof data !== "object") statusRedirect("/despesas", "error");
+  if (error || !data || typeof data !== "object") statusRedirect(returnTo, "error");
   const status =
     typeof (data as { status?: unknown }).status === "string"
       ? (data as { status: string }).status
       : "";
-  if (status === "not_found") statusRedirect("/despesas", "error");
+  if (status === "not_found") statusRedirect(returnTo, "error");
   if (status === "already_settled") {
     revalidateFinancialSurfaces({ includeExpenses: true });
-    statusRedirect("/despesas", "expense-already-settled");
+    statusRedirect(returnTo, "expense-already-settled");
   }
-  if (status !== "settled") statusRedirect("/despesas", "error");
+  if (status !== "settled") statusRedirect(returnTo, "error");
   revalidateFinancialSurfaces({ includeExpenses: true });
   const scheduled = Boolean((data as { scheduled?: unknown }).scheduled);
-  statusRedirect("/despesas", scheduled ? "expense-next-scheduled" : "paid");
+  statusRedirect(returnTo, scheduled ? "expense-next-scheduled" : "paid");
 }
 
 export async function stopExpenseRecurrence(formData: FormData) {

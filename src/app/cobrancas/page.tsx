@@ -55,7 +55,7 @@ export default async function ChargesPage({
   const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
   const firstRow = (page - 1) * pageSize;
   const chargeColumns =
-    "id, client_id, client_entity_id, description, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)";
+    "id, client_id, client_entity_id, client_service_id, description, notes, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)";
 
   const relatedSearch =
     query.length === 0
@@ -248,6 +248,7 @@ export default async function ChargesPage({
                     cancelReasonCode: charge.cancel_reason_code,
                     clientId: charge.client_id,
                     clientName: charge.clients?.name,
+                    clientServiceId: charge.client_service_id,
                     companyRevenue: charge.company_revenue,
                     delayReason: charge.delay_reason,
                     description: charge.description,
@@ -262,6 +263,7 @@ export default async function ChargesPage({
                     grossTotal: charge.gross_total,
                     id: charge.id,
                     mediaBudget: charge.media_budget,
+                    notes: charge.notes,
                     paidAt: charge.paid_at,
                     paymentMethod: charge.payment_method,
                     status: charge.status,
