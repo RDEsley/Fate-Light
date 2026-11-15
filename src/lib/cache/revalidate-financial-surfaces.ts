@@ -21,6 +21,8 @@ export function revalidateFinancialSurfaces({
 } = {}) {
   revalidatePath("/dashboard");
   revalidatePath("/historico");
+  // Cobranças e despesas pendentes alimentam a central de alertas e o sino.
+  if (includeCharges || includeExpenses) revalidatePath("/alertas");
 
   if (includeCharges) {
     revalidatePath("/cobrancas");

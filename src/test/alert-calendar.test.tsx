@@ -7,6 +7,7 @@ import type { AlertRow } from "@/features/alerts/board";
 import { buildCalendarFile, calendarKey } from "@/features/alerts/calendar";
 
 const row = (id: string, date: string, bucket: AlertRow["bucket"]): AlertRow => ({
+  amount: null,
   bucket,
   calendarUrl: "https://calendar.google.com/calendar/render",
   clientId: null,
@@ -16,6 +17,7 @@ const row = (id: string, date: string, bucket: AlertRow["bucket"]): AlertRow => 
   id,
   notes: null,
   owner: "Padaria",
+  recordId: null,
   recurrence: "none",
   source: "charge",
   subject: `Alerta ${id}`,

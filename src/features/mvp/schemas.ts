@@ -231,7 +231,7 @@ export const expenseSchema = z
     path: ["clientEntityId"],
   });
 
-/** Destino seguro após mutação financeira: listas financeiras ou ficha do cliente. */
+/** Destino seguro após mutação financeira: listas financeiras, alertas ou ficha do cliente. */
 export const financialReturnToSchema = z
   .string()
   .trim()
@@ -239,6 +239,7 @@ export const financialReturnToSchema = z
     (value) =>
       value === "/cobrancas" ||
       value === "/despesas" ||
+      value === "/alertas" ||
       /^\/clientes\/[0-9a-f-]{36}$/i.test(value),
     { message: "Destino de retorno inválido" },
   );
