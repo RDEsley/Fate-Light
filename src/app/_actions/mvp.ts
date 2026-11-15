@@ -439,6 +439,57 @@ export async function markChargePaid(formData: FormData) {
   statusRedirect(returnTo, "paid");
 }
 
+/** Teto da baixa em lote: a ficha lista no máximo 50 pendentes. */
+const bulkSettleLimit = 50;
+
+/**
+ * Recebe de uma vez as cobranças vencidas que o usuário viu na ficha do cliente. Só os ids
+ * enviados entram, e ainda assim apenas os que forem deste cliente, deste workspace e
+ * continuarem pendentes. A ordem é a do vencimento para a agenda de cada serviço avançar
+ * ciclo a ciclo, como avançaria pagando uma por uma.
+ */
+export async function settleChargesInBulk(formData: FormData) {
+  const clientId = identifierSchema.safeParse(formData.get("clientId"));
+  if (!clientId.success) statusRedirect("/clientes", "invalid");
+  const returnTo = `/clientes/${clientId.data}`;
+  const ids = identifierSchema
+    .array()
+    .min(1)
+    .max(bulkSettleLimit)
+    .safeParse([...new Set(formData.getAll("chargeId").map(String))]);
+  const payment = paymentSchema.omit({ id: true }).safeParse({
+    paidOn: formData.get("paidOn") ?? "",
+    paymentMethod: formData.get("paymentMethod"),
+  });
+  if (!ids.success || !payment.success) statusRedirect(returnTo, "invalid");
+  const { supabase, workspaceId, workspaceTimezone } = await requireWorkspaceContext();
+  const paidOn = acceptedPaidOn(payment.data.paidOn, workspaceTimezone);
+  if (paidOn === null) statusRedirect(returnTo, "payment-date-invalid");
+
+  const { data: charges, error } = await supabase
+    .from("charges")
+    .select("id")
+    .in("id", ids.data)
+    .eq("client_id", clientId.data)
+    .eq("workspace_id", workspaceId)
+    .eq("status", "pending")
+    .order("due_date");
+  if (error || !charges?.length) statusRedirect(returnTo, "error");
+
+  let settled = 0;
+  for (const charge of charges) {
+    const { error: settleError } = await supabase.rpc("settle_charge_and_schedule_next", {
+      p_charge_id: charge.id,
+      p_paid_on: paidOn,
+      p_payment_method: payment.data.paymentMethod,
+    });
+    if (settleError) break;
+    settled += 1;
+  }
+  revalidateFinancialSurfaces({ clientId: clientId.data, includeCharges: true });
+  statusRedirect(returnTo, settled === charges.length ? "bulk-paid" : "bulk-partial");
+}
+
 export async function recordChargeDelayReason(formData: FormData) {
   const values = delayReasonSchema.safeParse({
     code: formData.get("code"),
