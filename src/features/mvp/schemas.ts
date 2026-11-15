@@ -200,20 +200,32 @@ export const chargeEditSchema = z
     path: ["companyRevenue"],
   });
 
+const expenseCategory = z.enum([
+  "tools",
+  "artificial_intelligence",
+  "agents",
+  "staff_contractors",
+  "domains",
+  "hosting",
+  "software",
+  "marketing",
+  "other",
+]);
+
+/** Edição de despesa a pagar: só o que corrige o lançamento, sem mudar sua natureza. */
+export const expenseEditSchema = z.object({
+  amount: money.refine((value) => value > 0),
+  category: expenseCategory,
+  description: z.string().trim().min(2).max(200),
+  dueDate: z.string().date(),
+  id: identifierSchema,
+  notes: optionalText(5000),
+});
+
 export const expenseSchema = z
   .object({
     amount: money.refine((value) => value > 0),
-    category: z.enum([
-      "tools",
-      "artificial_intelligence",
-      "agents",
-      "staff_contractors",
-      "domains",
-      "hosting",
-      "software",
-      "marketing",
-      "other",
-    ]),
+    category: expenseCategory,
     clientEntityId: optionalIdentifier,
     clientId: z.union([z.literal(""), identifierSchema]),
     description: z.string().trim().min(2).max(200),
