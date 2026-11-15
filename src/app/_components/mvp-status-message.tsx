@@ -6,6 +6,7 @@ const messages: Record<string, string> = {
   created: "Cadastro salvo com sucesso.",
   "created-paid": "Cobrança registrada como já paga.",
   "charge-created": "Cobrança criada na ficha do cliente.",
+  "charge-updated": "Cobrança atualizada.",
   deleted: "Registro excluído com segurança.",
   "delete-blocked": "Este registro possui histórico confirmado ou ainda precisa ser encerrado.",
   "delete-error": "Não foi possível excluir este registro.",

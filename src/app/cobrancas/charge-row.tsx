@@ -13,6 +13,7 @@ import { cancellationReasons, ownRevenue } from "@/features/mvp/schemas";
 
 import { CancelChargeForm } from "./cancel-charge-form";
 import { DelayReasonForm } from "./delay-reason-form";
+import { EditChargeButton } from "./edit-charge-button";
 import { SettleChargeButton } from "./settle-charge-button";
 
 const cancellationLabels = new Map<string, string>(cancellationReasons.map(([v, l]) => [v, l]));
@@ -42,6 +43,8 @@ export type ChargeRowData = {
   cancelReasonCode?: string | null;
   clientId: string;
   clientName?: string | null;
+  /** Serviço que gerou a cobrança; ausente nas avulsas. */
+  clientServiceId?: string | null;
   companyRevenue: number | string;
   delayReason?: string | null;
   description: string;
@@ -51,6 +54,7 @@ export type ChargeRowData = {
   grossTotal: number | string | null;
   id: string;
   mediaBudget: number | string;
+  notes?: string | null;
   paidAt?: string | null;
   paymentMethod?: string | null;
   status: string;
@@ -161,6 +165,7 @@ export function ChargeRow({
           </div>
         ) : null}
       </dl>
+      {charge.notes ? <p className="service-note">{charge.notes}</p> : null}
 
       {status === "overdue" ? (
         charge.delayReason ? (
@@ -203,6 +208,22 @@ export function ChargeRow({
             <Icon className="size-4" name="receipt" /> Ver em Cobranças
           </Link>
         )}
+        {charge.status === "pending" ? (
+          <EditChargeButton
+            charge={{
+              additionalFee: charge.additionalFee,
+              additionalFeeIsRevenue: charge.additionalFeeIsRevenue,
+              clientServiceId: charge.clientServiceId,
+              companyRevenue: charge.companyRevenue,
+              description: charge.description,
+              dueDate: charge.dueDate,
+              id: charge.id,
+              mediaBudget: charge.mediaBudget,
+              notes: charge.notes,
+            }}
+            returnTo={returnTo}
+          />
+        ) : null}
         {charge.status === "pending" && context === "list" ? (
           <CancelChargeForm chargeId={charge.id} description={charge.description} />
         ) : null}
