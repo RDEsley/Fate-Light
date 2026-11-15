@@ -181,6 +181,25 @@ export const chargeSchema = z
     path: ["paymentMethod"],
   });
 
+/**
+ * Edição de cobrança pendente. Cliente, serviço e situação não mudam por aqui: trocar de
+ * dono é a transferência de dados, e pagar ou cancelar têm fluxos próprios com histórico.
+ */
+export const chargeEditSchema = z
+  .object({
+    additionalFee: moneyFromForm,
+    additionalFeeIsRevenue: additionalFeeNature,
+    companyRevenue: moneyFromForm,
+    description: z.string().trim().min(2).max(200),
+    dueDate: z.string().date(),
+    id: identifierSchema,
+    mediaBudget: moneyFromForm,
+    notes: optionalText(5000),
+  })
+  .refine((value) => value.companyRevenue + value.mediaBudget + value.additionalFee > 0, {
+    path: ["companyRevenue"],
+  });
+
 export const expenseSchema = z
   .object({
     amount: money.refine((value) => value > 0),

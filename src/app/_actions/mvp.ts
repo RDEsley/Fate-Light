@@ -7,6 +7,7 @@ import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
 import { actionError, rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import {
   cancellationSchema,
+  chargeEditSchema,
   chargeSchema,
   delayReasonSchema,
   domainSchema,
@@ -326,6 +327,59 @@ export async function createCharge(_state: ActionState, formData: FormData): Pro
     statusRedirect(returnTo, "charge-created");
   }
   statusRedirect(`${returnTo}?focus=${data.id}`, settled ? "created-paid" : "created");
+}
+
+/**
+ * Corrige uma cobrança ainda pendente: descrição, vencimento, valores e observações.
+ * Paga e cancelada ficam de fora — o que já foi liquidado não é reescrito. Remarcar a
+ * cobrança do ciclo atual de um serviço também move o "próximo vencimento" dele (trigger
+ * `charges_sync_service_cycle`), para o ciclo seguinte nascer a partir da data nova.
+ */
+export async function updateCharge(_state: ActionState, formData: FormData): Promise<ActionState> {
+  const values = chargeEditSchema.safeParse({
+    additionalFee: formData.get("additionalFee"),
+    additionalFeeIsRevenue: formData.get("additionalFeeNature") ?? "",
+    companyRevenue: formData.get("companyRevenue"),
+    description: formData.get("description"),
+    dueDate: formData.get("dueDate"),
+    id: formData.get("id"),
+    mediaBudget: formData.get("mediaBudget"),
+    notes: formData.get("notes"),
+  });
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, chargeLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
+  const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("charges")
+    .update({
+      additional_fee: values.data.additionalFee,
+      additional_fee_is_revenue: values.data.additionalFeeIsRevenue,
+      company_revenue: values.data.companyRevenue,
+      description: values.data.description,
+      due_date: values.data.dueDate,
+      media_budget: values.data.mediaBudget,
+      notes: optional(values.data.notes),
+    })
+    .eq("id", values.data.id)
+    .eq("workspace_id", workspaceId)
+    .eq("status", "pending")
+    .select("id, client_id")
+    .maybeSingle();
+  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
+  if (!data) {
+    return rejectSubmission(
+      formData,
+      "Esta cobrança não está mais pendente. Recarregue a página para ver a situação atual.",
+    );
+  }
+  revalidateFinancialSurfaces({ clientId: data.client_id, includeCharges: true });
+  statusRedirect(
+    returnTo === "/cobrancas" ? `/cobrancas?focus=${data.id}` : returnTo,
+    "charge-updated",
+  );
 }
 
 export async function markChargePaid(formData: FormData) {
