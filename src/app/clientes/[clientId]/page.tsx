@@ -573,6 +573,7 @@ export default async function ClientDetailsPage({
                   companyRevenue: charge.company_revenue,
                   description: charge.description,
                   dueDate: charge.due_date,
+                  entityId: charge.client_entity_id,
                   entityName: charge.client_entity_id
                     ? entityNames.get(charge.client_entity_id)
                     : null,
@@ -583,6 +584,7 @@ export default async function ClientDetailsPage({
                   status: charge.status,
                 }}
                 context="client"
+                entities={entityOptions}
                 headingLevel={3}
                 key={charge.id}
                 returnTo={clientReturnTo}
@@ -662,6 +664,7 @@ export default async function ClientDetailsPage({
                     delayReason: charge.delay_reason,
                     description: charge.description,
                     dueDate: charge.due_date,
+                    entityId: charge.client_entity_id,
                     entityName: charge.client_entity_id
                       ? entityNames.get(charge.client_entity_id)
                       : null,
@@ -675,6 +678,7 @@ export default async function ClientDetailsPage({
                   }}
                   anchorPrefix="history"
                   context="history"
+                  entities={entityOptions}
                   headingLevel={3}
                   returnTo={clientReturnTo}
                   today={today}

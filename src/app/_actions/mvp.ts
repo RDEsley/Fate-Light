@@ -352,7 +352,23 @@ export async function updateCharge(_state: ActionState, formData: FormData): Pro
   }
   const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
   const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
+  // A empresa/marca só muda quando o formulário a oferece (cliente com empresas ativas). Sem
+  // o campo, o vínculo atual fica como está — inclusive com empresa já arquivada.
+  let entityChange: { client_entity_id: string | null } | null = null;
+  if (formData.has("clientEntityId")) {
+    const clientId = identifierSchema.safeParse(formData.get("clientId"));
+    const entityId = String(formData.get("clientEntityId") ?? "").trim();
+    const entity = clientId.success
+      ? await resolveClientEntity(supabase, workspaceId, clientId.data, entityId)
+      : {};
+    if (!clientId.success || entity.id === undefined) {
+      return rejectSubmission(formData, foreignEntityMessage, {
+        clientEntityId: foreignEntityMessage,
+      });
+    }
+    entityChange = { client_entity_id: entity.id };
+  }
+  let request = supabase
     .from("charges")
     .update({
       additional_fee: values.data.additionalFee,
@@ -362,12 +378,14 @@ export async function updateCharge(_state: ActionState, formData: FormData): Pro
       due_date: values.data.dueDate,
       media_budget: values.data.mediaBudget,
       notes: optional(values.data.notes),
+      ...entityChange,
     })
     .eq("id", values.data.id)
     .eq("workspace_id", workspaceId)
-    .eq("status", "pending")
-    .select("id, client_id")
-    .maybeSingle();
+    .eq("status", "pending");
+  // A empresa foi validada contra este cliente; a cobrança precisa ser dele.
+  if (entityChange) request = request.eq("client_id", String(formData.get("clientId")));
+  const { data, error } = await request.select("id, client_id").maybeSingle();
   if (error) return rejectSubmission(formData, databaseErrorMessage(error));
   if (!data) {
     return rejectSubmission(

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { deleteOperationalRecord, deletePaidFinancialRecord } from "@/app/_actions/mvp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import type { ClientEntityOption } from "@/components/ui/form-controls";
 import {
   FiscalDocumentPanel,
   type FiscalDocumentItem,
@@ -50,6 +51,8 @@ export type ChargeRowData = {
   description: string;
   documents?: FiscalDocumentItem[];
   dueDate: string;
+  /** Empresa/marca vinculada, para a edição oferecer a troca. */
+  entityId?: string | null;
   entityName?: string | null;
   grossTotal: number | string | null;
   id: string;
@@ -70,6 +73,7 @@ export function ChargeRow({
   anchorPrefix = "charge",
   context = "list",
   defaultOpen = false,
+  entities,
   headingLevel = 2,
   returnTo,
   today,
@@ -80,6 +84,8 @@ export function ChargeRow({
   anchorPrefix?: string;
   context?: "client" | "history" | "list";
   defaultOpen?: boolean;
+  /** Empresas/marcas ativas, para trocar o vínculo ao editar. */
+  entities?: ClientEntityOption[];
   headingLevel?: 2 | 3;
   returnTo: string;
   today: string;
@@ -213,6 +219,8 @@ export function ChargeRow({
             charge={{
               additionalFee: charge.additionalFee,
               additionalFeeIsRevenue: charge.additionalFeeIsRevenue,
+              clientEntityId: charge.entityId,
+              clientId: charge.clientId,
               clientServiceId: charge.clientServiceId,
               companyRevenue: charge.companyRevenue,
               description: charge.description,
@@ -221,6 +229,7 @@ export function ChargeRow({
               mediaBudget: charge.mediaBudget,
               notes: charge.notes,
             }}
+            entities={entities}
             returnTo={returnTo}
           />
         ) : null}

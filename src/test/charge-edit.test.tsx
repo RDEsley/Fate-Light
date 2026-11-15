@@ -9,7 +9,12 @@ const mocks = vi.hoisted(() => {
   };
   query.eq.mockImplementation(() => query);
   query.select.mockImplementation(() => query);
+  const entityQuery = { eq: vi.fn(), is: vi.fn(), maybeSingle: vi.fn(), select: vi.fn() };
+  entityQuery.eq.mockImplementation(() => entityQuery);
+  entityQuery.is.mockImplementation(() => entityQuery);
+  entityQuery.select.mockImplementation(() => entityQuery);
   return {
+    entityQuery,
     from: vi.fn(),
     query,
     redirect: vi.fn((path: string) => {
@@ -57,7 +62,12 @@ function editForm(overrides: Record<string, string> = {}) {
 
 describe("updateCharge", () => {
   beforeEach(() => {
-    mocks.from.mockReset().mockReturnValue({ update: mocks.update });
+    mocks.from
+      .mockReset()
+      .mockImplementation((table: string) =>
+        table === "client_entities" ? mocks.entityQuery : { update: mocks.update },
+      );
+    mocks.entityQuery.maybeSingle.mockReset().mockResolvedValue({ data: null, error: null });
     mocks.update.mockClear();
     mocks.query.eq.mockClear();
     mocks.query.maybeSingle
@@ -85,6 +95,39 @@ describe("updateCharge", () => {
     );
     expect(mocks.query.eq).toHaveBeenCalledWith("status", "pending");
     expect(mocks.revalidatePath).toHaveBeenCalledWith(`/clientes/${clientId}`);
+  });
+
+  it("não mexe na empresa/marca quando o formulário não oferece a troca", async () => {
+    await expect(updateCharge(initialActionState, editForm())).rejects.toThrow("REDIRECT:");
+    expect(mocks.update).toHaveBeenCalledWith(
+      expect.not.objectContaining({ client_entity_id: expect.anything() }),
+    );
+    expect(mocks.from).not.toHaveBeenCalledWith("client_entities");
+  });
+
+  it("troca a empresa/marca só por uma do mesmo cliente", async () => {
+    const entityId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+    mocks.entityQuery.maybeSingle.mockResolvedValue({ data: { id: entityId }, error: null });
+
+    await expect(
+      updateCharge(initialActionState, editForm({ clientEntityId: entityId, clientId })),
+    ).rejects.toThrow("REDIRECT:");
+    expect(mocks.entityQuery.eq).toHaveBeenCalledWith("client_id", clientId);
+    expect(mocks.update).toHaveBeenCalledWith(
+      expect.objectContaining({ client_entity_id: entityId }),
+    );
+    expect(mocks.query.eq).toHaveBeenCalledWith("client_id", clientId);
+  });
+
+  it("recusa empresa/marca de outro cliente", async () => {
+    const state = await updateCharge(
+      initialActionState,
+      editForm({ clientEntityId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", clientId }),
+    );
+
+    expect(state.status).toBe("error");
+    expect(state.fieldErrors).toHaveProperty("clientEntityId");
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it("volta para a ficha quando a edição nasceu nela", async () => {
@@ -115,6 +158,7 @@ describe("EditChargeButton", () => {
   const charge: EditableCharge = {
     additionalFee: "30.00",
     additionalFeeIsRevenue: false,
+    clientId,
     clientServiceId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     companyRevenue: "300.00",
     description: "Gestão de tráfego",
@@ -139,6 +183,42 @@ describe("EditChargeButton", () => {
     expect(form.querySelector('input[name="returnTo"]')).toHaveValue("/cobrancas");
     // Adicional de repasse continua repasse se o usuário não mexer nele.
     expect(form.querySelector('[name="additionalFeeNature"]')).toHaveValue("passthrough");
+  });
+
+  it("oferece a troca de empresa só com empresas ativas do cliente", () => {
+    const entities = [
+      {
+        clientId,
+        id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        name: "Loja Centro",
+        typeLabel: "Filial",
+      },
+      {
+        clientId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        id: "x",
+        name: "Outra",
+        typeLabel: "Marca",
+      },
+    ];
+    const { unmount } = render(
+      <EditChargeButton charge={charge} entities={entities} returnTo="/cobrancas" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Editar Gestão de tráfego" }));
+    const form = screen.getByRole("button", { name: "Salvar alterações" }).closest("form")!;
+    expect(form.querySelector('[name="clientEntityId"]')).not.toBeNull();
+    unmount();
+
+    // Vínculo com empresa arquivada (fora da lista): o campo some para não apagá-lo.
+    render(
+      <EditChargeButton
+        charge={{ ...charge, clientEntityId: "99999999-9999-4999-8999-999999999999" }}
+        entities={entities}
+        returnTo="/cobrancas"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Editar Gestão de tráfego" }));
+    const archived = screen.getByRole("button", { name: "Salvar alterações" }).closest("form")!;
+    expect(archived.querySelector('[name="clientEntityId"]')).toBeNull();
   });
 
   it("não fala de agenda em cobrança avulsa", () => {
