@@ -5,6 +5,21 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-15
+
+### Added
+
+- Cobrança pendente pode ser editada (descrição, vencimento, valores, natureza do adicional e
+  observações) pelo botão "Editar" nos detalhes, em Cobranças e na ficha do cliente.
+- A central de alertas quita cobranças ("Receber") e despesas ("Pagar") direto na linha, com a
+  mesma confirmação das listas de origem.
+
+### Fixed
+
+- Remarcar a cobrança do ciclo atual move o próximo vencimento do serviço, e editar o próximo
+  vencimento do serviço move a cobrança pendente; antes as duas datas divergiam (ADR-0022).
+- As observações da cobrança passam a aparecer nos detalhes.
+
 ### Security
 
 - Next.js 16.4.6, zod 4.6.7 e undici 8.12.4 corrigem os avisos altos e críticos que derrubavam
