@@ -192,6 +192,7 @@ Consolidada em 2026-09-08:
 | ADR-0019 | Exclusão corretiva de cobrança/despesa paga pelo owner | Aceita | [ADR](adr/0019-corrective-deletion-of-confirmed-financial-records.md) |
 | ADR-0020 | Empresas e marcas dentro do cliente, com consolidação confirmada | Aceita | [ADR](adr/0020-client-entities-companies-brands.md) |
 | ADR-0021 | Modo visitante somente leitura, com dados fictícios em memória | Aceita | [ADR](adr/0021-read-only-guest-mode.md) |
+| ADR-0022 | Cobrança pendente editável e agenda do serviço sincronizada com o vencimento | Aceita | [ADR](adr/0022-editable-pending-charges-and-service-cycle-sync.md) |
 
 ## Outras decisões consolidadas
 
