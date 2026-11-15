@@ -112,7 +112,7 @@ export default async function ExpensesPage({
     let request = context.supabase
       .from("expenses")
       .select(
-        "id, description, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)",
+        "id, description, notes, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)",
         { count: "exact" },
       )
       .eq("workspace_id", context.workspaceId)
@@ -270,10 +270,12 @@ export default async function ExpensesPage({
                 </RecordGroup>
               ) : null}
               <ExpenseRow
+                categoryOptions={categoryOptions}
                 // O alerta leva até a despesa: ela já chega aberta, com os detalhes à vista.
                 defaultOpen={parameters.focus === expense.id}
                 expense={{
                   amount: expense.amount,
+                  category: expense.category,
                   categoryLabel: categoryLabels.get(expense.category) ?? "Outros",
                   clientName: expense.clients?.name,
                   description: expense.description,
@@ -291,6 +293,7 @@ export default async function ExpensesPage({
                     expense.expense_type === "fixed" &&
                     Boolean(expense.recurrence_group_id) &&
                     expense.recurrence_frequency === "monthly",
+                  notes: expense.notes,
                   paidAt: expense.paid_at,
                   recurrenceActive: Boolean(expense.recurrence_active),
                   status: expense.status,

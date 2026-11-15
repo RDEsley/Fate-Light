@@ -35,7 +35,7 @@ vi.mock("@/lib/auth/workspace-context", () => ({
   })),
 }));
 
-import { updateCharge } from "@/app/_actions/mvp";
+import { updateCharge, updateExpense } from "@/app/_actions/mvp";
 import { EditChargeButton, type EditableCharge } from "@/app/cobrancas/edit-charge-button";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -151,6 +151,52 @@ describe("updateCharge", () => {
 
     expect(state.status).toBe("error");
     expect(state.message).toMatch(/não está mais pendente/i);
+  });
+});
+
+describe("updateExpense", () => {
+  const expenseForm = () => {
+    const form = new FormData();
+    form.set("amount", "89.90");
+    form.set("category", "hosting");
+    form.set("description", "Hospedagem anual");
+    form.set("dueDate", "2026-12-05");
+    form.set("id", chargeId);
+    form.set("notes", "");
+    return form;
+  };
+
+  beforeEach(() => {
+    mocks.from.mockReset().mockReturnValue({ update: mocks.update });
+    mocks.update.mockClear();
+    mocks.query.eq.mockClear();
+    mocks.query.maybeSingle
+      .mockReset()
+      .mockResolvedValue({ data: { client_id: null, id: chargeId }, error: null });
+  });
+
+  it("corrige só a despesa a pagar do workspace da sessão", async () => {
+    await expect(updateExpense(initialActionState, expenseForm())).rejects.toThrow(
+      `REDIRECT:/despesas?focus=${chargeId}&status=expense-updated`,
+    );
+    expect(mocks.from).toHaveBeenCalledWith("expenses");
+    expect(mocks.update).toHaveBeenCalledWith({
+      amount: 89.9,
+      category: "hosting",
+      description: "Hospedagem anual",
+      due_date: "2026-12-05",
+      notes: null,
+    });
+    expect(mocks.query.eq).toHaveBeenCalledWith("status", "pending");
+  });
+
+  it("não reescreve despesa já paga", async () => {
+    mocks.query.maybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const state = await updateExpense(initialActionState, expenseForm());
+
+    expect(state.status).toBe("error");
+    expect(state.message).toMatch(/não está mais a pagar/i);
   });
 });
 

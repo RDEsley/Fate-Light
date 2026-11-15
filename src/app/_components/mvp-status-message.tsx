@@ -21,6 +21,7 @@ const messages: Record<string, string> = {
   "expense-next-scheduled":
     "Despesa marcada como paga e próxima ocorrência mensal criada automaticamente.",
   "expense-already-settled": "Esta despesa já estava paga. Nenhuma nova ocorrência foi criada.",
+  "expense-updated": "Despesa atualizada.",
   "expense-not-recurring": "Esta despesa não faz parte de uma série mensal.",
   "expense-recurrence-stopped":
     "Recorrência mensal encerrada. Novas ocorrências deixam de ser criadas automaticamente.",

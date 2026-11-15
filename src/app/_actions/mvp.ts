@@ -11,6 +11,7 @@ import {
   chargeSchema,
   delayReasonSchema,
   domainSchema,
+  expenseEditSchema,
   expenseSchema,
   financialReturnToSchema,
   identifierSchema,
@@ -543,6 +544,46 @@ export async function createExpense(_state: ActionState, formData: FormData): Pr
 
   revalidateFinancialSurfaces({ clientId, includeExpenses: true });
   statusRedirect("/despesas", "created");
+}
+
+/** Corrige uma despesa ainda não paga; a paga não é reescrita por aqui. */
+export async function updateExpense(_state: ActionState, formData: FormData): Promise<ActionState> {
+  const values = expenseEditSchema.safeParse({
+    amount: formData.get("amount"),
+    category: formData.get("category"),
+    description: formData.get("description"),
+    dueDate: formData.get("dueDate"),
+    id: formData.get("id"),
+    notes: formData.get("notes"),
+  });
+  if (!values.success) {
+    const { fieldErrors, message } = formErrors(values.error, expenseLabels);
+    return rejectSubmission(formData, message, fieldErrors);
+  }
+  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { data, error } = await supabase
+    .from("expenses")
+    .update({
+      amount: values.data.amount,
+      category: values.data.category,
+      description: values.data.description,
+      due_date: values.data.dueDate,
+      notes: optional(values.data.notes),
+    })
+    .eq("id", values.data.id)
+    .eq("workspace_id", workspaceId)
+    .eq("status", "pending")
+    .select("id, client_id")
+    .maybeSingle();
+  if (error) return rejectSubmission(formData, databaseErrorMessage(error));
+  if (!data) {
+    return rejectSubmission(
+      formData,
+      "Esta despesa não está mais a pagar. Recarregue a página para ver a situação atual.",
+    );
+  }
+  revalidateFinancialSurfaces({ clientId: data.client_id, includeExpenses: true });
+  statusRedirect(`/despesas?focus=${data.id}`, "expense-updated");
 }
 
 export async function markExpensePaid(formData: FormData) {
