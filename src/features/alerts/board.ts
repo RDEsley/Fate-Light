@@ -40,6 +40,8 @@ export function nextAlertDate(dueOn: string, recurrence: AlertRecurrence, today:
 }
 
 export type AlertRow = {
+  /** Valor da cobrança ou despesa; nulo nos alertas que não envolvem pagamento. */
+  amount: number | null;
   bucket: AlertBucket;
   calendarUrl: string;
   /** Cliente a que o lembrete avulso foi vinculado. */
@@ -52,6 +54,8 @@ export type AlertRow = {
   manualId?: string;
   notes: string | null;
   owner: string | null;
+  /** Cobrança ou despesa por trás do alerta, que pode ser quitada direto da central. */
+  recordId: string | null;
   recurrence: AlertRecurrence;
   source: AlertSource;
   subject: string;
@@ -116,6 +120,7 @@ export function googleCalendarUrl(title: string, details: string, date: string) 
 export function toAlertRows(items: AttentionItem[], today: string): AlertRow[] {
   return items
     .map((item) => ({
+      amount: item.amount === null || item.amount === undefined ? null : Number(item.amount),
       bucket: alertBucket(item.date, today),
       calendarUrl: googleCalendarUrl(item.title, item.meta, item.date),
       clientId: item.clientId ?? null,
@@ -126,6 +131,7 @@ export function toAlertRows(items: AttentionItem[], today: string): AlertRow[] {
       manualId: item.source === "manual" ? item.id.replace("manual-", "") : undefined,
       notes: item.notes ?? null,
       owner: item.owner ?? null,
+      recordId: item.recordId ?? null,
       recurrence: parseAlertRecurrence(item.recurrence),
       source: item.source,
       subject: item.subject,

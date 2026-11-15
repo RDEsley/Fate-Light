@@ -4,7 +4,10 @@ import type { Route } from "next";
 import Link from "next/link";
 import { Fragment, useState } from "react";
 
+import { markExpensePaid } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { SettleChargeButton } from "@/app/cobrancas/settle-charge-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { RecordCell, RecordGroup, RecordList, RecordRow } from "@/components/ui/record-row";
 import {
@@ -17,7 +20,7 @@ import {
   type AlertSource,
 } from "@/features/alerts/board";
 import { calendarKey } from "@/features/alerts/calendar";
-import { formatDatePtBr } from "@/features/mvp/format";
+import { formatCurrency, formatDatePtBr } from "@/features/mvp/format";
 
 import { resolveManualAlert, snoozeManualAlert } from "./actions";
 import { useCalendarMarks } from "./calendar-export";
@@ -174,6 +177,59 @@ export function AlertBoard({ rows, total }: { rows: AlertRow[]; total: number })
   );
 }
 
+/**
+ * Ação principal da linha. Cobrança e despesa são quitadas ali mesmo, com a mesma
+ * confirmação das listas de origem; o restante leva ao registro.
+ */
+function AlertQuickAction({ row }: { row: AlertRow }) {
+  if (row.manualId) {
+    return (
+      <form action={resolveManualAlert}>
+        <input name="id" type="hidden" value={row.manualId} />
+        <SubmitButton className="button--small" idleLabel="Resolver" pendingLabel="…" />
+      </form>
+    );
+  }
+  const amountLabel = row.amount ? formatCurrency(row.amount) : "Cortesia";
+  if (row.source === "charge" && row.recordId) {
+    return (
+      <SettleChargeButton
+        amountLabel={amountLabel}
+        chargeId={row.recordId}
+        description={row.subject}
+        returnTo="/alertas"
+      />
+    );
+  }
+  if (row.source === "expense" && row.recordId) {
+    return (
+      <form action={markExpensePaid}>
+        <input name="id" type="hidden" value={row.recordId} />
+        <input name="returnTo" type="hidden" value="/alertas" />
+        <ConfirmDialog
+          className="button button--primary button--small"
+          confirmLabel="Marcar como paga"
+          confirmation={`${amountLabel} · o pagamento é registrado com a data de hoje. Se a despesa se repete todo mês, a próxima ocorrência é criada automaticamente.`}
+          icon="wallet"
+          label="Pagar"
+          title={`Pagar ${row.subject}`}
+          tone="default"
+          triggerLabel={`Pagar ${row.subject}`}
+        />
+      </form>
+    );
+  }
+  return (
+    <Link
+      aria-label={`${alertSources[row.source].open}: ${row.subject}`}
+      className="button button--secondary button--small"
+      href={row.href as Route}
+    >
+      Abrir
+    </Link>
+  );
+}
+
 function AlertListRow({ row }: { row: AlertRow }) {
   const kind = alertSources[row.source];
   const inCalendar = useCalendarMarks().includes(calendarKey(row));
@@ -191,22 +247,7 @@ function AlertListRow({ row }: { row: AlertRow }) {
       amount={formatDatePtBr(row.date)}
       cells={<RecordCell label="Tipo">{kind.label}</RecordCell>}
       id={row.id}
-      quickAction={
-        row.manualId ? (
-          <form action={resolveManualAlert}>
-            <input name="id" type="hidden" value={row.manualId} />
-            <SubmitButton className="button--small" idleLabel="Resolver" pendingLabel="…" />
-          </form>
-        ) : (
-          <Link
-            aria-label={`${kind.open}: ${row.subject}`}
-            className="button button--secondary button--small"
-            href={row.href as Route}
-          >
-            Abrir
-          </Link>
-        )
-      }
+      quickAction={<AlertQuickAction row={row} />}
       status={
         <span className={`charge-status ${deadlineClasses[row.deadline.tone]}`}>
           {row.deadline.label}
@@ -235,6 +276,12 @@ function AlertListRow({ row }: { row: AlertRow }) {
           <dt>{row.manualId ? "Data do lembrete" : "Vencimento"}</dt>
           <dd>{formatDatePtBr(row.date)}</dd>
         </div>
+        {row.amount !== null ? (
+          <div>
+            <dt>Valor</dt>
+            <dd>{formatCurrency(row.amount)}</dd>
+          </div>
+        ) : null}
         {row.owner ? (
           <div>
             <dt>Cliente</dt>

@@ -2,6 +2,11 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { Route } from "next";
 import { vi } from "vitest";
 
+vi.mock("@/app/_actions/mvp", () => ({
+  markChargePaid: vi.fn(),
+  markExpensePaid: vi.fn(),
+}));
+
 vi.mock("@/app/alertas/actions", () => ({
   resolveManualAlert: vi.fn(),
   snoozeManualAlert: vi.fn(),
@@ -198,6 +203,51 @@ describe("AlertBoard", () => {
       "target",
       "_blank",
     );
+  });
+
+  it("quita cobrança e despesa direto da central, voltando para os alertas", () => {
+    const chargeId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const expenseId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    render(
+      <AlertBoard
+        rows={toAlertRows(
+          [
+            item({
+              amount: "1500.00",
+              date: "2026-10-04",
+              id: `charge-${chargeId}`,
+              recordId: chargeId,
+              subject: "Site institucional",
+            }),
+            item({
+              amount: 89.9,
+              date: "2026-10-09",
+              id: `expense-${expenseId}`,
+              recordId: expenseId,
+              source: "expense",
+              subject: "Hospedagem",
+            }),
+          ],
+          today,
+        )}
+        total={2}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Receber Site institucional" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("R$ 1.500,00");
+    const chargeForm = within(dialog)
+      .getByRole("button", { name: "Marcar como paga" })
+      .closest("form")!;
+    expect(chargeForm.querySelector('input[name="id"]')).toHaveValue(chargeId);
+    expect(chargeForm.querySelector('input[name="returnTo"]')).toHaveValue("/alertas");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Voltar" }));
+
+    const expenseForm = screen.getByRole("button", { name: "Pagar Hospedagem" }).closest("form")!;
+    expect(expenseForm.querySelector('input[name="id"]')).toHaveValue(expenseId);
+    expect(expenseForm.querySelector('input[name="returnTo"]')).toHaveValue("/alertas");
+    expect(screen.queryByRole("link", { name: /^Abrir cobrança:/ })).not.toBeInTheDocument();
   });
 
   it("mostra o cliente e a repetição do lembrete e leva à ficha dele", () => {

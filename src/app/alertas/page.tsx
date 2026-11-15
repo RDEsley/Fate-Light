@@ -19,7 +19,20 @@ export const metadata: Metadata = { title: "Alertas" };
 const statusMessages: Record<string, { message: string; tone: "error" | "success" | "warning" }> = {
   created: { message: "Alerta criado. Ele já está no seu radar.", tone: "success" },
   error: { message: "Não foi possível salvar o alerta. Tente novamente.", tone: "error" },
+  "expense-already-settled": {
+    message: "Esta despesa já estava paga. Nenhuma nova ocorrência foi criada.",
+    tone: "warning",
+  },
+  "expense-next-scheduled": {
+    message: "Despesa paga. A próxima ocorrência mensal já está no radar.",
+    tone: "success",
+  },
   invalid: { message: "Revise o título, a data e a prioridade.", tone: "error" },
+  paid: {
+    message:
+      "Pagamento registrado e alerta retirado da lista. Se havia próximo ciclo, ele já está agendado.",
+    tone: "success",
+  },
   "repeat-error": {
     message: "Alerta resolvido, mas a próxima ocorrência não foi agendada. Crie-a de novo.",
     tone: "warning",
