@@ -1,6 +1,6 @@
 // A Vercel Function aceita no máximo 4,5 MB de payload. O teto menor inclui a
 // sobrecarga multipart do Server Action e evita que um arquivo válido termine em 413.
-const maxFiscalDocumentBytes = 4 * 1024 * 1024;
+export const maxFiscalDocumentBytes = 4 * 1024 * 1024;
 
 const acceptedTypes = {
   "application/pdf": {
@@ -29,6 +29,20 @@ const acceptedTypes = {
       String.fromCharCode(...bytes.slice(8, 12)) === "WEBP",
   },
 } as const;
+
+/** `invoice` é a nota fiscal; `payment_proof` é o comprovante de pagamento de uma cobrança. */
+export type FiscalDocumentKind = "invoice" | "payment_proof";
+
+/** O banco devolve `text` (com check constraint); qualquer valor fora de comprovante é nota. */
+export function toFiscalDocumentKind(value: string): FiscalDocumentKind {
+  return value === "payment_proof" ? "payment_proof" : "invoice";
+}
+
+/** Nome fixo do arquivo guardado, sem nada do nome original (ADR-0003). */
+export const fiscalDocumentFilenames: Record<FiscalDocumentKind, string> = {
+  invoice: "nota-fiscal",
+  payment_proof: "comprovante",
+};
 
 export type FiscalDocumentInspection =
   | { extension: "jpeg" | "jpg" | "pdf" | "png" | "webp"; ok: true }

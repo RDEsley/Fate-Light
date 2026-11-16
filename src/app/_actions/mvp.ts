@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import { redirect } from "next/navigation";
 
+import { inspectFiscalDocument } from "@/features/documents/fiscal-document";
 import { databaseErrorMessage, formErrors } from "@/features/mvp/messages";
 import { actionError, rejectSubmission, type ActionState } from "@/lib/forms/action-state";
 import {
@@ -25,6 +26,7 @@ import {
 import { isoDateInTimeZone } from "@/features/mvp/format";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 import { revalidateFinancialSurfaces } from "@/lib/cache/revalidate-financial-surfaces";
+import { storeFiscalDocument } from "@/lib/documents/store-fiscal-document";
 import { revalidatePath } from "next/cache";
 
 function statusRedirect(path: string, status: string): never {
@@ -397,15 +399,43 @@ export async function markChargePaid(formData: FormData) {
   });
   const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
   if (!values.success) statusRedirect(returnTo, "invalid");
-  const { supabase, workspaceTimezone } = await requireWorkspaceContext();
+  const { supabase, userId, workspaceId, workspaceTimezone } = await requireWorkspaceContext();
   const paidOn = acceptedPaidOn(values.data.paidOn, workspaceTimezone);
   if (paidOn === null) statusRedirect(returnTo, "payment-date-invalid");
+
+  // Comprovante é opcional. Um arquivo recusado barra a baixa antes de ela acontecer:
+  // pagar sem o comprovante que o usuário acabou de escolher seria um efeito surpresa.
+  const proofEntry = formData.get("proof");
+  const proof = proofEntry instanceof File && proofEntry.size > 0 ? proofEntry : null;
+  const proofInspection = proof ? await inspectFiscalDocument(proof) : null;
+  if (proofInspection && !proofInspection.ok) {
+    statusRedirect(returnTo, proofInspection.code === "size" ? "proof-too-large" : "proof-invalid");
+  }
+
   const { error } = await supabase.rpc("settle_charge_and_schedule_next", {
     p_charge_id: values.data.id,
     p_paid_on: paidOn,
     p_payment_method: values.data.paymentMethod,
   });
   if (error) statusRedirect(returnTo, "error");
+
+  // A cobrança já está paga aqui. Se o envio do comprovante falhar, o pagamento fica e o
+  // aviso diz que dá para anexar de novo na própria cobrança.
+  let proofStored: boolean | null = null;
+  if (proof && proofInspection?.ok) {
+    proofStored =
+      (await storeFiscalDocument({
+        entityId: values.data.id,
+        entityType: "charge",
+        extension: proofInspection.extension,
+        file: proof,
+        kind: "payment_proof",
+        supabase,
+        userId,
+        workspaceId,
+      })) === "ok";
+  }
+
   const clientMatch = returnTo.match(/^\/clientes\/([0-9a-f-]{36})$/i);
   revalidateFinancialSurfaces({
     clientId: clientMatch?.[1] ?? null,
@@ -413,7 +443,10 @@ export async function markChargePaid(formData: FormData) {
   });
   // Sem `focus`: a cobrança acabou de descer para o bloco das resolvidas, e arrastar a
   // tela até lá tiraria o usuário de onde ele estava trabalhando.
-  statusRedirect(returnTo, "paid");
+  statusRedirect(
+    returnTo,
+    proofStored === null ? "paid" : proofStored ? "paid-proof" : "paid-proof-error",
+  );
 }
 
 /** Teto da baixa em lote: a ficha lista no máximo 50 pendentes. */

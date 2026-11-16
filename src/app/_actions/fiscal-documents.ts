@@ -1,7 +1,5 @@
 "use server";
 
-import { createHash, randomUUID } from "node:crypto";
-
 import type { Route } from "next";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -10,11 +8,23 @@ import { z } from "zod";
 import { inspectFiscalDocument } from "@/features/documents/fiscal-document";
 import { financialReturnToSchema } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
+import { storeFiscalDocument } from "@/lib/documents/store-fiscal-document";
 
-const documentRequestSchema = z.object({
-  entityId: z.string().uuid(),
-  entityType: z.enum(["charge", "expense"]),
-});
+const kindSchema = z.enum(["invoice", "payment_proof"]).default("invoice");
+
+// Comprovante é do recebimento de uma cobrança; despesa só tem nota fiscal.
+const documentRequestSchema = z
+  .object({
+    entityId: z.string().uuid(),
+    entityType: z.enum(["charge", "expense"]),
+    kind: kindSchema,
+  })
+  .refine((value) => value.kind === "invoice" || value.entityType === "charge");
+
+/** Prefixo dos códigos de retorno: o texto da mensagem muda entre nota e comprovante. */
+function codePrefix(kind: z.infer<typeof kindSchema>) {
+  return kind === "payment_proof" ? "proof" : "invoice";
+}
 
 const documentIdSchema = z.string().uuid();
 
@@ -45,71 +55,45 @@ export async function uploadFiscalDocument(formData: FormData) {
   const request = documentRequestSchema.safeParse({
     entityId: formData.get("entityId"),
     entityType: formData.get("entityType"),
+    kind: formData.get("kind") ?? undefined,
   });
   if (!request.success) redirect("/dashboard?status=error");
   const back = backTo(formData, request.data.entityType);
+  const prefix = codePrefix(request.data.kind);
 
   const file = formData.get("file");
-  if (!(file instanceof File)) statusRedirect(back, "invoice-invalid");
+  if (!(file instanceof File)) statusRedirect(back, `${prefix}-invalid`);
 
   const inspection = await inspectFiscalDocument(file);
   if (!inspection.ok) {
-    statusRedirect(back, inspection.code === "size" ? "invoice-too-large" : "invoice-invalid");
+    statusRedirect(back, inspection.code === "size" ? `${prefix}-too-large` : `${prefix}-invalid`);
   }
 
   const { supabase, userId, workspaceId } = await requireWorkspaceContext();
-  const table = request.data.entityType === "charge" ? "charges" : "expenses";
-  const { data: parent, error: parentError } = await supabase
-    .from(table)
-    .select("id, status")
-    .eq("id", request.data.entityId)
-    .eq("workspace_id", workspaceId)
-    .single();
-  if (parentError || parent?.status !== "paid") {
-    statusRedirect(back, "invoice-unavailable");
-  }
-
-  const documentId = randomUUID();
-  const safeFilename = `nota-fiscal.${inspection.extension}`;
-  const objectPath = `${workspaceId}/fiscal/${request.data.entityType}/${request.data.entityId}/${documentId}/${safeFilename}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const checksum = createHash("sha256").update(bytes).digest("hex");
-  const bucket = supabase.storage.from("workspace-documents");
-  const { error: uploadError } = await bucket.upload(objectPath, bytes, {
-    cacheControl: "3600",
-    contentType: file.type,
-    upsert: false,
+  const result = await storeFiscalDocument({
+    entityId: request.data.entityId,
+    entityType: request.data.entityType,
+    extension: inspection.extension,
+    file,
+    kind: request.data.kind,
+    supabase,
+    userId,
+    workspaceId,
   });
-  if (uploadError) statusRedirect(back, "invoice-error");
-
-  const { error: metadataError } = await supabase.from("fiscal_documents").insert({
-    bucket: "workspace-documents",
-    charge_id: request.data.entityType === "charge" ? request.data.entityId : null,
-    checksum_sha256: checksum,
-    created_by: userId,
-    expense_id: request.data.entityType === "expense" ? request.data.entityId : null,
-    id: documentId,
-    mime_type: file.type,
-    object_path: objectPath,
-    safe_filename: safeFilename,
-    size_bytes: file.size,
-    workspace_id: workspaceId,
-  });
-
-  if (metadataError) {
-    await bucket.remove([objectPath]);
-    statusRedirect(back, "invoice-error");
-  }
+  if (result === "unavailable") statusRedirect(back, `${prefix}-unavailable`);
+  if (result === "error") statusRedirect(back, `${prefix}-error`);
 
   revalidateDocumentSurfaces(request.data.entityType, back);
-  statusRedirect(back, "invoice-uploaded");
+  statusRedirect(back, `${prefix}-uploaded`);
 }
 
 export async function downloadFiscalDocument(formData: FormData) {
   const id = documentIdSchema.safeParse(formData.get("id"));
   const entityType = z.enum(["charge", "expense"]).safeParse(formData.get("entityType"));
-  if (!id.success || !entityType.success) redirect("/dashboard?status=error");
+  const kind = kindSchema.safeParse(formData.get("kind") ?? undefined);
+  if (!id.success || !entityType.success || !kind.success) redirect("/dashboard?status=error");
   const back = backTo(formData, entityType.data);
+  const prefix = codePrefix(kind.data);
 
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data: document, error } = await supabase
@@ -118,20 +102,22 @@ export async function downloadFiscalDocument(formData: FormData) {
     .eq("id", id.data)
     .eq("workspace_id", workspaceId)
     .single();
-  if (error || !document) statusRedirect(back, "invoice-error");
+  if (error || !document) statusRedirect(back, `${prefix}-error`);
 
   const { data, error: signedUrlError } = await supabase.storage
     .from(document.bucket)
     .createSignedUrl(document.object_path, 300, { download: true });
-  if (signedUrlError || !data?.signedUrl) statusRedirect(back, "invoice-error");
+  if (signedUrlError || !data?.signedUrl) statusRedirect(back, `${prefix}-error`);
   redirect(data.signedUrl as Route);
 }
 
 export async function deleteFiscalDocument(formData: FormData) {
   const id = documentIdSchema.safeParse(formData.get("id"));
   const entityType = z.enum(["charge", "expense"]).safeParse(formData.get("entityType"));
-  if (!id.success || !entityType.success) redirect("/dashboard?status=error");
+  const kind = kindSchema.safeParse(formData.get("kind") ?? undefined);
+  if (!id.success || !entityType.success || !kind.success) redirect("/dashboard?status=error");
   const back = backTo(formData, entityType.data);
+  const prefix = codePrefix(kind.data);
 
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data: document, error } = await supabase
@@ -140,20 +126,20 @@ export async function deleteFiscalDocument(formData: FormData) {
     .eq("id", id.data)
     .eq("workspace_id", workspaceId)
     .single();
-  if (error || !document) statusRedirect(back, "invoice-error");
+  if (error || !document) statusRedirect(back, `${prefix}-error`);
 
   const { error: storageError } = await supabase.storage
     .from(document.bucket)
     .remove([document.object_path]);
-  if (storageError) statusRedirect(back, "invoice-error");
+  if (storageError) statusRedirect(back, `${prefix}-error`);
 
   const { error: metadataError } = await supabase
     .from("fiscal_documents")
     .delete()
     .eq("id", id.data)
     .eq("workspace_id", workspaceId);
-  if (metadataError) statusRedirect(back, "invoice-error");
+  if (metadataError) statusRedirect(back, `${prefix}-error`);
 
   revalidateDocumentSurfaces(entityType.data, back);
-  statusRedirect(back, "invoice-deleted");
+  statusRedirect(back, `${prefix}-deleted`);
 }

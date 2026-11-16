@@ -35,6 +35,15 @@ const messages: Record<string, string> = {
   "invoice-too-large": "A nota fiscal ultrapassa o limite de 4 MB.",
   "invoice-unavailable": "Anexe a nota fiscal somente depois de marcar a conta como paga.",
   "invoice-uploaded": "Nota fiscal anexada e protegida no armazenamento privado.",
+  "paid-proof": "Cobrança recebida e comprovante anexado.",
+  "paid-proof-error":
+    "Cobrança recebida, mas o comprovante não foi anexado. Anexe de novo na própria cobrança.",
+  "proof-deleted": "Comprovante removido com segurança.",
+  "proof-error": "Não foi possível concluir a operação com o comprovante.",
+  "proof-invalid": "Escolha um comprovante válido em PDF, JPEG, PNG ou WebP.",
+  "proof-too-large": "O comprovante ultrapassa o limite de 4 MB.",
+  "proof-unavailable": "Anexe o comprovante somente depois de marcar a cobrança como paga.",
+  "proof-uploaded": "Comprovante anexado e protegido no armazenamento privado.",
   "charge-updated": "Cobrança atualizada.",
   paid: "Pagamento registrado neste cliente.",
   "payment-date-invalid": "A data do pagamento não pode estar no futuro.",
@@ -58,11 +67,20 @@ const messages: Record<string, string> = {
 
 export function ClientStatusMessage({ status }: { status?: string }) {
   const message = status ? messages[status] : undefined;
-  const isError = status?.includes("error") || status?.includes("invalid");
+  // Recebida com o anexo falhando: o pagamento valeu, então é aviso e não erro.
+  const proofOnlyFailed = status === "paid-proof-error";
+  const isError =
+    !proofOnlyFailed &&
+    (status?.includes("error") ||
+      status?.includes("invalid") ||
+      status?.includes("too-large") ||
+      status?.includes("unavailable"));
   return message ? (
     <StatusToast
       message={message}
-      tone={isError ? "error" : status?.includes("blocked") ? "warning" : "success"}
+      tone={
+        isError ? "error" : proofOnlyFailed || status?.includes("blocked") ? "warning" : "success"
+      }
     />
   ) : null;
 }

@@ -19,15 +19,17 @@ const baseProps = {
   email: "contato@example.test",
   entityCount: 1,
   expiringDomains: 1,
-  firstStart: "2025-01-15",
   links: [],
   name: "Padaria do João",
   notes: "Prefere Pix",
   overdueCharges: 1,
+  partnership: {
+    text: "Parceria há 1 ano e 2 meses",
+    title: "Parceria desde 15/01/2025, data do primeiro pagamento",
+  },
   phone: "(11) 98888-7777",
   showingArchived: false,
   status: "active",
-  tenureLabel: "1 ano",
   tradeName: "João Alimentos",
   website: "padaria.example",
 };
@@ -65,7 +67,7 @@ describe("ClientSummaryCard", () => {
       `/clientes/${clientId}?action=new-service#servicos`,
     );
 
-    expect(container.querySelector('a a')).toBeNull();
+    expect(container.querySelector("a a")).toBeNull();
   });
 
   it("usa ícones de e-mail e telefone semanticamente corretos", () => {

@@ -197,12 +197,21 @@ export function ChargeRow({
       ) : null}
 
       {charge.status === "paid" ? (
-        <FiscalDocumentPanel
-          documents={charge.documents ?? []}
-          entityId={charge.id}
-          entityType="charge"
-          returnTo={returnTo}
-        />
+        <>
+          <FiscalDocumentPanel
+            documents={(charge.documents ?? []).filter((item) => item.kind === "payment_proof")}
+            entityId={charge.id}
+            entityType="charge"
+            kind="payment_proof"
+            returnTo={returnTo}
+          />
+          <FiscalDocumentPanel
+            documents={(charge.documents ?? []).filter((item) => item.kind === "invoice")}
+            entityId={charge.id}
+            entityType="charge"
+            returnTo={returnTo}
+          />
+        </>
       ) : null}
 
       <div className="record-actions">
