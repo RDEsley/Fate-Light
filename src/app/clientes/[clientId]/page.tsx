@@ -23,6 +23,7 @@ import { archiveClient, deleteClient, restoreClient } from "../actions";
 import { ClientStatusMessage } from "../status-message";
 import { ChargeForm } from "./charge-form";
 import { ClientChargeHistory } from "./client-charge-history";
+import { ClientWhatsAppCard } from "./whatsapp-card";
 import { ConsolidateClientPanel } from "./consolidate-client-panel";
 import { TransferClientPanel } from "./transfer-client-panel";
 import { ServiceApplicationForm } from "./service-application-form";
@@ -455,6 +456,14 @@ export default async function ClientDetailsPage({
           <p className="client-notes">{client.notes}</p>
         </section>
       ) : null}
+
+      {archived ? null : (
+        <ClientWhatsAppCard
+          clientId={client.id}
+          clientName={client.name}
+          clientPhone={client.phone}
+        />
+      )}
 
       <section className="panel-card mt-4" id="servicos">
         <div className="section-heading mb-4">

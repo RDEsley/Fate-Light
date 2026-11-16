@@ -169,32 +169,33 @@ Consolidada em 2026-09-08:
 
 ## Decisões aceitas
 
-| ID       | Decisão                                                                      | Estado                                           | Registro                                                              |
-| -------- | ---------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
-| ADR-0001 | Separar receita própria, mídia administrada e repasses desde cada linha      | Aceita                                           | [ADR](adr/0001-financial-natures.md)                                  |
-| ADR-0002 | Multi-tenancy por workspace, membership e RLS                                | Aceita                                           | [ADR](adr/0002-multi-tenant.md)                                       |
-| ADR-0003 | Storage privado e URLs assinadas curtas                                      | Aceita                                           | [ADR](adr/0003-private-storage.md)                                    |
-| ADR-0004 | Administrador global separado e sem conteúdo financeiro                      | Aceita                                           | [ADR](adr/0004-global-administrator.md)                               |
-| ADR-0005 | `numeric(15,2)`, decimal string e arredondamento por linha                   | Aceita                                           | [ADR](adr/0005-money-and-rounding.md)                                 |
-| ADR-0006 | `date` civil, `timestamptz` UTC e timezone por workspace                     | Aceita                                           | [ADR](adr/0006-dates-and-timezone.md)                                 |
-| ADR-0007 | Supabase Cron e idempotência agenda/período                                  | Aceita                                           | [ADR](adr/0007-recurrence-and-idempotency.md)                         |
-| ADR-0008 | Bootstrap explícito de identidade e isolamento RLS                           | Aceita                                           | [ADR](adr/0008-identity-workspace-bootstrap-and-rls.md)               |
-| ADR-0009 | Autenticação SSR, gate de conta e proteção contra abuso                      | Aceita                                           | [ADR](adr/0009-ssr-authentication-and-abuse-protection.md)            |
-| ADR-0010 | Cadastros operacionais arquiváveis e auditoria mínima                        | Aceita                                           | [ADR](adr/0010-operational-records-and-audit.md)                      |
-| ADR-0011 | Importação de planilha em memória, idempotente e transacional                | Aceita                                           | [ADR](adr/0011-transactional-spreadsheet-import.md)                   |
-| ADR-0012 | Contrato de versões do runtime na Vercel                                     | Aceita                                           | [ADR](adr/0012-vercel-runtime-version-contract.md)                    |
-| ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços              | Aceita; supersedida parcialmente pela 0019       | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md)         |
-| ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha           | Superada para produção; ativação manual pendente | [ADR](adr/0014-temporary-email-confirmation-waiver.md)                |
-| ADR-0015 | Estados do cliente, pausa de serviço e ciclos promocionais gratuitos         | Aceita                                           | [ADR](adr/0015-client-states-and-service-lifecycle-experience.md)     |
-| ADR-0016 | Exclusão forçada pelo dono, links do cliente e liquidação em lote            | Aceita                                           | [ADR](adr/0016-owner-forced-deletion-and-client-links.md)             |
-| ADR-0017 | Edição e exclusão do lançamento de receita anterior ao sistema               | Aceita                                           | [ADR](adr/0017-editable-prior-revenue-entry.md)                       |
-| ADR-0018 | Natureza declarada do custo adicional: receita própria ou repasse            | Aceita                                           | [ADR](adr/0018-additional-fee-nature.md)                              |
-| ADR-0019 | Exclusão corretiva de cobrança/despesa paga pelo owner                       | Aceita                                           | [ADR](adr/0019-corrective-deletion-of-confirmed-financial-records.md) |
-| ADR-0020 | Empresas e marcas dentro do cliente, com consolidação confirmada             | Aceita                                           | [ADR](adr/0020-client-entities-companies-brands.md)                   |
-| ADR-0021 | Modo visitante somente leitura, com dados fictícios em memória               | Aceita                                           | [ADR](adr/0021-read-only-guest-mode.md)                               |
-| ADR-0022 | Cobrança pendente editável e agenda do serviço sincronizada com o vencimento | Aceita                                           | [ADR](adr/0022-editable-pending-charges-and-service-cycle-sync.md)    |
-| ADR-0023 | Data do pagamento informada na baixa                                         | Aceita                                           | [ADR](adr/0023-payment-date-on-settlement.md)                         |
-| ADR-0025 | Comprovante de pagamento e início da parceria                                | Aceita                                           | [ADR](adr/0025-payment-proof-and-partnership-start.md)                |
+| ID | Decisão | Estado | Registro |
+|---|---|---|---|
+| ADR-0001 | Separar receita própria, mídia administrada e repasses desde cada linha | Aceita | [ADR](adr/0001-financial-natures.md) |
+| ADR-0002 | Multi-tenancy por workspace, membership e RLS | Aceita | [ADR](adr/0002-multi-tenant.md) |
+| ADR-0003 | Storage privado e URLs assinadas curtas | Aceita | [ADR](adr/0003-private-storage.md) |
+| ADR-0004 | Administrador global separado e sem conteúdo financeiro | Aceita | [ADR](adr/0004-global-administrator.md) |
+| ADR-0005 | `numeric(15,2)`, decimal string e arredondamento por linha | Aceita | [ADR](adr/0005-money-and-rounding.md) |
+| ADR-0006 | `date` civil, `timestamptz` UTC e timezone por workspace | Aceita | [ADR](adr/0006-dates-and-timezone.md) |
+| ADR-0007 | Supabase Cron e idempotência agenda/período | Aceita | [ADR](adr/0007-recurrence-and-idempotency.md) |
+| ADR-0008 | Bootstrap explícito de identidade e isolamento RLS | Aceita | [ADR](adr/0008-identity-workspace-bootstrap-and-rls.md) |
+| ADR-0009 | Autenticação SSR, gate de conta e proteção contra abuso | Aceita | [ADR](adr/0009-ssr-authentication-and-abuse-protection.md) |
+| ADR-0010 | Cadastros operacionais arquiváveis e auditoria mínima | Aceita | [ADR](adr/0010-operational-records-and-audit.md) |
+| ADR-0011 | Importação de planilha em memória, idempotente e transacional | Aceita | [ADR](adr/0011-transactional-spreadsheet-import.md) |
+| ADR-0012 | Contrato de versões do runtime na Vercel | Aceita | [ADR](adr/0012-vercel-runtime-version-contract.md) |
+| ADR-0013 | Exclusão operacional protegida, reativação e agenda de serviços | Aceita; supersedida parcialmente pela 0019 | [ADR](adr/0013-operational-deletion-and-service-lifecycle.md) |
+| ADR-0014 | Dispensa temporária da confirmação de e-mail no cadastro por senha | Superada para produção; ativação manual pendente | [ADR](adr/0014-temporary-email-confirmation-waiver.md) |
+| ADR-0015 | Estados do cliente, pausa de serviço e ciclos promocionais gratuitos | Aceita | [ADR](adr/0015-client-states-and-service-lifecycle-experience.md) |
+| ADR-0016 | Exclusão forçada pelo dono, links do cliente e liquidação em lote | Aceita | [ADR](adr/0016-owner-forced-deletion-and-client-links.md) |
+| ADR-0017 | Edição e exclusão do lançamento de receita anterior ao sistema | Aceita | [ADR](adr/0017-editable-prior-revenue-entry.md) |
+| ADR-0018 | Natureza declarada do custo adicional: receita própria ou repasse | Aceita | [ADR](adr/0018-additional-fee-nature.md) |
+| ADR-0019 | Exclusão corretiva de cobrança/despesa paga pelo owner | Aceita | [ADR](adr/0019-corrective-deletion-of-confirmed-financial-records.md) |
+| ADR-0020 | Empresas e marcas dentro do cliente, com consolidação confirmada | Aceita | [ADR](adr/0020-client-entities-companies-brands.md) |
+| ADR-0021 | Modo visitante somente leitura, com dados fictícios em memória | Aceita | [ADR](adr/0021-read-only-guest-mode.md) |
+| ADR-0022 | Cobrança pendente editável e agenda do serviço sincronizada com o vencimento | Aceita | [ADR](adr/0022-editable-pending-charges-and-service-cycle-sync.md) |
+| ADR-0023 | Data do pagamento informada na baixa | Aceita | [ADR](adr/0023-payment-date-on-settlement.md) |
+| ADR-0024 | Lembretes de cobrança pelo WhatsApp | Aceita | [ADR](adr/0024-whatsapp-charge-reminders.md) |
+| ADR-0025 | Comprovante de pagamento e início da parceria | Aceita | [ADR](adr/0025-payment-proof-and-partnership-start.md) |
 
 ## Outras decisões consolidadas
 
@@ -219,13 +220,13 @@ Consolidada em 2026-09-08:
 
 ## Hipóteses de importação que exigem confirmação
 
-| Tema                | Hipótese inicial                                               | Tratamento                                                   |
-| ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
-| `Payment type`      | Representa modalidade/cadência, não método real do recebimento | Prévia exige confirmação; método do pagamento é outro campo. |
-| `Planning Value`    | Taxa própria de planejamento/setup                             | Importar como receita própria somente após confirmação.      |
-| `Mens/ ADS`         | Taxa própria recorrente de gestão                              | Não tratar como verba de mídia sem confirmação.              |
-| Sinal de `Expenses` | Despesa pode estar lançada com convenção negativa              | Normalizar para valor positivo + natureza/direção explícita. |
-| `Net Total`         | Soma manual de total e despesa, não uma métrica canônica       | Recalcular e mostrar divergência; não importar como verdade. |
+| Tema | Hipótese inicial | Tratamento |
+|---|---|---|
+| `Payment type` | Representa modalidade/cadência, não método real do recebimento | Prévia exige confirmação; método do pagamento é outro campo. |
+| `Planning Value` | Taxa própria de planejamento/setup | Importar como receita própria somente após confirmação. |
+| `Mens/ ADS` | Taxa própria recorrente de gestão | Não tratar como verba de mídia sem confirmação. |
+| Sinal de `Expenses` | Despesa pode estar lançada com convenção negativa | Normalizar para valor positivo + natureza/direção explícita. |
+| `Net Total` | Soma manual de total e despesa, não uma métrica canônica | Recalcular e mostrar divergência; não importar como verdade. |
 
 ## Ambiguidades não bloqueadoras da Fase 2
 
@@ -246,7 +247,7 @@ Esses pontos devem ser decididos antes da fase que os implementa, sem bloquear a
 - Diário, razão, balancete, DRE contábil e balanço patrimonial.
 - Períodos contábeis, postagem, estorno contábil e saldos de abertura.
 - Papéis funcionais `admin` e `member` no workspace.
-- Notificações por e-mail/push.
+- Notificações por e-mail/push (lembretes de cobrança pelo WhatsApp entram pelo ADR-0024).
 - Conciliação bancária e OFX.
 - Exportações XLSX/PDF e relatórios contábeis.
 

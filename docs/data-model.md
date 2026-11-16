@@ -472,6 +472,16 @@ As invariantes de soma são validadas na mesma transação por função/trigger 
 | Workspace/RLS          | Somente owner ativo do workspace pode listar, anexar, baixar por URL assinada de cinco minutos ou remover.                                                                                                                    |
 | Derivado/não armazenar | Nome original e URL assinada não são persistidos; o servidor valida MIME, extensão e assinatura binária. A view `client_directory` deriva `first_paid_at` (primeiro pagamento, início da parceria) das cobranças pagas.       |
 
+### `whatsapp_reminder_settings`, `client_whatsapp_preferences` e `whatsapp_reminder_deliveries` (ADR-0024)
+
+| Aspecto | Definição |
+|---|---|
+| Finalidade | Lembretes de cobrança pelo WhatsApp: configuração do workspace, opt-in por cliente e histórico de envios. |
+| Campos | Configuração: `enabled`, `phone_number_id`, `template_language`, `template_before/due/overdue`, `days_before`, `days_after`, `header_image_url`, `pix_key`. Preferência: `client_id`, `enabled`, `phone null`, `contact_name null`. Envio: `charge_id`, `client_id`, `kind`, `due_date`, `scheduled_on`, snapshot de `recipient_phone`/`contact_name`, `status`, `attempts`, `wa_message_id`, `error_message`. |
+| FKs/constraints | Ligar exige número e template do vencimento; envio único por `(charge_id, kind, due_date)`; `wa_message_id` único; status `sending/sent/delivered/read/failed`. |
+| Segredo | Token da Meta em `private.whatsapp_credentials`, gravado por `set_whatsapp_access_token` e lido só por `service_role`. |
+| Workspace/RLS | Owner lê e edita configuração e preferência; envios são somente leitura para o owner e escritos pelos RPCs `claim_whatsapp_reminders`, `record_whatsapp_send_result` e `record_whatsapp_status`, restritos a `service_role`. |
+
 ## 9. Auditoria e importação
 
 ### `audit_events`

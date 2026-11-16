@@ -70,6 +70,12 @@ const tabs: SettingsTab[] = [
     icon: "building",
     label: "Empresa",
   },
+  {
+    description: "Lembretes de cobrança",
+    href: "/configuracoes/whatsapp",
+    icon: "phone",
+    label: "WhatsApp",
+  },
 ];
 
 function tabHash(tab: SettingsTab) {

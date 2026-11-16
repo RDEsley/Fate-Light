@@ -53,7 +53,10 @@ Git, em logs ou em capturas de tela.
 | `NEXT_PUBLIC_SUPABASE_URL` | URL da API do projeto | mesma URL ou projeto separado | Supabase → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | chave `sb_publishable_...` | mesma chave ou projeto separado | É pública por definição; nunca use a secret key no navegador |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | obrigatória | obrigatória no build | Site key pública real em produção; previews podem usar a chave oficial de teste |
-| `SUPABASE_SECRET_KEY` | deixar vazio | deixar vazio | O MVP não usa cliente privilegiado |
+| `SUPABASE_SECRET_KEY` | chave `sb_secret_...` se usar lembretes | deixar vazio | Só o agendador e o webhook do WhatsApp usam (ADR-0024); nenhuma tela |
+| `CRON_SECRET` | 16+ caracteres aleatórios | deixar vazio | A Vercel envia como `Bearer` ao chamar o cron diário |
+| `WHATSAPP_APP_SECRET` | App secret do app da Meta | deixar vazio | Valida a assinatura do webhook |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | texto escolhido por você | deixar vazio | Repetido na configuração do webhook na Meta |
 
 As variáveis `NEXT_PUBLIC_*` são incorporadas no build. Qualquer alteração exige um novo deploy.
 Como previews da Vercel também compilam com ambiente de produção, eles precisam de uma site key;
@@ -70,6 +73,21 @@ npx vercel@latest env ls production
 
 Repita para `preview` se esse ambiente também for usado. Os comandos solicitam os valores de forma
 interativa para evitar que segredos apareçam no histórico do terminal.
+
+## Lembretes de cobrança pelo WhatsApp (opcional)
+
+O cron diário (`vercel.json`, 12:00 UTC = 09:00 em Brasília) chama `/api/cron/whatsapp-reminders`.
+Sem as quatro variáveis acima, as rotas respondem 503 e nada é enviado. Para ligar:
+
+1. Na Meta, crie um app com o produto WhatsApp e um número da WhatsApp Cloud API.
+2. Gere um token permanente de usuário do sistema com `whatsapp_business_messaging`.
+3. Crie e aprove templates de categoria **Utilidade** com cinco variáveis no corpo, nesta ordem:
+   nome do contato, serviço, valor, vencimento e chave PIX. Exemplo:
+   `Olá, {{1}}! Hoje é o dia do pagamento referente a {{2}}. Valor: {{3}}. Vencimento: {{4}}.
+   PIX: {{5}}. Após o pagamento, envie o comprovante por aqui.` Um cabeçalho de imagem é opcional.
+4. Em Webhooks, use `https://seu-dominio/api/webhooks/whatsapp`, o mesmo
+   `WHATSAPP_WEBHOOK_VERIFY_TOKEN` e assine o campo `messages`.
+5. No Fate Light, preencha **Configurações → WhatsApp** e ative cada cliente na ficha dele.
 
 ## Configuração obrigatória no Supabase
 

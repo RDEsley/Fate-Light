@@ -4097,6 +4097,33 @@ summary.action-row__head {
   line-height: 1.35;
 }
 
+/* Prévia do lembrete pelo WhatsApp: balão de mensagem, só para leitura. */
+.whatsapp-preview {
+  display: grid;
+  gap: 0.45rem;
+  border-radius: 1rem;
+  padding: 1rem;
+  background: var(--positive-soft);
+}
+
+.whatsapp-preview__label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.whatsapp-preview__bubble {
+  max-width: 28rem;
+  border: 1.5px solid var(--line);
+  border-radius: 0.25rem 1rem 1rem 1rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface-raised);
+  color: var(--foreground);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
 .empty-state {
   display: grid;
   justify-items: center;

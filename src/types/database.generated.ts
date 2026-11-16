@@ -5,1977 +5,2233 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
 export type Database = {
   public: {
     Tables: {
       activity_events: {
         Row: {
-          action: string;
-          actor_user_id: string | null;
-          client_id: string | null;
-          entity_id: string;
-          entity_type: string;
-          event_data: Json;
-          id: string;
-          occurred_at: string;
-          summary: string;
-          workspace_id: string;
-        };
+          action: string
+          actor_user_id: string | null
+          client_id: string | null
+          entity_id: string
+          entity_type: string
+          event_data: Json
+          id: string
+          occurred_at: string
+          summary: string
+          workspace_id: string
+        }
         Insert: {
-          action: string;
-          actor_user_id?: string | null;
-          client_id?: string | null;
-          entity_id: string;
-          entity_type: string;
-          event_data?: Json;
-          id?: string;
-          occurred_at?: string;
-          summary: string;
-          workspace_id: string;
-        };
+          action: string
+          actor_user_id?: string | null
+          client_id?: string | null
+          entity_id: string
+          entity_type: string
+          event_data?: Json
+          id?: string
+          occurred_at?: string
+          summary: string
+          workspace_id: string
+        }
         Update: {
-          action?: string;
-          actor_user_id?: string | null;
-          client_id?: string | null;
-          entity_id?: string;
-          entity_type?: string;
-          event_data?: Json;
-          id?: string;
-          occurred_at?: string;
-          summary?: string;
-          workspace_id?: string;
-        };
+          action?: string
+          actor_user_id?: string | null
+          client_id?: string | null
+          entity_id?: string
+          entity_type?: string
+          event_data?: Json
+          id?: string
+          occurred_at?: string
+          summary?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "activity_events_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "activity_events_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "activity_events_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "activity_events_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "activity_events_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "activity_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       audit_events: {
         Row: {
-          action: string;
-          actor_user_id: string;
-          after_json: Json | null;
-          before_json: Json | null;
-          changed_fields: string[];
-          correlation_id: string;
-          entity_id: string;
-          entity_type: string;
-          id: string;
-          occurred_at: string;
-          reason: string | null;
-          workspace_id: string;
-        };
+          action: string
+          actor_user_id: string
+          after_json: Json | null
+          before_json: Json | null
+          changed_fields: string[]
+          correlation_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+          occurred_at: string
+          reason: string | null
+          workspace_id: string
+        }
         Insert: {
-          action: string;
-          actor_user_id: string;
-          after_json?: Json | null;
-          before_json?: Json | null;
-          changed_fields: string[];
-          correlation_id?: string;
-          entity_id: string;
-          entity_type: string;
-          id?: string;
-          occurred_at?: string;
-          reason?: string | null;
-          workspace_id: string;
-        };
+          action: string
+          actor_user_id: string
+          after_json?: Json | null
+          before_json?: Json | null
+          changed_fields: string[]
+          correlation_id?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          occurred_at?: string
+          reason?: string | null
+          workspace_id: string
+        }
         Update: {
-          action?: string;
-          actor_user_id?: string;
-          after_json?: Json | null;
-          before_json?: Json | null;
-          changed_fields?: string[];
-          correlation_id?: string;
-          entity_id?: string;
-          entity_type?: string;
-          id?: string;
-          occurred_at?: string;
-          reason?: string | null;
-          workspace_id?: string;
-        };
+          action?: string
+          actor_user_id?: string
+          after_json?: Json | null
+          before_json?: Json | null
+          changed_fields?: string[]
+          correlation_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          occurred_at?: string
+          reason?: string | null
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "audit_events_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "audit_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       charges: {
         Row: {
-          additional_fee: number;
-          additional_fee_is_revenue: boolean;
-          cancel_reason: string | null;
-          cancel_reason_code: string | null;
-          cancelled_at: string | null;
-          client_entity_id: string | null;
-          client_id: string;
-          client_service_id: string | null;
-          company_revenue: number;
-          created_at: string;
-          created_by: string;
-          delay_reason: string | null;
-          delay_reason_code: string | null;
-          delay_recorded_at: string | null;
-          description: string;
-          due_date: string;
-          gross_total: number | null;
-          id: string;
-          media_budget: number;
-          notes: string | null;
-          paid_at: string | null;
-          payment_method: string | null;
-          status: string;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          additional_fee: number
+          additional_fee_is_revenue: boolean
+          cancel_reason: string | null
+          cancel_reason_code: string | null
+          cancelled_at: string | null
+          client_entity_id: string | null
+          client_id: string
+          client_service_id: string | null
+          company_revenue: number
+          created_at: string
+          created_by: string
+          delay_reason: string | null
+          delay_reason_code: string | null
+          delay_recorded_at: string | null
+          description: string
+          due_date: string
+          gross_total: number | null
+          id: string
+          media_budget: number
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          additional_fee?: number;
-          additional_fee_is_revenue?: boolean;
-          cancel_reason?: string | null;
-          cancel_reason_code?: string | null;
-          cancelled_at?: string | null;
-          client_entity_id?: string | null;
-          client_id: string;
-          client_service_id?: string | null;
-          company_revenue?: number;
-          created_at?: string;
-          created_by?: string;
-          delay_reason?: string | null;
-          delay_reason_code?: string | null;
-          delay_recorded_at?: string | null;
-          description: string;
-          due_date: string;
-          gross_total?: number | null;
-          id?: string;
-          media_budget?: number;
-          notes?: string | null;
-          paid_at?: string | null;
-          payment_method?: string | null;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          additional_fee?: number
+          additional_fee_is_revenue?: boolean
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
+          client_entity_id?: string | null
+          client_id: string
+          client_service_id?: string | null
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
+          description: string
+          due_date: string
+          gross_total?: number | null
+          id?: string
+          media_budget?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          additional_fee?: number;
-          additional_fee_is_revenue?: boolean;
-          cancel_reason?: string | null;
-          cancel_reason_code?: string | null;
-          cancelled_at?: string | null;
-          client_entity_id?: string | null;
-          client_id?: string;
-          client_service_id?: string | null;
-          company_revenue?: number;
-          created_at?: string;
-          created_by?: string;
-          delay_reason?: string | null;
-          delay_reason_code?: string | null;
-          delay_recorded_at?: string | null;
-          description?: string;
-          due_date?: string;
-          gross_total?: number | null;
-          id?: string;
-          media_budget?: number;
-          notes?: string | null;
-          paid_at?: string | null;
-          payment_method?: string | null;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          additional_fee?: number
+          additional_fee_is_revenue?: boolean
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
+          client_entity_id?: string | null
+          client_id?: string
+          client_service_id?: string | null
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
+          description?: string
+          due_date?: string
+          gross_total?: number | null
+          id?: string
+          media_budget?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "charges_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "charges_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "charges_entity_fk";
-            columns: ["workspace_id", "client_id", "client_entity_id"];
-            isOneToOne: false;
-            referencedRelation: "client_entities";
-            referencedColumns: ["workspace_id", "client_id", "id"];
+            foreignKeyName: "charges_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
-            foreignKeyName: "charges_service_fk";
-            columns: ["workspace_id", "client_id", "client_service_id"];
-            isOneToOne: false;
-            referencedRelation: "client_services";
-            referencedColumns: ["workspace_id", "client_id", "id"];
+            foreignKeyName: "charges_service_fk"
+            columns: ["workspace_id", "client_id", "client_service_id"]
+            isOneToOne: false
+            referencedRelation: "client_services"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
-            foreignKeyName: "charges_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "charges_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       client_contacts: {
         Row: {
-          archived_at: string | null;
-          client_id: string;
-          created_at: string;
-          created_by: string;
-          email: string | null;
-          id: string;
-          is_primary: boolean;
-          name: string;
-          phone: string | null;
-          role: string | null;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          archived_at: string | null
+          client_id: string
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string | null
+          role: string | null
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          archived_at?: string | null;
-          client_id: string;
-          created_at?: string;
-          created_by?: string;
-          email?: string | null;
-          id?: string;
-          is_primary?: boolean;
-          name: string;
-          phone?: string | null;
-          role?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          archived_at?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          archived_at?: string | null;
-          client_id?: string;
-          created_at?: string;
-          created_by?: string;
-          email?: string | null;
-          id?: string;
-          is_primary?: boolean;
-          name?: string;
-          phone?: string | null;
-          role?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          archived_at?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "client_contacts_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "client_contacts_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_contacts_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "client_contacts_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_contacts_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "client_contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       client_entities: {
         Row: {
-          archived_at: string | null;
-          client_id: string;
-          created_at: string;
-          created_by: string;
-          display_name: string;
-          email: string | null;
-          entity_type: string;
-          id: string;
-          legal_name: string | null;
-          notes: string | null;
-          phone: string | null;
-          status: string;
-          tax_id: string | null;
-          updated_at: string;
-          updated_by: string;
-          website: string | null;
-          workspace_id: string;
-        };
+          archived_at: string | null
+          client_id: string
+          created_at: string
+          created_by: string
+          display_name: string
+          email: string | null
+          entity_type: string
+          id: string
+          legal_name: string | null
+          notes: string | null
+          phone: string | null
+          status: string
+          tax_id: string | null
+          updated_at: string
+          updated_by: string
+          website: string | null
+          workspace_id: string
+        }
         Insert: {
-          archived_at?: string | null;
-          client_id: string;
-          created_at?: string;
-          created_by?: string;
-          display_name: string;
-          email?: string | null;
-          entity_type?: string;
-          id?: string;
-          legal_name?: string | null;
-          notes?: string | null;
-          phone?: string | null;
-          status?: string;
-          tax_id?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          website?: string | null;
-          workspace_id: string;
-        };
+          archived_at?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string
+          display_name: string
+          email?: string | null
+          entity_type?: string
+          id?: string
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string
+          website?: string | null
+          workspace_id: string
+        }
         Update: {
-          archived_at?: string | null;
-          client_id?: string;
-          created_at?: string;
-          created_by?: string;
-          display_name?: string;
-          email?: string | null;
-          entity_type?: string;
-          id?: string;
-          legal_name?: string | null;
-          notes?: string | null;
-          phone?: string | null;
-          status?: string;
-          tax_id?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          website?: string | null;
-          workspace_id?: string;
-        };
+          archived_at?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          display_name?: string
+          email?: string | null
+          entity_type?: string
+          id?: string
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string
+          website?: string | null
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "client_entities_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "client_entities_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_entities_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "client_entities_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_entities_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "client_entities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       client_services: {
         Row: {
-          additional_fee: number;
-          additional_fee_is_revenue: boolean;
-          adjustment_interval_months: number | null;
-          adjustment_rate: number | null;
-          billing_type: string;
-          client_entity_id: string | null;
-          client_id: string;
-          company_revenue: number;
-          created_at: string;
-          created_by: string;
-          description: string | null;
-          discount_type: string;
-          discount_value: number;
-          ended_at: string | null;
-          id: string;
-          installment_count: number;
-          list_price: number;
-          media_budget: number;
-          name: string;
-          next_adjustment_date: string | null;
-          next_due_date: string | null;
-          notes: string | null;
-          promotional_cycles: number | null;
-          promotional_cycles_used: number;
-          promotional_price: number | null;
-          service_id: string | null;
-          start_date: string;
-          status: string;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          additional_fee: number
+          additional_fee_is_revenue: boolean
+          adjustment_interval_months: number | null
+          adjustment_rate: number | null
+          billing_type: string
+          client_entity_id: string | null
+          client_id: string
+          company_revenue: number
+          created_at: string
+          created_by: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          ended_at: string | null
+          id: string
+          installment_count: number
+          list_price: number
+          media_budget: number
+          name: string
+          next_adjustment_date: string | null
+          next_due_date: string | null
+          notes: string | null
+          promotional_cycles: number | null
+          promotional_cycles_used: number
+          promotional_price: number | null
+          service_id: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          additional_fee?: number;
-          additional_fee_is_revenue?: boolean;
-          adjustment_interval_months?: number | null;
-          adjustment_rate?: number | null;
-          billing_type?: string;
-          client_entity_id?: string | null;
-          client_id: string;
-          company_revenue?: number;
-          created_at?: string;
-          created_by?: string;
-          description?: string | null;
-          discount_type?: string;
-          discount_value?: number;
-          ended_at?: string | null;
-          id?: string;
-          installment_count?: number;
-          list_price: number;
-          media_budget?: number;
-          name: string;
-          next_adjustment_date?: string | null;
-          next_due_date?: string | null;
-          notes?: string | null;
-          promotional_cycles?: number | null;
-          promotional_cycles_used?: number;
-          promotional_price?: number | null;
-          service_id?: string | null;
-          start_date: string;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          additional_fee?: number
+          additional_fee_is_revenue?: boolean
+          adjustment_interval_months?: number | null
+          adjustment_rate?: number | null
+          billing_type?: string
+          client_entity_id?: string | null
+          client_id: string
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          ended_at?: string | null
+          id?: string
+          installment_count?: number
+          list_price: number
+          media_budget?: number
+          name: string
+          next_adjustment_date?: string | null
+          next_due_date?: string | null
+          notes?: string | null
+          promotional_cycles?: number | null
+          promotional_cycles_used?: number
+          promotional_price?: number | null
+          service_id?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          additional_fee?: number;
-          additional_fee_is_revenue?: boolean;
-          adjustment_interval_months?: number | null;
-          adjustment_rate?: number | null;
-          billing_type?: string;
-          client_entity_id?: string | null;
-          client_id?: string;
-          company_revenue?: number;
-          created_at?: string;
-          created_by?: string;
-          description?: string | null;
-          discount_type?: string;
-          discount_value?: number;
-          ended_at?: string | null;
-          id?: string;
-          installment_count?: number;
-          list_price?: number;
-          media_budget?: number;
-          name?: string;
-          next_adjustment_date?: string | null;
-          next_due_date?: string | null;
-          notes?: string | null;
-          promotional_cycles?: number | null;
-          promotional_cycles_used?: number;
-          promotional_price?: number | null;
-          service_id?: string | null;
-          start_date?: string;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          additional_fee?: number
+          additional_fee_is_revenue?: boolean
+          adjustment_interval_months?: number | null
+          adjustment_rate?: number | null
+          billing_type?: string
+          client_entity_id?: string | null
+          client_id?: string
+          company_revenue?: number
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          ended_at?: string | null
+          id?: string
+          installment_count?: number
+          list_price?: number
+          media_budget?: number
+          name?: string
+          next_adjustment_date?: string | null
+          next_due_date?: string | null
+          notes?: string | null
+          promotional_cycles?: number | null
+          promotional_cycles_used?: number
+          promotional_price?: number | null
+          service_id?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "client_services_catalog_fk";
-            columns: ["workspace_id", "service_id"];
-            isOneToOne: false;
-            referencedRelation: "services";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "client_services_catalog_fk"
+            columns: ["workspace_id", "service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_services_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "client_services_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_services_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "client_services_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "client_services_entity_fk";
-            columns: ["workspace_id", "client_id", "client_entity_id"];
-            isOneToOne: false;
-            referencedRelation: "client_entities";
-            referencedColumns: ["workspace_id", "client_id", "id"];
+            foreignKeyName: "client_services_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
-            foreignKeyName: "client_services_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "client_services_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
+      client_whatsapp_preferences: {
+        Row: {
+          client_id: string
+          contact_name: string | null
+          created_at: string
+          created_by: string
+          enabled: boolean
+          phone: string | null
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          client_id: string
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          client_id?: string
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_whatsapp_preferences_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_whatsapp_preferences_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_whatsapp_preferences_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
-          address_json: Json | null;
-          archived_at: string | null;
-          commercial_status: string;
-          created_at: string;
-          created_by: string;
-          email: string | null;
-          id: string;
-          kind: string;
-          links: Json;
-          name: string;
-          notes: string | null;
-          phone: string | null;
-          responsible_name: string | null;
-          tags: string[];
-          tax_id: string | null;
-          trade_name: string | null;
-          updated_at: string;
-          updated_by: string;
-          website: string | null;
-          workspace_id: string;
-        };
+          address_json: Json | null
+          archived_at: string | null
+          commercial_status: string
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          kind: string
+          links: Json
+          name: string
+          notes: string | null
+          phone: string | null
+          responsible_name: string | null
+          tags: string[]
+          tax_id: string | null
+          trade_name: string | null
+          updated_at: string
+          updated_by: string
+          website: string | null
+          workspace_id: string
+        }
         Insert: {
-          address_json?: Json | null;
-          archived_at?: string | null;
-          commercial_status?: string;
-          created_at?: string;
-          created_by?: string;
-          email?: string | null;
-          id?: string;
-          kind: string;
-          links?: Json;
-          name: string;
-          notes?: string | null;
-          phone?: string | null;
-          responsible_name?: string | null;
-          tags?: string[];
-          tax_id?: string | null;
-          trade_name?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          website?: string | null;
-          workspace_id: string;
-        };
+          address_json?: Json | null
+          archived_at?: string | null
+          commercial_status?: string
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          kind: string
+          links?: Json
+          name: string
+          notes?: string | null
+          phone?: string | null
+          responsible_name?: string | null
+          tags?: string[]
+          tax_id?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string
+          website?: string | null
+          workspace_id: string
+        }
         Update: {
-          address_json?: Json | null;
-          archived_at?: string | null;
-          commercial_status?: string;
-          created_at?: string;
-          created_by?: string;
-          email?: string | null;
-          id?: string;
-          kind?: string;
-          links?: Json;
-          name?: string;
-          notes?: string | null;
-          phone?: string | null;
-          responsible_name?: string | null;
-          tags?: string[];
-          tax_id?: string | null;
-          trade_name?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          website?: string | null;
-          workspace_id?: string;
-        };
+          address_json?: Json | null
+          archived_at?: string | null
+          commercial_status?: string
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          kind?: string
+          links?: Json
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          responsible_name?: string | null
+          tags?: string[]
+          tax_id?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string
+          website?: string | null
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "clients_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "clients_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       domains: {
         Row: {
-          auto_renew: boolean;
-          client_entity_id: string | null;
-          client_id: string;
-          cost: number | null;
-          created_at: string;
-          created_by: string;
-          domain: string;
-          expires_on: string;
-          id: string;
-          notes: string | null;
-          payment_responsibility: string;
-          registrar: string | null;
-          status: string;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          auto_renew: boolean
+          client_entity_id: string | null
+          client_id: string
+          cost: number | null
+          created_at: string
+          created_by: string
+          domain: string
+          expires_on: string
+          id: string
+          notes: string | null
+          payment_responsibility: string
+          registrar: string | null
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          auto_renew?: boolean;
-          client_entity_id?: string | null;
-          client_id: string;
-          cost?: number | null;
-          created_at?: string;
-          created_by?: string;
-          domain: string;
-          expires_on: string;
-          id?: string;
-          notes?: string | null;
-          payment_responsibility: string;
-          registrar?: string | null;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          auto_renew?: boolean
+          client_entity_id?: string | null
+          client_id: string
+          cost?: number | null
+          created_at?: string
+          created_by?: string
+          domain: string
+          expires_on: string
+          id?: string
+          notes?: string | null
+          payment_responsibility: string
+          registrar?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          auto_renew?: boolean;
-          client_entity_id?: string | null;
-          client_id?: string;
-          cost?: number | null;
-          created_at?: string;
-          created_by?: string;
-          domain?: string;
-          expires_on?: string;
-          id?: string;
-          notes?: string | null;
-          payment_responsibility?: string;
-          registrar?: string | null;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          auto_renew?: boolean
+          client_entity_id?: string | null
+          client_id?: string
+          cost?: number | null
+          created_at?: string
+          created_by?: string
+          domain?: string
+          expires_on?: string
+          id?: string
+          notes?: string | null
+          payment_responsibility?: string
+          registrar?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "domains_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "domains_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "domains_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "domains_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "domains_entity_fk";
-            columns: ["workspace_id", "client_id", "client_entity_id"];
-            isOneToOne: false;
-            referencedRelation: "client_entities";
-            referencedColumns: ["workspace_id", "client_id", "id"];
+            foreignKeyName: "domains_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
-            foreignKeyName: "domains_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "domains_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       expense_categories: {
         Row: {
-          active: boolean;
-          archived_at: string | null;
-          color: string | null;
-          created_at: string;
-          created_by: string;
-          default_nature: string;
-          id: string;
-          name: string;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          active: boolean
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          created_by: string
+          default_nature: string
+          id: string
+          name: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          active?: boolean;
-          archived_at?: string | null;
-          color?: string | null;
-          created_at?: string;
-          created_by?: string;
-          default_nature?: string;
-          id?: string;
-          name: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          active?: boolean
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          default_nature?: string
+          id?: string
+          name: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          active?: boolean;
-          archived_at?: string | null;
-          color?: string | null;
-          created_at?: string;
-          created_by?: string;
-          default_nature?: string;
-          id?: string;
-          name?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          active?: boolean
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          default_nature?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "expense_categories_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "expense_categories_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       expenses: {
         Row: {
-          amount: number;
-          category: string;
-          client_entity_id: string | null;
-          client_id: string | null;
-          created_at: string;
-          created_by: string;
-          description: string;
-          due_date: string;
-          expense_type: string;
-          id: string;
-          notes: string | null;
-          paid_at: string | null;
-          recurrence_active: boolean;
-          recurrence_frequency: string | null;
-          recurrence_group_id: string | null;
-          recurrence_sequence: number | null;
-          status: string;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          amount: number
+          category: string
+          client_entity_id: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string
+          description: string
+          due_date: string
+          expense_type: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          recurrence_active: boolean
+          recurrence_frequency: string | null
+          recurrence_group_id: string | null
+          recurrence_sequence: number | null
+          status: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          amount: number;
-          category: string;
-          client_entity_id?: string | null;
-          client_id?: string | null;
-          created_at?: string;
-          created_by?: string;
-          description: string;
-          due_date: string;
-          expense_type: string;
-          id?: string;
-          notes?: string | null;
-          paid_at?: string | null;
-          recurrence_active?: boolean;
-          recurrence_frequency?: string | null;
-          recurrence_group_id?: string | null;
-          recurrence_sequence?: number | null;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          amount: number
+          category: string
+          client_entity_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description: string
+          due_date: string
+          expense_type: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          recurrence_active?: boolean
+          recurrence_frequency?: string | null
+          recurrence_group_id?: string | null
+          recurrence_sequence?: number | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          amount?: number;
-          category?: string;
-          client_entity_id?: string | null;
-          client_id?: string | null;
-          created_at?: string;
-          created_by?: string;
-          description?: string;
-          due_date?: string;
-          expense_type?: string;
-          id?: string;
-          notes?: string | null;
-          paid_at?: string | null;
-          recurrence_active?: boolean;
-          recurrence_frequency?: string | null;
-          recurrence_group_id?: string | null;
-          recurrence_sequence?: number | null;
-          status?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          amount?: number
+          category?: string
+          client_entity_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          due_date?: string
+          expense_type?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          recurrence_active?: boolean
+          recurrence_frequency?: string | null
+          recurrence_group_id?: string | null
+          recurrence_sequence?: number | null
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "expenses_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "expenses_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "expenses_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "expenses_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "expenses_entity_fk";
-            columns: ["workspace_id", "client_id", "client_entity_id"];
-            isOneToOne: false;
-            referencedRelation: "client_entities";
-            referencedColumns: ["workspace_id", "client_id", "id"];
+            foreignKeyName: "expenses_entity_fk"
+            columns: ["workspace_id", "client_id", "client_entity_id"]
+            isOneToOne: false
+            referencedRelation: "client_entities"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
-            foreignKeyName: "expenses_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "expenses_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       fiscal_documents: {
         Row: {
-          bucket: string;
-          charge_id: string | null;
-          checksum_sha256: string;
-          created_at: string;
-          created_by: string;
-          expense_id: string | null;
-          id: string;
-          kind: string;
-          mime_type: string;
-          object_path: string;
-          safe_filename: string;
-          size_bytes: number;
-          workspace_id: string;
-        };
+          bucket: string
+          charge_id: string | null
+          checksum_sha256: string
+          created_at: string
+          created_by: string
+          expense_id: string | null
+          id: string
+          kind: string
+          mime_type: string
+          object_path: string
+          safe_filename: string
+          size_bytes: number
+          workspace_id: string
+        }
         Insert: {
-          bucket?: string;
-          charge_id?: string | null;
-          checksum_sha256: string;
-          created_at?: string;
-          created_by?: string;
-          expense_id?: string | null;
-          id?: string;
-          kind?: string;
-          mime_type: string;
-          object_path: string;
-          safe_filename: string;
-          size_bytes: number;
-          workspace_id: string;
-        };
+          bucket?: string
+          charge_id?: string | null
+          checksum_sha256: string
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          id?: string
+          kind?: string
+          mime_type: string
+          object_path: string
+          safe_filename: string
+          size_bytes: number
+          workspace_id: string
+        }
         Update: {
-          bucket?: string;
-          charge_id?: string | null;
-          checksum_sha256?: string;
-          created_at?: string;
-          created_by?: string;
-          expense_id?: string | null;
-          id?: string;
-          kind?: string;
-          mime_type?: string;
-          object_path?: string;
-          safe_filename?: string;
-          size_bytes?: number;
-          workspace_id?: string;
-        };
+          bucket?: string
+          charge_id?: string | null
+          checksum_sha256?: string
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string
+          object_path?: string
+          safe_filename?: string
+          size_bytes?: number
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "fiscal_documents_charge_fk";
-            columns: ["workspace_id", "charge_id"];
-            isOneToOne: false;
-            referencedRelation: "charges";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "fiscal_documents_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "fiscal_documents_charge_fk";
-            columns: ["workspace_id", "charge_id"];
-            isOneToOne: false;
-            referencedRelation: "charges_overview";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "fiscal_documents_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges_overview"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "fiscal_documents_expense_fk";
-            columns: ["workspace_id", "expense_id"];
-            isOneToOne: false;
-            referencedRelation: "expenses";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "fiscal_documents_expense_fk"
+            columns: ["workspace_id", "expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "fiscal_documents_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "fiscal_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       import_jobs: {
         Row: {
-          confirmed_at: string;
-          created_at: string;
-          created_by: string;
-          entity_counts: Json;
-          id: string;
-          mapping_version: string;
-          row_count: number;
-          source_checksum: string;
-          source_type: string;
-          status: string;
-          workspace_id: string;
-        };
+          confirmed_at: string
+          created_at: string
+          created_by: string
+          entity_counts: Json
+          id: string
+          mapping_version: string
+          row_count: number
+          source_checksum: string
+          source_type: string
+          status: string
+          workspace_id: string
+        }
         Insert: {
-          confirmed_at?: string;
-          created_at?: string;
-          created_by?: string;
-          entity_counts?: Json;
-          id?: string;
-          mapping_version: string;
-          row_count: number;
-          source_checksum: string;
-          source_type: string;
-          status?: string;
-          workspace_id: string;
-        };
+          confirmed_at?: string
+          created_at?: string
+          created_by?: string
+          entity_counts?: Json
+          id?: string
+          mapping_version: string
+          row_count: number
+          source_checksum: string
+          source_type: string
+          status?: string
+          workspace_id: string
+        }
         Update: {
-          confirmed_at?: string;
-          created_at?: string;
-          created_by?: string;
-          entity_counts?: Json;
-          id?: string;
-          mapping_version?: string;
-          row_count?: number;
-          source_checksum?: string;
-          source_type?: string;
-          status?: string;
-          workspace_id?: string;
-        };
+          confirmed_at?: string
+          created_at?: string
+          created_by?: string
+          entity_counts?: Json
+          id?: string
+          mapping_version?: string
+          row_count?: number
+          source_checksum?: string
+          source_type?: string
+          status?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "import_jobs_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "import_jobs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       legal_acceptances: {
         Row: {
-          accepted_at: string;
-          created_at: string;
-          document_version: string;
-          id: string;
-          legal_document_id: string;
-          source: string;
-          user_id: string;
-        };
+          accepted_at: string
+          created_at: string
+          document_version: string
+          id: string
+          legal_document_id: string
+          source: string
+          user_id: string
+        }
         Insert: {
-          accepted_at?: string;
-          created_at?: string;
-          document_version: string;
-          id?: string;
-          legal_document_id: string;
-          source?: string;
-          user_id: string;
-        };
+          accepted_at?: string
+          created_at?: string
+          document_version: string
+          id?: string
+          legal_document_id: string
+          source?: string
+          user_id: string
+        }
         Update: {
-          accepted_at?: string;
-          created_at?: string;
-          document_version?: string;
-          id?: string;
-          legal_document_id?: string;
-          source?: string;
-          user_id?: string;
-        };
+          accepted_at?: string
+          created_at?: string
+          document_version?: string
+          id?: string
+          legal_document_id?: string
+          source?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "legal_acceptances_document_fk";
-            columns: ["legal_document_id", "document_version"];
-            isOneToOne: false;
-            referencedRelation: "legal_documents";
-            referencedColumns: ["id", "version"];
+            foreignKeyName: "legal_acceptances_document_fk"
+            columns: ["legal_document_id", "document_version"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id", "version"]
           },
-        ];
-      };
+        ]
+      }
       legal_documents: {
         Row: {
-          content_hash: string;
-          content_markdown: string;
-          created_at: string;
-          document_type: string;
-          effective_at: string | null;
-          id: string;
-          is_required: boolean;
-          published_at: string | null;
-          retired_at: string | null;
-          status: string;
-          updated_at: string;
-          version: string;
-        };
+          content_hash: string
+          content_markdown: string
+          created_at: string
+          document_type: string
+          effective_at: string | null
+          id: string
+          is_required: boolean
+          published_at: string | null
+          retired_at: string | null
+          status: string
+          updated_at: string
+          version: string
+        }
         Insert: {
-          content_hash: string;
-          content_markdown: string;
-          created_at?: string;
-          document_type: string;
-          effective_at?: string | null;
-          id?: string;
-          is_required?: boolean;
-          published_at?: string | null;
-          retired_at?: string | null;
-          status?: string;
-          updated_at?: string;
-          version: string;
-        };
+          content_hash: string
+          content_markdown: string
+          created_at?: string
+          document_type: string
+          effective_at?: string | null
+          id?: string
+          is_required?: boolean
+          published_at?: string | null
+          retired_at?: string | null
+          status?: string
+          updated_at?: string
+          version: string
+        }
         Update: {
-          content_hash?: string;
-          content_markdown?: string;
-          created_at?: string;
-          document_type?: string;
-          effective_at?: string | null;
-          id?: string;
-          is_required?: boolean;
-          published_at?: string | null;
-          retired_at?: string | null;
-          status?: string;
-          updated_at?: string;
-          version?: string;
-        };
-        Relationships: [];
-      };
+          content_hash?: string
+          content_markdown?: string
+          created_at?: string
+          document_type?: string
+          effective_at?: string | null
+          id?: string
+          is_required?: boolean
+          published_at?: string | null
+          retired_at?: string | null
+          status?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       manual_alerts: {
         Row: {
-          client_id: string | null;
-          created_at: string;
-          created_by: string;
-          due_on: string;
-          id: string;
-          notes: string | null;
-          recurrence: string;
-          resolved_at: string | null;
-          severity: string;
-          state: string;
-          title: string;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          client_id: string | null
+          created_at: string
+          created_by: string
+          due_on: string
+          id: string
+          notes: string | null
+          recurrence: string
+          resolved_at: string | null
+          severity: string
+          state: string
+          title: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          client_id?: string | null;
-          created_at?: string;
-          created_by?: string;
-          due_on: string;
-          id?: string;
-          notes?: string | null;
-          recurrence?: string;
-          resolved_at?: string | null;
-          severity?: string;
-          state?: string;
-          title: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          due_on: string
+          id?: string
+          notes?: string | null
+          recurrence?: string
+          resolved_at?: string | null
+          severity?: string
+          state?: string
+          title: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          client_id?: string | null;
-          created_at?: string;
-          created_by?: string;
-          due_on?: string;
-          id?: string;
-          notes?: string | null;
-          recurrence?: string;
-          resolved_at?: string | null;
-          severity?: string;
-          state?: string;
-          title?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          due_on?: string
+          id?: string
+          notes?: string | null
+          recurrence?: string
+          resolved_at?: string | null
+          severity?: string
+          state?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "manual_alerts_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "manual_alerts_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "manual_alerts_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "manual_alerts_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "manual_alerts_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "manual_alerts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       profiles: {
         Row: {
-          account_status: string;
-          created_at: string;
-          full_name: string;
-          id: string;
-          last_seen_at: string | null;
-          locale: string;
-          phone: string | null;
-          theme: string;
-          timezone: string;
-          updated_at: string;
-        };
+          account_status: string
+          created_at: string
+          full_name: string
+          id: string
+          last_seen_at: string | null
+          locale: string
+          phone: string | null
+          theme: string
+          timezone: string
+          updated_at: string
+        }
         Insert: {
-          account_status?: string;
-          created_at?: string;
-          full_name: string;
-          id: string;
-          last_seen_at?: string | null;
-          locale?: string;
-          phone?: string | null;
-          theme?: string;
-          timezone?: string;
-          updated_at?: string;
-        };
+          account_status?: string
+          created_at?: string
+          full_name: string
+          id: string
+          last_seen_at?: string | null
+          locale?: string
+          phone?: string | null
+          theme?: string
+          timezone?: string
+          updated_at?: string
+        }
         Update: {
-          account_status?: string;
-          created_at?: string;
-          full_name?: string;
-          id?: string;
-          last_seen_at?: string | null;
-          locale?: string;
-          phone?: string | null;
-          theme?: string;
-          timezone?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          account_status?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          last_seen_at?: string | null
+          locale?: string
+          phone?: string | null
+          theme?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
-          active: boolean;
-          archived_at: string | null;
-          created_at: string;
-          created_by: string;
-          default_adjustment_interval_months: number | null;
-          default_adjustment_rate: number | null;
-          default_billing_type: string;
-          default_component_kind: string;
-          default_financial_nature: string;
-          default_price: number;
-          description: string | null;
-          id: string;
-          name: string;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          active: boolean
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          default_adjustment_interval_months: number | null
+          default_adjustment_rate: number | null
+          default_billing_type: string
+          default_component_kind: string
+          default_financial_nature: string
+          default_price: number
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          active?: boolean;
-          archived_at?: string | null;
-          created_at?: string;
-          created_by?: string;
-          default_adjustment_interval_months?: number | null;
-          default_adjustment_rate?: number | null;
-          default_billing_type?: string;
-          default_component_kind?: string;
-          default_financial_nature?: string;
-          default_price?: number;
-          description?: string | null;
-          id?: string;
-          name: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          active?: boolean
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          default_adjustment_interval_months?: number | null
+          default_adjustment_rate?: number | null
+          default_billing_type?: string
+          default_component_kind?: string
+          default_financial_nature?: string
+          default_price?: number
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          active?: boolean;
-          archived_at?: string | null;
-          created_at?: string;
-          created_by?: string;
-          default_adjustment_interval_months?: number | null;
-          default_adjustment_rate?: number | null;
-          default_billing_type?: string;
-          default_component_kind?: string;
-          default_financial_nature?: string;
-          default_price?: number;
-          description?: string | null;
-          id?: string;
-          name?: string;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          active?: boolean
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          default_adjustment_interval_months?: number | null
+          default_adjustment_rate?: number | null
+          default_billing_type?: string
+          default_component_kind?: string
+          default_financial_nature?: string
+          default_price?: number
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "services_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "services_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       vendors: {
         Row: {
-          archived_at: string | null;
-          contact_json: Json | null;
-          created_at: string;
-          created_by: string;
-          id: string;
-          name: string;
-          notes: string | null;
-          tax_id: string | null;
-          updated_at: string;
-          updated_by: string;
-          workspace_id: string;
-        };
+          archived_at: string | null
+          contact_json: Json | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          notes: string | null
+          tax_id: string | null
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
         Insert: {
-          archived_at?: string | null;
-          contact_json?: Json | null;
-          created_at?: string;
-          created_by?: string;
-          id?: string;
-          name: string;
-          notes?: string | null;
-          tax_id?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id: string;
-        };
+          archived_at?: string | null
+          contact_json?: Json | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name: string
+          notes?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
         Update: {
-          archived_at?: string | null;
-          contact_json?: Json | null;
-          created_at?: string;
-          created_by?: string;
-          id?: string;
-          name?: string;
-          notes?: string | null;
-          tax_id?: string | null;
-          updated_at?: string;
-          updated_by?: string;
-          workspace_id?: string;
-        };
+          archived_at?: string | null
+          contact_json?: Json | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "vendors_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "vendors_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
+      whatsapp_reminder_deliveries: {
+        Row: {
+          attempts: number
+          charge_id: string
+          client_id: string
+          contact_name: string
+          created_at: string
+          due_date: string
+          error_message: string | null
+          id: string
+          kind: string
+          recipient_phone: string
+          scheduled_on: string
+          sent_at: string | null
+          status: string
+          status_at: string
+          wa_message_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          attempts?: number
+          charge_id: string
+          client_id: string
+          contact_name: string
+          created_at?: string
+          due_date: string
+          error_message?: string | null
+          id?: string
+          kind: string
+          recipient_phone: string
+          scheduled_on: string
+          sent_at?: string | null
+          status?: string
+          status_at?: string
+          wa_message_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          attempts?: number
+          charge_id?: string
+          client_id?: string
+          contact_name?: string
+          created_at?: string
+          due_date?: string
+          error_message?: string | null
+          id?: string
+          kind?: string
+          recipient_phone?: string
+          scheduled_on?: string
+          sent_at?: string | null
+          status?: string
+          status_at?: string
+          wa_message_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_deliveries_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_deliveries_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges_overview"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_deliveries_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_deliveries_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_reminder_deliveries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_reminder_settings: {
+        Row: {
+          created_at: string
+          created_by: string
+          days_after: number
+          days_before: number
+          enabled: boolean
+          header_image_url: string | null
+          phone_number_id: string | null
+          pix_key: string | null
+          template_before: string | null
+          template_due: string | null
+          template_language: string
+          template_overdue: string | null
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          days_after?: number
+          days_before?: number
+          enabled?: boolean
+          header_image_url?: string | null
+          phone_number_id?: string | null
+          pix_key?: string | null
+          template_before?: string | null
+          template_due?: string | null
+          template_language?: string
+          template_overdue?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          days_after?: number
+          days_before?: number
+          enabled?: boolean
+          header_image_url?: string | null
+          phone_number_id?: string | null
+          pix_key?: string | null
+          template_before?: string | null
+          template_due?: string | null
+          template_language?: string
+          template_overdue?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_reminder_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
-          created_at: string;
-          joined_at: string;
-          role: string;
-          status: string;
-          updated_at: string;
-          user_id: string;
-          workspace_id: string;
-        };
+          created_at: string
+          joined_at: string
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
         Insert: {
-          created_at?: string;
-          joined_at?: string;
-          role?: string;
-          status?: string;
-          updated_at?: string;
-          user_id: string;
-          workspace_id: string;
-        };
+          created_at?: string
+          joined_at?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
         Update: {
-          created_at?: string;
-          joined_at?: string;
-          role?: string;
-          status?: string;
-          updated_at?: string;
-          user_id?: string;
-          workspace_id?: string;
-        };
+          created_at?: string
+          joined_at?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "workspace_members_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       workspace_settings: {
         Row: {
-          accounting_basis: string;
-          address_city: string | null;
-          address_district: string | null;
-          address_line1: string | null;
-          address_line2: string | null;
-          address_region: string | null;
-          country_code: string;
-          created_at: string;
-          date_format: string;
-          default_alert_offsets: number[];
-          general_settings: Json;
-          legal_name: string;
-          postal_code: string | null;
-          tax_id: string | null;
-          trade_name: string | null;
-          updated_at: string;
-          workspace_id: string;
-        };
+          accounting_basis: string
+          address_city: string | null
+          address_district: string | null
+          address_line1: string | null
+          address_line2: string | null
+          address_region: string | null
+          country_code: string
+          created_at: string
+          date_format: string
+          default_alert_offsets: number[]
+          general_settings: Json
+          legal_name: string
+          postal_code: string | null
+          tax_id: string | null
+          trade_name: string | null
+          updated_at: string
+          workspace_id: string
+        }
         Insert: {
-          accounting_basis?: string;
-          address_city?: string | null;
-          address_district?: string | null;
-          address_line1?: string | null;
-          address_line2?: string | null;
-          address_region?: string | null;
-          country_code?: string;
-          created_at?: string;
-          date_format?: string;
-          default_alert_offsets?: number[];
-          general_settings?: Json;
-          legal_name: string;
-          postal_code?: string | null;
-          tax_id?: string | null;
-          trade_name?: string | null;
-          updated_at?: string;
-          workspace_id: string;
-        };
+          accounting_basis?: string
+          address_city?: string | null
+          address_district?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_region?: string | null
+          country_code?: string
+          created_at?: string
+          date_format?: string
+          default_alert_offsets?: number[]
+          general_settings?: Json
+          legal_name: string
+          postal_code?: string | null
+          tax_id?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
         Update: {
-          accounting_basis?: string;
-          address_city?: string | null;
-          address_district?: string | null;
-          address_line1?: string | null;
-          address_line2?: string | null;
-          address_region?: string | null;
-          country_code?: string;
-          created_at?: string;
-          date_format?: string;
-          default_alert_offsets?: number[];
-          general_settings?: Json;
-          legal_name?: string;
-          postal_code?: string | null;
-          tax_id?: string | null;
-          trade_name?: string | null;
-          updated_at?: string;
-          workspace_id?: string;
-        };
+          accounting_basis?: string
+          address_city?: string | null
+          address_district?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_region?: string | null
+          country_code?: string
+          created_at?: string
+          date_format?: string
+          default_alert_offsets?: number[]
+          general_settings?: Json
+          legal_name?: string
+          postal_code?: string | null
+          tax_id?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "workspace_settings_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: true;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "workspace_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       workspaces: {
         Row: {
-          archived_at: string | null;
-          created_at: string;
-          created_by: string;
-          currency: string;
-          id: string;
-          name: string;
-          status: string;
-          timezone: string;
-          updated_at: string;
-        };
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          id: string
+          name: string
+          status: string
+          timezone: string
+          updated_at: string
+        }
         Insert: {
-          archived_at?: string | null;
-          created_at?: string;
-          created_by: string;
-          currency?: string;
-          id?: string;
-          name: string;
-          status?: string;
-          timezone?: string;
-          updated_at?: string;
-        };
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          id?: string
+          name: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
         Update: {
-          archived_at?: string | null;
-          created_at?: string;
-          created_by?: string;
-          currency?: string;
-          id?: string;
-          name?: string;
-          status?: string;
-          timezone?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-    };
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          id?: string
+          name?: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
     Views: {
       charges_overview: {
         Row: {
-          additional_fee: number | null;
-          additional_fee_is_revenue: boolean | null;
-          cancel_reason: string | null;
-          cancel_reason_code: string | null;
-          cancelled_at: string | null;
-          client_id: string | null;
-          client_service_id: string | null;
-          company_result_value: number | null;
-          company_revenue: number | null;
-          created_at: string | null;
-          created_by: string | null;
-          delay_reason: string | null;
-          delay_reason_code: string | null;
-          delay_recorded_at: string | null;
-          description: string | null;
-          due_date: string | null;
-          effective_status: string | null;
-          gross_total: number | null;
-          id: string | null;
-          media_budget: number | null;
-          notes: string | null;
-          paid_at: string | null;
-          payment_method: string | null;
-          status: string | null;
-          updated_at: string | null;
-          updated_by: string | null;
-          workspace_id: string | null;
-        };
+          additional_fee: number | null
+          additional_fee_is_revenue: boolean | null
+          cancel_reason: string | null
+          cancel_reason_code: string | null
+          cancelled_at: string | null
+          client_id: string | null
+          client_service_id: string | null
+          company_result_value: number | null
+          company_revenue: number | null
+          created_at: string | null
+          created_by: string | null
+          delay_reason: string | null
+          delay_reason_code: string | null
+          delay_recorded_at: string | null
+          description: string | null
+          due_date: string | null
+          effective_status: string | null
+          gross_total: number | null
+          id: string | null
+          media_budget: number | null
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string | null
+          updated_by: string | null
+          workspace_id: string | null
+        }
         Insert: {
-          additional_fee?: number | null;
-          additional_fee_is_revenue?: boolean | null;
-          cancel_reason?: string | null;
-          cancel_reason_code?: string | null;
-          cancelled_at?: string | null;
-          client_id?: string | null;
-          client_service_id?: string | null;
-          company_result_value?: never;
-          company_revenue?: number | null;
-          created_at?: string | null;
-          created_by?: string | null;
-          delay_reason?: string | null;
-          delay_reason_code?: string | null;
-          delay_recorded_at?: string | null;
-          description?: string | null;
-          due_date?: string | null;
-          effective_status?: never;
-          gross_total?: number | null;
-          id?: string | null;
-          media_budget?: number | null;
-          notes?: string | null;
-          paid_at?: string | null;
-          payment_method?: string | null;
-          status?: string | null;
-          updated_at?: string | null;
-          updated_by?: string | null;
-          workspace_id?: string | null;
-        };
+          additional_fee?: number | null
+          additional_fee_is_revenue?: boolean | null
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
+          client_id?: string | null
+          client_service_id?: string | null
+          company_result_value?: never
+          company_revenue?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          effective_status?: never
+          gross_total?: number | null
+          id?: string | null
+          media_budget?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id?: string | null
+        }
         Update: {
-          additional_fee?: number | null;
-          additional_fee_is_revenue?: boolean | null;
-          cancel_reason?: string | null;
-          cancel_reason_code?: string | null;
-          cancelled_at?: string | null;
-          client_id?: string | null;
-          client_service_id?: string | null;
-          company_result_value?: never;
-          company_revenue?: number | null;
-          created_at?: string | null;
-          created_by?: string | null;
-          delay_reason?: string | null;
-          delay_reason_code?: string | null;
-          delay_recorded_at?: string | null;
-          description?: string | null;
-          due_date?: string | null;
-          effective_status?: never;
-          gross_total?: number | null;
-          id?: string | null;
-          media_budget?: number | null;
-          notes?: string | null;
-          paid_at?: string | null;
-          payment_method?: string | null;
-          status?: string | null;
-          updated_at?: string | null;
-          updated_by?: string | null;
-          workspace_id?: string | null;
-        };
+          additional_fee?: number | null
+          additional_fee_is_revenue?: boolean | null
+          cancel_reason?: string | null
+          cancel_reason_code?: string | null
+          cancelled_at?: string | null
+          client_id?: string | null
+          client_service_id?: string | null
+          company_result_value?: never
+          company_revenue?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_code?: string | null
+          delay_recorded_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          effective_status?: never
+          gross_total?: number | null
+          id?: string | null
+          media_budget?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "charges_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "client_directory";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "charges_client_fk";
-            columns: ["workspace_id", "client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["workspace_id", "id"];
+            foreignKeyName: "charges_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
           },
           {
-            foreignKeyName: "charges_service_fk";
-            columns: ["workspace_id", "client_id", "client_service_id"];
-            isOneToOne: false;
-            referencedRelation: "client_services";
-            referencedColumns: ["workspace_id", "client_id", "id"];
+            foreignKeyName: "charges_service_fk"
+            columns: ["workspace_id", "client_id", "client_service_id"]
+            isOneToOne: false
+            referencedRelation: "client_services"
+            referencedColumns: ["workspace_id", "client_id", "id"]
           },
           {
-            foreignKeyName: "charges_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "charges_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       client_directory: {
         Row: {
-          active_services: number | null;
-          archived_at: string | null;
-          commercial_status: string | null;
-          email: string | null;
-          expiring_domains: number | null;
-          first_paid_at: string | null;
-          first_service_start: string | null;
-          id: string | null;
-          lifetime_revenue: number | null;
-          links: Json | null;
-          name: string | null;
-          notes: string | null;
-          overdue_charges: number | null;
-          phone: string | null;
-          status_rank: number | null;
-          trade_name: string | null;
-          website: string | null;
-          workspace_id: string | null;
-        };
+          active_services: number | null
+          archived_at: string | null
+          commercial_status: string | null
+          email: string | null
+          expiring_domains: number | null
+          first_paid_at: string | null
+          first_service_start: string | null
+          id: string | null
+          lifetime_revenue: number | null
+          links: Json | null
+          name: string | null
+          notes: string | null
+          overdue_charges: number | null
+          phone: string | null
+          status_rank: number | null
+          trade_name: string | null
+          website: string | null
+          workspace_id: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "clients_workspace_id_fkey";
-            columns: ["workspace_id"];
-            isOneToOne: false;
-            referencedRelation: "workspaces";
-            referencedColumns: ["id"];
+            foreignKeyName: "clients_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
           },
-        ];
-      };
-    };
+        ]
+      }
+    }
     Functions: {
       apply_service_to_client: {
         Args: {
-          p_additional_fee: number;
-          p_additional_fee_is_revenue: boolean;
-          p_adjustment_interval_months: number;
-          p_adjustment_rate: number;
-          p_billing_type: string;
-          p_client_entity_id?: string;
-          p_client_id: string;
-          p_description: string;
-          p_discount_type: string;
-          p_discount_value: number;
-          p_installment_count: number;
-          p_list_price: number;
-          p_media_budget: number;
-          p_name: string;
-          p_next_due_date: string;
-          p_notes: string;
-          p_promotional_cycles: number;
-          p_promotional_price: number;
-          p_service_id: string;
-          p_start_date: string;
-        };
-        Returns: string;
-      };
+          p_additional_fee: number
+          p_additional_fee_is_revenue: boolean
+          p_adjustment_interval_months: number
+          p_adjustment_rate: number
+          p_billing_type: string
+          p_client_entity_id?: string
+          p_client_id: string
+          p_description: string
+          p_discount_type: string
+          p_discount_value: number
+          p_installment_count: number
+          p_list_price: number
+          p_media_budget: number
+          p_name: string
+          p_next_due_date: string
+          p_notes: string
+          p_promotional_cycles: number
+          p_promotional_price: number
+          p_service_id: string
+          p_start_date: string
+        }
+        Returns: string
+      }
       bootstrap_identity_workspace: {
         Args: {
-          p_accepted_legal_document_ids: string[];
-          p_accounting_basis?: string;
-          p_currency?: string;
-          p_date_format?: string;
-          p_default_alert_offsets?: number[];
-          p_full_name: string;
-          p_legal_name?: string;
-          p_locale?: string;
-          p_phone?: string;
-          p_tax_id?: string;
-          p_theme?: string;
-          p_timezone?: string;
-          p_trade_name?: string;
-          p_workspace_name: string;
-        };
+          p_accepted_legal_document_ids: string[]
+          p_accounting_basis?: string
+          p_currency?: string
+          p_date_format?: string
+          p_default_alert_offsets?: number[]
+          p_full_name: string
+          p_legal_name?: string
+          p_locale?: string
+          p_phone?: string
+          p_tax_id?: string
+          p_theme?: string
+          p_timezone?: string
+          p_trade_name?: string
+          p_workspace_name: string
+        }
         Returns: {
-          profile_id: string;
-          workspace_created: boolean;
-          workspace_id: string;
-        }[];
-      };
+          profile_id: string
+          workspace_created: boolean
+          workspace_id: string
+        }[]
+      }
+      claim_whatsapp_reminders: {
+        Args: { p_now?: string }
+        Returns: {
+          access_token: string
+          amount: number
+          contact_name: string
+          delivery_id: string
+          description: string
+          due_date: string
+          header_image_url: string
+          kind: string
+          phone_number_id: string
+          pix_key: string
+          recipient_phone: string
+          template_language: string
+          template_name: string
+          workspace_id: string
+        }[]
+      }
       consolidate_client_into_entity: {
         Args: {
-          p_confirmation?: string;
-          p_entity_display_name: string;
-          p_entity_type?: string;
-          p_source_client_id: string;
-          p_target_client_id: string;
-        };
-        Returns: Json;
-      };
+          p_confirmation?: string
+          p_entity_display_name: string
+          p_entity_type?: string
+          p_source_client_id: string
+          p_target_client_id: string
+        }
+        Returns: Json
+      }
       create_expense_with_recurrence: {
         Args: {
-          p_amount: number;
-          p_category: string;
-          p_client_entity_id?: string;
-          p_client_id?: string;
-          p_description: string;
-          p_due_date: string;
-          p_enable_recurrence?: boolean;
-          p_expense_type: string;
-          p_notes?: string;
-          p_status: string;
-        };
-        Returns: Json;
-      };
+          p_amount: number
+          p_category: string
+          p_client_entity_id?: string
+          p_client_id?: string
+          p_description: string
+          p_due_date: string
+          p_enable_recurrence?: boolean
+          p_expense_type: string
+          p_notes?: string
+          p_status: string
+        }
+        Returns: Json
+      }
       dashboard_financial_summary: {
         Args: {
-          p_due_end: string;
-          p_end: string;
-          p_next_month: string;
-          p_next_week: string;
-          p_start: string;
-          p_today: string;
-          p_workspace_id: string;
-        };
+          p_due_end: string
+          p_end: string
+          p_next_month: string
+          p_next_week: string
+          p_start: string
+          p_today: string
+          p_workspace_id: string
+        }
         Returns: {
-          active_client_entities: number;
-          active_clients: number;
-          due_soon_charges: number;
-          due_soon_expenses: number;
-          expenses_paid: number;
-          expired_domains: number;
-          media_period: number;
-          overdue_charges: number;
-          overdue_expenses: number;
-          own_pending: number;
-          own_received: number;
-          upcoming_domains: number;
-        }[];
-      };
+          active_client_entities: number
+          active_clients: number
+          due_soon_charges: number
+          due_soon_expenses: number
+          expenses_paid: number
+          expired_domains: number
+          media_period: number
+          overdue_charges: number
+          overdue_expenses: number
+          own_pending: number
+          own_received: number
+          upcoming_domains: number
+        }[]
+      }
       delete_catalog_service: {
-        Args: { p_detach: boolean; p_service_id: string };
-        Returns: string;
-      };
-      delete_client_record: { Args: { p_client_id: string }; Returns: string };
+        Args: { p_detach: boolean; p_service_id: string }
+        Returns: string
+      }
+      delete_client_record: { Args: { p_client_id: string }; Returns: string }
       delete_client_service_cascade: {
-        Args: { p_force: boolean; p_service_id: string };
-        Returns: string;
-      };
-      delete_domain_record: { Args: { p_domain_id: string }; Returns: string };
+        Args: { p_force: boolean; p_service_id: string }
+        Returns: string
+      }
+      delete_domain_record: { Args: { p_domain_id: string }; Returns: string }
       delete_paid_financial_record: {
-        Args: { p_record_id: string; p_record_type: string };
-        Returns: Json;
-      };
+        Args: { p_record_id: string; p_record_type: string }
+        Returns: Json
+      }
       delete_workspace_record: {
-        Args: { p_record_id: string; p_record_type: string };
-        Returns: string;
-      };
+        Args: { p_record_id: string; p_record_type: string }
+        Returns: string
+      }
       domain_operational_summary: {
-        Args: { p_next_week: string; p_today: string; p_workspace_id: string };
+        Args: { p_next_week: string; p_today: string; p_workspace_id: string }
         Returns: {
-          active_cost: number;
-          due_this_week: number;
-          due_today: number;
-          overdue: number;
-        }[];
-      };
+          active_cost: number
+          due_this_week: number
+          due_today: number
+          overdue: number
+        }[]
+      }
       get_current_account_gate: {
-        Args: never;
+        Args: never
         Returns: {
-          account_status: string;
-          has_profile: boolean;
-          has_workspace: boolean;
-          workspace_status: string;
-        }[];
-      };
+          account_status: string
+          has_profile: boolean
+          has_workspace: boolean
+          workspace_status: string
+        }[]
+      }
       get_current_account_lifecycle_requests: {
-        Args: never;
+        Args: never
         Returns: {
-          artifact_expires_at: string;
-          completed_at: string;
-          request_id: string;
-          request_type: string;
-          requested_at: string;
-          scheduled_for: string;
-          status: string;
-          verified_at: string;
-        }[];
-      };
+          artifact_expires_at: string
+          completed_at: string
+          request_id: string
+          request_type: string
+          requested_at: string
+          scheduled_for: string
+          status: string
+          verified_at: string
+        }[]
+      }
+      has_whatsapp_access_token: { Args: never; Returns: boolean }
       import_workspace_spreadsheet: {
         Args: {
-          p_payload: Json;
-          p_source_checksum: string;
-          p_source_type: string;
-          p_workspace_id: string;
-        };
-        Returns: Json;
-      };
+          p_payload: Json
+          p_source_checksum: string
+          p_source_type: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       import_workspace_spreadsheet_v2: {
         Args: {
-          p_payload: Json;
-          p_source_checksum: string;
-          p_source_type: string;
-          p_workspace_id: string;
-        };
-        Returns: Json;
-      };
+          p_payload: Json
+          p_source_checksum: string
+          p_source_type: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       import_workspace_spreadsheet_v3: {
         Args: {
-          p_payload: Json;
-          p_source_checksum: string;
-          p_source_type: string;
-          p_workspace_id: string;
-        };
-        Returns: Json;
-      };
+          p_payload: Json
+          p_source_checksum: string
+          p_source_type: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       preview_consolidate_client_into_entity: {
-        Args: { p_source_client_id: string; p_target_client_id: string };
-        Returns: Json;
-      };
+        Args: { p_source_client_id: string; p_target_client_id: string }
+        Returns: Json
+      }
       preview_transfer_client_data: {
-        Args: { p_source_client_id: string; p_target_client_id: string };
-        Returns: Json;
-      };
+        Args: { p_source_client_id: string; p_target_client_id: string }
+        Returns: Json
+      }
+      record_whatsapp_send_result: {
+        Args: {
+          p_delivery_id: string
+          p_error_message?: string
+          p_wa_message_id?: string
+        }
+        Returns: undefined
+      }
+      record_whatsapp_status: {
+        Args: {
+          p_error_message?: string
+          p_status: string
+          p_wa_message_id: string
+        }
+        Returns: boolean
+      }
       request_current_account_lifecycle: {
-        Args: { p_request_type: string };
+        Args: { p_request_type: string }
         Returns: {
-          request_created: boolean;
-          request_id: string;
-          request_type: string;
-          requested_at: string;
-          status: string;
-        }[];
-      };
+          request_created: boolean
+          request_id: string
+          request_type: string
+          requested_at: string
+          status: string
+        }[]
+      }
       reset_current_workspace_operational_data: {
-        Args: { p_confirmation: string };
-        Returns: Json;
-      };
+        Args: { p_confirmation: string }
+        Returns: Json
+      }
       reset_current_workspace_operational_data_with_documents: {
-        Args: { p_confirmation: string };
-        Returns: string[];
-      };
+        Args: { p_confirmation: string }
+        Returns: string[]
+      }
       set_client_service_installments: {
-        Args: { p_installment_count: number; p_service_id: string };
-        Returns: string;
-      };
+        Args: { p_installment_count: number; p_service_id: string }
+        Returns: string
+      }
+      set_whatsapp_access_token: { Args: { p_token: string }; Returns: boolean }
       settle_charge_and_schedule_next: {
         Args: {
-          p_charge_id: string;
-          p_paid_on?: string;
-          p_payment_method: string;
-        };
-        Returns: string;
-      };
+          p_charge_id: string
+          p_paid_on?: string
+          p_payment_method: string
+        }
+        Returns: string
+      }
       settle_client_service_charges: {
-        Args: { p_payment_method: string; p_service_id: string };
-        Returns: number;
-      };
+        Args: { p_payment_method: string; p_service_id: string }
+        Returns: number
+      }
       settle_expense_and_schedule_next: {
-        Args: { p_expense_id: string; p_paid_on?: string };
-        Returns: Json;
-      };
-      stop_expense_recurrence: { Args: { p_expense_id: string }; Returns: Json };
+        Args: { p_expense_id: string; p_paid_on?: string }
+        Returns: Json
+      }
+      stop_expense_recurrence: { Args: { p_expense_id: string }; Returns: Json }
       transfer_client_data: {
         Args: {
-          p_confirmation?: string;
-          p_source_client_id: string;
-          p_target_client_id: string;
-        };
-        Returns: Json;
-      };
+          p_confirmation?: string
+          p_source_client_id: string
+          p_target_client_id: string
+        }
+        Returns: Json
+      }
       update_client_service: {
         Args: {
-          p_additional_fee: number;
-          p_additional_fee_is_revenue: boolean;
-          p_adjustment_interval_months: number;
-          p_adjustment_rate: number;
-          p_billing_type: string;
-          p_description: string;
-          p_discount_type: string;
-          p_discount_value: number;
-          p_list_price: number;
-          p_media_budget: number;
-          p_name: string;
-          p_next_due_date: string;
-          p_notes: string;
-          p_promotional_cycles: number;
-          p_promotional_price: number;
-          p_service_id: string;
-        };
-        Returns: string;
-      };
+          p_additional_fee: number
+          p_additional_fee_is_revenue: boolean
+          p_adjustment_interval_months: number
+          p_adjustment_rate: number
+          p_billing_type: string
+          p_description: string
+          p_discount_type: string
+          p_discount_value: number
+          p_list_price: number
+          p_media_budget: number
+          p_name: string
+          p_next_due_date: string
+          p_notes: string
+          p_promotional_cycles: number
+          p_promotional_price: number
+          p_service_id: string
+        }
+        Returns: string
+      }
       update_current_workspace_configuration: {
         Args: {
-          p_accounting_basis: string;
-          p_address_city: string;
-          p_address_district: string;
-          p_address_line1: string;
-          p_address_line2: string;
-          p_address_region: string;
-          p_country_code: string;
-          p_date_format: string;
-          p_default_alert_offsets: number[];
-          p_legal_name: string;
-          p_postal_code: string;
-          p_tax_id: string;
-          p_timezone: string;
-          p_trade_name: string;
-          p_workspace_name: string;
-        };
+          p_accounting_basis: string
+          p_address_city: string
+          p_address_district: string
+          p_address_line1: string
+          p_address_line2: string
+          p_address_region: string
+          p_country_code: string
+          p_date_format: string
+          p_default_alert_offsets: number[]
+          p_legal_name: string
+          p_postal_code: string
+          p_tax_id: string
+          p_timezone: string
+          p_trade_name: string
+          p_workspace_name: string
+        }
         Returns: {
-          workspace_id: string;
-        }[];
-      };
-    };
+          workspace_id: string
+        }[]
+      }
+    }
     Enums: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R;
+      Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R;
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
       }
       ? R
       : never
-    : never;
+    : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I;
+      Insert: infer I
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I;
+        Insert: infer I
       }
       ? I
       : never
-    : never;
+    : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U;
+      Update: infer U
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U;
+        Update: infer U
       }
       ? U
       : never
-    : never;
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never;
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never;
+    : never
 
 export const Constants = {
   public: {
     Enums: {},
   },
-} as const;
+} as const
