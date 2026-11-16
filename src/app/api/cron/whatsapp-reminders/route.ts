@@ -40,11 +40,12 @@ export async function GET(request: Request) {
       },
       record: async (deliveryId, messageId, sendError) => {
         // Argumentos ausentes valem `null` na função: sucesso grava o id, falha grava o erro.
-        await supabase.rpc("record_whatsapp_send_result", {
+        const { error } = await supabase.rpc("record_whatsapp_send_result", {
           p_delivery_id: deliveryId,
           ...(messageId ? { p_wa_message_id: messageId } : {}),
           ...(sendError ? { p_error_message: sendError } : {}),
         });
+        if (error) throw new Error("record_failed");
       },
       send: (input) => sendTemplateMessage(input),
     });
