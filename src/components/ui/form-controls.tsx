@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
-import { formatDatePtBr, isoToday, parseDatePtBr } from "@/features/mvp/format";
+import { formatDatePtBr, localIsoToday, parseDatePtBr } from "@/features/mvp/format";
 
 import { classNames, Field } from "./field";
 import { useFieldFeedback } from "./form-context";
@@ -366,7 +366,9 @@ export function DateField({
     initialValue ? formatDatePtBr(initialValue) : "",
   );
   const [open, setOpen] = useState(false);
-  const [monthCursor, setMonthCursor] = useState(`${(initialValue || isoToday()).slice(0, 7)}-01`);
+  const [monthCursor, setMonthCursor] = useState(
+    () => `${(initialValue || localIsoToday()).slice(0, 7)}-01`,
+  );
 
   const commitDate = (iso: string) => {
     setDateValue(iso);
@@ -414,7 +416,8 @@ export function DateField({
     timeZone: "UTC",
     year: "numeric",
   }).format(new Date(`${monthCursor}T00:00:00.000Z`));
-  const today = isoToday();
+  // Usado só com o calendário aberto, que só existe no navegador: o fuso é o de quem usa.
+  const today = open ? localIsoToday() : "";
   const dayIso = (day: number) =>
     `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
 

@@ -10,7 +10,7 @@ import { Icon } from "@/components/ui/icon";
 import { RecordGroup, RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
-import { addDays, formatDatePtBr, isoDateInTimeZone } from "@/features/mvp/format";
+import { addDays, formatDatePtBr, isoDateInTimeZone, isoDateOfInstant } from "@/features/mvp/format";
 import {
   appendIdInFilter,
   idsMatchingText,
@@ -280,7 +280,7 @@ export default async function ExpensesPage({
                   clientName: expense.clients?.name,
                   description: expense.description,
                   documents: (expense.fiscal_documents ?? []).map((document) => ({
-                    createdAt: document.created_at,
+                    createdAt: isoDateOfInstant(document.created_at, context.workspaceTimezone),
                     id: document.id,
                     mimeType: document.mime_type,
                     sizeBytes: document.size_bytes,
@@ -294,7 +294,9 @@ export default async function ExpensesPage({
                     Boolean(expense.recurrence_group_id) &&
                     expense.recurrence_frequency === "monthly",
                   notes: expense.notes,
-                  paidAt: expense.paid_at,
+                  paidAt: expense.paid_at
+                    ? isoDateOfInstant(expense.paid_at, context.workspaceTimezone)
+                    : null,
                   recurrenceActive: Boolean(expense.recurrence_active),
                   status: expense.status,
                 }}

@@ -4,11 +4,13 @@ import {
   uploadFiscalDocument,
 } from "@/app/_actions/fiscal-documents";
 import { SubmitButton } from "@/app/_components/submit-button";
+import { formatDatePtBr } from "@/features/mvp/format";
 
 import { ConfirmDialog } from "./confirm-dialog";
 import { Icon } from "./icon";
 
 export type FiscalDocumentItem = {
+  /** Dia do anexo (YYYY-MM-DD), já no fuso do workspace. */
   createdAt: string;
   id: string;
   mimeType: string;
@@ -52,7 +54,7 @@ export function FiscalDocumentPanel({
                     {(document.sizeBytes / 1024).toLocaleString("pt-BR", {
                       maximumFractionDigits: 0,
                     })}{" "}
-                    KB · {new Date(document.createdAt).toLocaleDateString("pt-BR")}
+                    KB · {formatDatePtBr(document.createdAt)}
                   </small>
                 </span>
                 <form action={downloadFiscalDocument}>

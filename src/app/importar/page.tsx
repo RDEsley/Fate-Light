@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export default async function ImportPage() {
-  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { supabase, workspaceId, workspaceTimezone } = await requireWorkspaceContext();
   const { data: jobs } = await supabase
     .from("import_jobs")
     .select("id,row_count,entity_counts,confirmed_at")
@@ -68,6 +68,7 @@ export default async function ImportPage() {
                       {new Intl.DateTimeFormat("pt-BR", {
                         dateStyle: "short",
                         timeStyle: "short",
+                        timeZone: workspaceTimezone,
                       }).format(new Date(job.confirmed_at))}
                     </p>
                   </article>
