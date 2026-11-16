@@ -58,11 +58,15 @@ export async function POST(request: Request) {
   }
 
   for (const status of parseWebhookStatuses(payload)) {
-    await supabase.rpc("record_whatsapp_status", {
+    const { error } = await supabase.rpc("record_whatsapp_status", {
       p_status: status.status,
       p_wa_message_id: status.messageId,
       ...(status.error ? { p_error_message: status.error } : {}),
     });
+    if (error) {
+      // Responde com erro para a Meta repetir o evento; status repetidos são idempotentes.
+      return NextResponse.json({ error: "status_update_failed" }, { status: 500 });
+    }
   }
 
   // A Meta reenvia o evento enquanto não recebe 200; status desconhecidos são ignorados.
