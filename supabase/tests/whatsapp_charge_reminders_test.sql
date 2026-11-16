@@ -168,8 +168,8 @@ select results_eq(
   'Falha tardia não apaga uma leitura'
 );
 select lives_ok(
-  $select public.record_whatsapp_send_result(id, null, 'Falha na segunda tentativa')
-    from public.whatsapp_reminder_deliveries where kind = 'before'$,
+  $$select public.record_whatsapp_send_result(id, null, 'Falha na segunda tentativa')
+    from public.whatsapp_reminder_deliveries where kind = 'before'$$,
   'Registra a falha da segunda tentativa'
 );
 -- O cenário de interrupção é preparado pelo papel administrativo do teste; não ampliamos grants
