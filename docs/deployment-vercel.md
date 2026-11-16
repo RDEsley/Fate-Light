@@ -87,7 +87,7 @@ Sem as quatro variáveis acima, as rotas respondem 503 e nada é enviado. Para l
    PIX: {{5}}. Após o pagamento, envie o comprovante por aqui.` Um cabeçalho de imagem é opcional.
 4. Em Webhooks, use `https://seu-dominio/api/webhooks/whatsapp`, o mesmo
    `WHATSAPP_WEBHOOK_VERIFY_TOKEN` e assine o campo `messages`.
-5. No Fate Light, preencha **Configurações → WhatsApp** e ative cada cliente na ficha dele.
+5. (veja docs/whatsapp-setup.md) No Fate Light, preencha **Configurações → WhatsApp** e ative cada cliente na ficha dele.
 
 ## Configuração obrigatória no Supabase
 

@@ -38,6 +38,35 @@ function pause(milliseconds: number) {
 }
 
 /**
+ * Cobranças do mesmo cliente que vencem no mesmo dia viram uma única mensagem: serviços
+ * listados juntos e valor somado. Cada cobrança mantém a própria linha de histórico.
+ */
+function groupReminders(reminders: ClaimedReminder[]) {
+  const groups = new Map<string, ClaimedReminder[]>();
+  for (const reminder of reminders) {
+    const key = [
+      reminder.phone_number_id,
+      reminder.template_name,
+      reminder.recipient_phone,
+      reminder.due_date,
+    ].join("|");
+    groups.set(key, [...(groups.get(key) ?? []), reminder]);
+  }
+  return [...groups.values()];
+}
+
+function joinServices(descriptions: string[]) {
+  const unique = [...new Set(descriptions.map((value) => value.trim()).filter(Boolean))];
+  if (unique.length <= 1) return unique[0] ?? "";
+  return `${unique.slice(0, -1).join(", ")} e ${unique[unique.length - 1]}`;
+}
+
+function sumAmounts(group: ClaimedReminder[]) {
+  const cents = group.reduce((total, item) => total + Math.round(Number(item.amount) * 100), 0);
+  return cents / 100;
+}
+
+/**
  * Reserva e envia os lembretes do dia. Falhas persistidas são reclamadas novamente na mesma
  * execução, respeitando o limite de três tentativas da função SQL e pequenas pausas entre elas.
  */
@@ -48,36 +77,49 @@ export async function runReminders(deps: ReminderRunDependencies): Promise<Remin
   for (let attempt = 0; attempt < MAX_ATTEMPTS && reminders.length > 0; attempt += 1) {
     let failedThisAttempt = false;
 
-    for (const reminder of reminders) {
-      outcomes.set(reminder.delivery_id, false);
-      const phone = normalizeWhatsAppPhone(reminder.recipient_phone);
+    for (const group of groupReminders(reminders)) {
+      const [leader] = group;
+      if (!leader) continue;
+      for (const item of group) outcomes.set(item.delivery_id, false);
+
+      const phone = normalizeWhatsAppPhone(leader.recipient_phone);
       if (!phone) {
-        await deps.record(reminder.delivery_id, null, "Telefone do cliente inválido.");
+        for (const item of group) {
+          await deps.record(item.delivery_id, null, "Telefone do cliente inválido.");
+        }
         failedThisAttempt = true;
         continue;
       }
 
       const result = await deps.send({
-        accessToken: reminder.access_token,
+        accessToken: leader.access_token,
         message: {
-          amount: reminder.amount,
-          contactName: reminder.contact_name,
-          description: reminder.description,
-          dueDate: reminder.due_date,
-          headerImageUrl: reminder.header_image_url,
-          pixKey: reminder.pix_key,
+          amount: sumAmounts(group),
+          contactName: leader.contact_name,
+          description: joinServices(group.map((item) => item.description)),
+          dueDate: leader.due_date,
+          headerImageUrl: leader.header_image_url,
+          pixKey: leader.pix_key,
           recipientPhone: phone,
-          templateLanguage: reminder.template_language,
-          templateName: reminder.template_name,
+          templateLanguage: leader.template_language,
+          templateName: leader.template_name,
         },
-        phoneNumberId: reminder.phone_number_id,
+        phoneNumberId: leader.phone_number_id,
       });
 
       if (result.ok) {
-        await deps.record(reminder.delivery_id, result.messageId, null);
-        outcomes.set(reminder.delivery_id, true);
+        // O id da Meta é único por linha: a primeira recebe o id real (e os status do
+        // webhook); as demais do mesmo envio guardam uma variação rastreável.
+        for (const [index, item] of group.entries()) {
+          await deps.record(
+            item.delivery_id,
+            index === 0 ? result.messageId : `${result.messageId}#${index + 1}`,
+            null,
+          );
+          outcomes.set(item.delivery_id, true);
+        }
       } else {
-        await deps.record(reminder.delivery_id, null, result.error);
+        for (const item of group) await deps.record(item.delivery_id, null, result.error);
         failedThisAttempt = true;
       }
     }

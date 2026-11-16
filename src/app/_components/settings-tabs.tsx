@@ -3,12 +3,14 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { Icon, type IconName } from "@/components/ui/icon";
 
 type SettingsTab = {
   description: string;
+  /** Título do bloco; só aparece na primeira aba de cada grupo. */
+  group?: string;
   href: Route;
   icon: IconName;
   label: string;
@@ -52,12 +54,6 @@ const tabs: SettingsTab[] = [
     section: "/perfil",
   },
   {
-    description: "Tudo o que já aconteceu",
-    href: "/historico",
-    icon: "history",
-    label: "Histórico",
-  },
-  {
     description: "Exportação e exclusão de conta",
     href: "/perfil#privacidade",
     icon: "info",
@@ -65,16 +61,25 @@ const tabs: SettingsTab[] = [
     section: "/perfil",
   },
   {
-    description: "Identidade e preferências",
+    group: "Empresa",
+    description: "Dados e preferências da empresa",
     href: "/configuracoes/empresa",
     icon: "building",
     label: "Empresa",
   },
   {
-    description: "Lembretes de cobrança",
+    group: "Empresa",
+    description: "Cobrança automática no WhatsApp",
     href: "/configuracoes/whatsapp",
     icon: "phone",
     label: "WhatsApp",
+  },
+  {
+    group: "Empresa",
+    description: "Tudo o que já aconteceu",
+    href: "/historico",
+    icon: "history",
+    label: "Histórico",
   },
 ];
 
@@ -106,24 +111,28 @@ export function SettingsTabs() {
 
   return (
     <nav aria-label="Configurações" className="settings-tabs">
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
+        const group = tab.group ?? "Minha conta";
+        const showGroup = index === 0 || group !== (tabs[index - 1]?.group ?? "Minha conta");
         const active = pathname === (tab.section ?? tab.href) && hash === tabHash(tab);
         return (
-          <Link
-            aria-current={active ? "page" : undefined}
-            className="settings-tabs__item"
-            href={tab.href}
-            key={tab.href}
-            onClick={() => setHash(tabHash(tab))}
-          >
-            <span className="settings-tabs__icon">
-              <Icon className="size-4" name={tab.icon} />
-            </span>
-            <span className="min-w-0">
-              <strong>{tab.label}</strong>
-              <small>{tab.description}</small>
-            </span>
-          </Link>
+          <Fragment key={tab.href}>
+            {showGroup ? <p className="settings-tabs__group">{group}</p> : null}
+            <Link
+              aria-current={active ? "page" : undefined}
+              className="settings-tabs__item"
+              href={tab.href}
+              onClick={() => setHash(tabHash(tab))}
+            >
+              <span className="settings-tabs__icon">
+                <Icon className="size-4" name={tab.icon} />
+              </span>
+              <span className="min-w-0">
+                <strong>{tab.label}</strong>
+                <small>{tab.description}</small>
+              </span>
+            </Link>
+          </Fragment>
         );
       })}
     </nav>

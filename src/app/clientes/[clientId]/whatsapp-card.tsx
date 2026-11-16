@@ -43,7 +43,7 @@ export async function ClientWhatsAppCard({
           <h2>Lembretes pelo WhatsApp</h2>
           <p>
             {settings?.enabled
-              ? "Cobranças pendentes deste cliente são avisadas automaticamente no WhatsApp."
+              ? "Cobranças pendentes deste cliente são avisadas no WhatsApp. Serviço, valor total e vencimento vêm das cobranças; vários serviços no mesmo dia viram uma só mensagem."
               : "A automação está desligada para a empresa. Ative em Configurações > WhatsApp."}
           </p>
         </div>

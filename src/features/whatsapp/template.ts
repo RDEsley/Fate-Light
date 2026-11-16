@@ -76,20 +76,37 @@ export function buildTemplateRequest(message: ReminderMessage) {
   };
 }
 
-/** Prévia do texto, para a tela de configuração mostrar como o cliente vai ler. */
+/**
+ * Texto sugerido para cadastrar na Meta, um por momento do aviso. As cinco variáveis seguem a
+ * ordem de `templateVariables`; mude o texto à vontade, mas mantenha as cinco chaves.
+ */
+export const suggestedTemplateBodies: Record<ReminderKind, string> = {
+  before:
+    "Olá, {{1}}! Passando para lembrar do pagamento referente a {{2}}. Valor: {{3}}. " +
+    "Vencimento: {{4}}. PIX: {{5}}. Após o pagamento, envie o comprovante por aqui. " +
+    "Obrigado pela parceria!",
+  due:
+    "Olá, {{1}}! Hoje é o dia do pagamento referente a {{2}}. Valor: {{3}}. " +
+    "Vencimento: {{4}}. PIX: {{5}}. Após o pagamento, envie o comprovante por aqui. " +
+    "Obrigado pela parceria!",
+  overdue:
+    "Olá, {{1}}! Identificamos que o pagamento referente a {{2}} (valor: {{3}}, vencimento: " +
+    "{{4}}) ainda está em aberto. PIX: {{5}}. Se já pagou, envie o comprovante por aqui. " +
+    "Qualquer dúvida, é só responder.",
+};
+
+/** Prévia do texto sugerido com dados de exemplo, como o cliente vai ler. */
 export function previewReminderText(
+  kind: ReminderKind,
   message: Omit<ReminderMessage, "recipientPhone" | "templateLanguage" | "templateName">,
 ) {
-  const [name, service, amount, dueDate, pix] = reminderBodyValues({
+  const values = reminderBodyValues({
     ...message,
     templateLanguage: "pt_BR",
     templateName: "preview",
   });
-  return [
-    `Olá, ${name}! Hoje é o dia do pagamento referente a ${service}.`,
-    `Valor: ${amount}`,
-    `Vencimento: ${dueDate}`,
-    `PIX: ${pix}`,
-    "Após o pagamento, envie o comprovante por aqui. Obrigado pela parceria!",
-  ].join("\n");
+  return suggestedTemplateBodies[kind].replace(
+    /\{\{([1-5])\}\}/g,
+    (_, index: string) => values[Number(index) - 1] ?? "",
+  );
 }
