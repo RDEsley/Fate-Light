@@ -11,6 +11,13 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminSupabaseClient: () => (adminClient.value ? { rpc } : null),
 }));
 
+const sendTemplateMessage = vi.hoisted(() => vi.fn());
+
+vi.mock("@/features/whatsapp/cloud-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/features/whatsapp/cloud-api")>();
+  return { ...actual, sendTemplateMessage };
+});
+
 import { GET as runCron } from "@/app/api/cron/whatsapp-reminders/route";
 import { GET as verifyWebhook, POST as receiveWebhook } from "@/app/api/webhooks/whatsapp/route";
 
@@ -20,6 +27,7 @@ const verifyToken = "verify_token_value_for_tests";
 
 beforeEach(() => {
   rpc.mockReset();
+  sendTemplateMessage.mockReset();
   adminClient.value = true;
   vi.stubEnv("CRON_SECRET", cronSecret);
   vi.stubEnv("WHATSAPP_APP_SECRET", appSecret);
@@ -57,6 +65,47 @@ describe("rota do agendador", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ claimed: 0, failed: 0, sent: 0 });
     expect(rpc).toHaveBeenCalledWith("claim_whatsapp_reminders", {});
+  });
+
+  it("devolve 500 se não conseguir persistir o resultado do envio", async () => {
+    rpc.mockImplementation(async (...args: unknown[]) => {
+      if (args[0] === "claim_whatsapp_reminders") {
+        return {
+          data: [
+            {
+              access_token: "token",
+              amount: 150,
+              contact_name: "Marina",
+              delivery_id: "delivery-1",
+              description: "Hospedagem",
+              due_date: "2026-12-10",
+              header_image_url: null,
+              phone_number_id: "123456",
+              pix_key: null,
+              recipient_phone: "5561999991234",
+              template_language: "pt_BR",
+              template_name: "cobranca_hoje",
+            },
+          ],
+          error: null,
+        };
+      }
+      return { data: null, error: { message: "database unavailable" } };
+    });
+    sendTemplateMessage.mockResolvedValueOnce({ messageId: "wamid.1", ok: true });
+
+    const response = await runCron(
+      new Request("https://example.invalid/api/cron/whatsapp-reminders", {
+        headers: { authorization: `Bearer ${cronSecret}` },
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "run_failed" });
+    expect(rpc).toHaveBeenCalledWith("record_whatsapp_send_result", {
+      p_delivery_id: "delivery-1",
+      p_wa_message_id: "wamid.1",
+    });
   });
 
   it("devolve 500 sem detalhes quando o banco falha", async () => {
@@ -98,6 +147,24 @@ describe("webhook da Meta", () => {
     );
     expect(response.status).toBe(401);
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("pede reenvio à Meta quando não consegue salvar um status", async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { message: "database unavailable" } });
+    const body = JSON.stringify({
+      entry: [{ changes: [{ value: { statuses: [{ id: "wamid.2", status: "read" }] } }] }],
+    });
+    const signature = `sha256=${createHmac("sha256", appSecret).update(body).digest("hex")}`;
+    const response = await receiveWebhook(
+      new Request("https://example.invalid/api/webhooks/whatsapp", {
+        body,
+        headers: { "x-hub-signature-256": signature },
+        method: "POST",
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "status_update_failed" });
   });
 
   it("registra cada status recebido", async () => {
