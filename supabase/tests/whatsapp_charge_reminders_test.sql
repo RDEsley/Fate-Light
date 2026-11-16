@@ -148,8 +148,8 @@ select lives_ok(
   'Registra falha de envio'
 );
 select results_eq(
-  $select array_agg(kind order by kind) from public.claim_whatsapp_reminders('2026-12-10 20:00+00')$,
-  $select array['before', 'overdue']$,
+  $$select array_agg(kind order by kind) from public.claim_whatsapp_reminders('2026-12-10 20:00+00')$$,
+  $$select array['before', 'overdue']$$,
   'Falha é tentada de novo e envio interrompido é recuperado no mesmo dia'
 );
 select results_eq(
@@ -163,31 +163,31 @@ select results_eq(
   'Status não regride de lido para entregue'
 );
 select results_eq(
-  $select public.record_whatsapp_status('wamid.due', 'failed', 'x')$,
+  $$select public.record_whatsapp_status('wamid.due', 'failed', 'x')$$,
   array[false],
   'Falha tardia não apaga uma leitura'
 );
 select lives_ok(
-  $select public.record_whatsapp_send_result(id, null, 'Falha na segunda tentativa')
-    from public.whatsapp_reminder_deliveries where kind = 'before'$,
+  $$select public.record_whatsapp_send_result(id, null, 'Falha na segunda tentativa')
+    from public.whatsapp_reminder_deliveries where kind = 'before'$$,
   'Registra a falha da segunda tentativa'
 );
 update public.whatsapp_reminder_deliveries
 set status = 'sending', attempts = 3, status_at = '2026-12-10 12:00+00'
 where kind = 'overdue';
 select results_eq(
-  $select array_agg(kind order by kind)
-    from public.claim_whatsapp_reminders('2026-12-10 22:00+00')$,
-  $select array['before']$,
+  $$select array_agg(kind order by kind)
+    from public.claim_whatsapp_reminders('2026-12-10 22:00+00')$$,
+  $$select array['before']$$,
   'Não reenvia uma entrega interrompida que já esgotou as tentativas'
 );
 select results_eq(
-  $select status from public.whatsapp_reminder_deliveries where kind = 'overdue'$,
+  $$select status from public.whatsapp_reminder_deliveries where kind = 'overdue'$$,
   array['failed']::text[],
   'Entrega interrompida com tentativas esgotadas termina como falha'
 );
 select results_eq(
-  $select count(*) from public.claim_whatsapp_reminders('2026-12-10 22:30+00')$,
+  $$select count(*) from public.claim_whatsapp_reminders('2026-12-10 22:30+00')$$,
   array[0::bigint],
   'Não passa de três tentativas por lembrete'
 );
