@@ -7,10 +7,22 @@ import { CheckboxField, FormActions, TextField, ToggleCard } from "@/components/
 import { Form } from "@/components/ui/form";
 import { Icon } from "@/components/ui/icon";
 import { IntegerField } from "@/components/ui/integer-field";
-import { previewReminderText, templateVariables } from "@/features/whatsapp/template";
+import { previewReminderText, suggestedTemplateBodies } from "@/features/whatsapp/template";
 import { initialActionState, submittedValues } from "@/lib/forms/action-state";
 
 import { updateWhatsAppSettings } from "./actions";
+import { TemplateGuideCard } from "./template-guide-card";
+
+function sample(pixKey: string) {
+  return {
+    amount: 1800,
+    contactName: "Marina Souza",
+    description: "Site, Gestão e Criativo",
+    dueDate: "2026-12-10",
+    headerImageUrl: null,
+    pixKey: pixKey || null,
+  };
+}
 
 export type WhatsAppSettings = {
   days_after: number;
@@ -55,7 +67,7 @@ export function WhatsAppSettingsForm({
         </div>
         <ToggleCard
           defaultChecked={sent.checkbox("enabled", settings?.enabled ?? false)}
-          description="Exige número, template do vencimento e token da Meta."
+          description="Exige o ID do número, o token e o nome do modelo do dia do vencimento."
           name="enabled"
           title="Enviar lembretes automaticamente"
         />
@@ -68,13 +80,16 @@ export function WhatsAppSettingsForm({
           </span>
           <div>
             <h2>Conta do WhatsApp Business</h2>
-            <p>Dados da API oficial da Meta (WhatsApp Cloud API), em Configuração da API.</p>
+            <p>
+              Dados da API oficial da Meta (WhatsApp Cloud API). Sem eles nada é enviado; o passo a
+              passo para obtê-los está em <strong>docs/whatsapp-setup.md</strong>.
+            </p>
           </div>
         </div>
         <div className="form-grid sm:grid-cols-2">
           <TextField
             defaultValue={sent.text("phoneNumberId", settings?.phone_number_id ?? "")}
-            hint="Número longo que a Meta mostra como Phone number ID, não o telefone."
+            hint="Número longo mostrado como “Phone number ID” em WhatsApp → Configuração da API. Não é o telefone."
             inputMode="numeric"
             label="ID do número"
             maxLength={32}
@@ -116,52 +131,98 @@ export function WhatsAppSettingsForm({
           <div>
             <h2>Mensagens</h2>
             <p>
-              Nomes dos templates aprovados na Meta. Variáveis do corpo, nesta ordem:{" "}
-              {templateVariables.map((label, index) => `{{${index + 1}}} ${label}`).join(", ")}.
+              A Meta só deixa o sistema enviar mensagens automáticas a partir de modelos que ela
+              aprova antes. O campo de cada mensagem pede apenas o <strong>nome</strong> do modelo
+              que você criou lá, nunca o texto. O texto fica no botão “Ver o texto para cadastrar na
+              Meta”.
             </p>
           </div>
         </div>
+
+        <div className="whatsapp-note mb-5">
+          <strong>Várias cobranças do mesmo cliente</strong>
+          <p>
+            O valor vem sozinho da cobrança, já com desconto e custos adicionais (o total a pagar).
+            Se o cliente tem vários serviços vencendo no <em>mesmo dia</em>, ele recebe{" "}
+            <strong>uma só mensagem</strong>, com os serviços listados e o valor somado. Se vencem
+            em dias diferentes, cada dia gera sua própria mensagem.
+          </p>
+        </div>
+
         <div className="form-grid sm:grid-cols-2">
           <TextField
             className="sm:col-span-2"
             defaultValue={sent.text("templateDue", settings?.template_due ?? "")}
-            hint="Enviado no dia do vencimento."
-            label="Template do dia do vencimento"
+            hint="Obrigatório. Aviso enviado às 9h do dia do vencimento."
+            label="Nome do modelo — dia do vencimento"
             maxLength={512}
             name="templateDue"
             optional
-            placeholder="cobranca_vencimento"
+            placeholder="ex.: cobranca_vencimento"
           />
+          <TemplateGuideCard
+            body={suggestedTemplateBodies.due}
+            preview={previewReminderText("due", sample(pixKey))}
+          />
+
           <TextField
             defaultValue={sent.text("templateBefore", settings?.template_before ?? "")}
-            label="Template de lembrete antes"
+            hint="Opcional. Deixe vazio para não avisar antes."
+            label="Nome do modelo — antes do vencimento"
             maxLength={512}
             name="templateBefore"
             optional
+            placeholder="ex.: cobranca_lembrete"
           />
           <IntegerField
             defaultValue={sent.text("daysBefore", String(settings?.days_before ?? 0))}
-            hint="0 desliga o lembrete antes."
+            hint="Quantos dias antes. 0 desliga este aviso."
             label="Dias antes do vencimento"
             max={15}
             name="daysBefore"
           />
+          <TemplateGuideCard
+            body={suggestedTemplateBodies.before}
+            preview={previewReminderText("before", sample(pixKey))}
+          />
+
           <TextField
             defaultValue={sent.text("templateOverdue", settings?.template_overdue ?? "")}
-            label="Template de cobrança em atraso"
+            hint="Opcional. Deixe vazio para não cobrar atraso."
+            label="Nome do modelo — cobrança em atraso"
             maxLength={512}
             name="templateOverdue"
             optional
+            placeholder="ex.: cobranca_atraso"
           />
           <IntegerField
             defaultValue={sent.text("daysAfter", String(settings?.days_after ?? 0))}
-            hint="0 desliga o aviso de atraso."
+            hint="Quantos dias depois. 0 desliga este aviso."
             label="Dias depois do vencimento"
             max={30}
             name="daysAfter"
           />
+          <TemplateGuideCard
+            body={suggestedTemplateBodies.overdue}
+            preview={previewReminderText("overdue", sample(pixKey))}
+          />
+        </div>
+      </section>
+
+      <section className="panel-card">
+        <div className="section-heading mb-5">
+          <span className="section-heading__icon bg-positive-soft text-positive">
+            <Icon name="wallet" />
+          </span>
+          <div>
+            <h2>Dados que entram na mensagem</h2>
+            <p>Além do nome, serviço, valor e vencimento, que o sistema preenche sozinho.</p>
+          </div>
+        </div>
+        <div className="form-grid sm:grid-cols-2">
           <TextField
             defaultValue={pixKey}
+            hint="Aparece na mensagem para o cliente pagar. Pode ser CPF/CNPJ, e-mail, telefone ou chave aleatória."
             label="Chave PIX"
             maxLength={140}
             name="pixKey"
@@ -170,26 +231,12 @@ export function WhatsAppSettingsForm({
           />
           <TextField
             defaultValue={sent.text("headerImageUrl", settings?.header_image_url ?? "")}
-            hint="Imagem do cabeçalho, se o template tiver uma. Endereço público https://."
+            hint="Só se o modelo na Meta tiver imagem no cabeçalho. Endereço público https://."
             label="Imagem do cabeçalho"
             maxLength={1000}
             name="headerImageUrl"
             optional
           />
-        </div>
-
-        <div className="whatsapp-preview mt-5">
-          <p className="whatsapp-preview__label">Exemplo com o template sugerido</p>
-          <p className="whatsapp-preview__bubble">
-            {previewReminderText({
-              amount: 1500,
-              contactName: "Marina Souza",
-              description: "Gestão de tráfego",
-              dueDate: "2026-12-10",
-              headerImageUrl: null,
-              pixKey: pixKey || null,
-            })}
-          </p>
         </div>
       </section>
 

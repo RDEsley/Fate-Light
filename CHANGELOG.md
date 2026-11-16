@@ -5,6 +5,15 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+### Changed
+
+- WhatsApp: a tela deixa claro que o campo pede o nome do modelo aprovado na Meta, mostra o texto
+  para copiar e a prévia de cada aviso; cobranças do mesmo cliente com o mesmo vencimento saem em
+  uma só mensagem, com os serviços listados e o valor somado. Novo guia em
+  `docs/whatsapp-setup.md`.
+- Configurações: abas agrupadas em "Minha conta" (mesma página, sem recarregar) e "Empresa"
+  (Empresa, WhatsApp e Histórico).
+
 ### Added
 
 - Comprovante de pagamento opcional ao receber uma cobrança; fica no painel da cobrança paga, com
