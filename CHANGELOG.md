@@ -5,6 +5,22 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-11-15
+
+### Fixed
+
+- Datas e horas de pagamentos, notas fiscais, histórico e importação aparecem no fuso do workspace
+  (antes um pagamento das 22h30 de Brasília aparecia no dia seguinte).
+- O calendário dos campos de data não marca mais "amanhã" como hoje depois das 21h.
+- Notas fiscais aparecem no histórico da ficha do cliente.
+- Anexar/baixar/excluir nota e registrar motivo de atraso na ficha continuam na ficha.
+- Pagar despesa mensal pelos alertas avisa que a próxima ocorrência será criada.
+- A mensagem de pagamento não promete próximo ciclo para cobrança avulsa.
+
+### Removed
+
+- Action interna sem uso que alterava a agenda do serviço sem mover a cobrança pendente.
+
 ## [0.21.0] - 2026-11-15
 
 ### Added
