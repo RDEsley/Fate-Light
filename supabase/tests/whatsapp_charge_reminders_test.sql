@@ -168,13 +168,17 @@ select results_eq(
   'Falha tardia não apaga uma leitura'
 );
 select lives_ok(
-  $$select public.record_whatsapp_send_result(id, null, 'Falha na segunda tentativa')
-    from public.whatsapp_reminder_deliveries where kind = 'before'$$,
+  $select public.record_whatsapp_send_result(id, null, 'Falha na segunda tentativa')
+    from public.whatsapp_reminder_deliveries where kind = 'before'$,
   'Registra a falha da segunda tentativa'
 );
+-- O cenário de interrupção é preparado pelo papel administrativo do teste; não ampliamos grants
+-- do service_role, que só deve escrever no histórico através dos RPCs dedicados.
+reset role;
 update public.whatsapp_reminder_deliveries
 set status = 'sending', attempts = 3, status_at = '2026-12-10 12:00+00'
 where kind = 'overdue';
+set local role service_role;
 select results_eq(
   $$select array_agg(kind order by kind)
     from public.claim_whatsapp_reminders('2026-12-10 22:00+00')$$,
