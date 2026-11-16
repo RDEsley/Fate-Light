@@ -182,7 +182,7 @@ export function ChargeRow({
             </span>
           </div>
         ) : (
-          <DelayReasonForm chargeId={charge.id} />
+          <DelayReasonForm chargeId={charge.id} returnTo={returnTo} />
         )
       ) : null}
 
@@ -201,6 +201,7 @@ export function ChargeRow({
           documents={charge.documents ?? []}
           entityId={charge.id}
           entityType="charge"
+          returnTo={returnTo}
         />
       ) : null}
 

@@ -13,7 +13,7 @@ import { RecordList } from "@/components/ui/record-row";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
 import { clientStatusInfo, isBillableClientStatus } from "@/features/clients/status";
 import { ClientStatusChip } from "@/features/clients/status-chip";
-import { formatCurrency, isoDateInTimeZone } from "@/features/mvp/format";
+import { formatCurrency, isoDateInTimeZone, isoDateOfInstant } from "@/features/mvp/format";
 import { type BillingFrequency } from "@/features/mvp/recurrence";
 import { ownRevenue } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
@@ -109,7 +109,7 @@ export default async function ClientDetailsPage({
     context.supabase
       .from("charges")
       .select(
-        "id, client_service_id, client_entity_id, description, notes, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, due_date, paid_at, payment_method, delay_reason, cancel_reason, cancel_reason_code",
+        "id, client_service_id, client_entity_id, description, notes, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, due_date, paid_at, payment_method, delay_reason, cancel_reason, cancel_reason_code, fiscal_documents(id, created_at, mime_type, size_bytes)",
       )
       .eq("client_id", clientId.data)
       .eq("workspace_id", context.workspaceId)
@@ -688,7 +688,15 @@ export default async function ClientDetailsPage({
                     id: charge.id,
                     mediaBudget: charge.media_budget,
                     notes: charge.notes,
-                    paidAt: charge.paid_at,
+                    documents: (charge.fiscal_documents ?? []).map((document) => ({
+                      createdAt: isoDateOfInstant(document.created_at, context.workspaceTimezone),
+                      id: document.id,
+                      mimeType: document.mime_type,
+                      sizeBytes: document.size_bytes,
+                    })),
+                    paidAt: charge.paid_at
+                      ? isoDateOfInstant(charge.paid_at, context.workspaceTimezone)
+                      : null,
                     paymentMethod: charge.payment_method,
                     status: charge.status,
                   }}

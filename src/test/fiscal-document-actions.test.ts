@@ -116,6 +116,27 @@ describe("fiscal document actions", () => {
     expect(documentMocks.revalidatePath).toHaveBeenCalledWith("/cobrancas");
   });
 
+  it("volta para a ficha do cliente quando o anexo foi feito nela", async () => {
+    const form = pdfForm();
+    form.set("returnTo", "/clientes/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
+
+    await expect(uploadFiscalDocument(form)).rejects.toThrow(
+      "REDIRECT:/clientes/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee?status=invoice-uploaded",
+    );
+    expect(documentMocks.revalidatePath).toHaveBeenCalledWith(
+      "/clientes/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    );
+  });
+
+  it("ignora destino de retorno fora das telas financeiras", async () => {
+    const form = pdfForm();
+    form.set("returnTo", "https://example.com");
+
+    await expect(uploadFiscalDocument(form)).rejects.toThrow(
+      "REDIRECT:/cobrancas?status=invoice-uploaded",
+    );
+  });
+
   it("bloqueia o anexo quando a conta ainda não está paga", async () => {
     documentMocks.chain.single.mockResolvedValue({
       data: { id: chargeId, status: "pending" },

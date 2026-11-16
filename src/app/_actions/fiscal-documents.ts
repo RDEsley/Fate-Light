@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { inspectFiscalDocument } from "@/features/documents/fiscal-document";
+import { financialReturnToSchema } from "@/features/mvp/schemas";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
 
 const documentRequestSchema = z.object({
@@ -21,8 +22,23 @@ function pageFor(entityType: "charge" | "expense") {
   return entityType === "charge" ? "/cobrancas" : "/despesas";
 }
 
-function statusRedirect(entityType: "charge" | "expense", status: string): never {
-  redirect(`${pageFor(entityType)}?status=${status}` as Route);
+/**
+ * Tela para onde a ação volta. A ficha do cliente também mostra cobranças pagas com o painel
+ * de notas: sem isto, anexar ali jogava o usuário na lista de cobranças.
+ */
+function backTo(formData: FormData, entityType: "charge" | "expense") {
+  const parsed = financialReturnToSchema.safeParse(String(formData.get("returnTo") ?? ""));
+  return parsed.success ? parsed.data : pageFor(entityType);
+}
+
+function statusRedirect(path: string, status: string): never {
+  redirect(`${path}?status=${status}` as Route);
+}
+
+/** Lista do tipo do registro e, quando a ação veio da ficha, a ficha também. */
+function revalidateDocumentSurfaces(entityType: "charge" | "expense", path: string) {
+  revalidatePath(pageFor(entityType));
+  if (path !== pageFor(entityType)) revalidatePath(path);
 }
 
 export async function uploadFiscalDocument(formData: FormData) {
@@ -31,16 +47,14 @@ export async function uploadFiscalDocument(formData: FormData) {
     entityType: formData.get("entityType"),
   });
   if (!request.success) redirect("/dashboard?status=error");
+  const back = backTo(formData, request.data.entityType);
 
   const file = formData.get("file");
-  if (!(file instanceof File)) statusRedirect(request.data.entityType, "invoice-invalid");
+  if (!(file instanceof File)) statusRedirect(back, "invoice-invalid");
 
   const inspection = await inspectFiscalDocument(file);
   if (!inspection.ok) {
-    statusRedirect(
-      request.data.entityType,
-      inspection.code === "size" ? "invoice-too-large" : "invoice-invalid",
-    );
+    statusRedirect(back, inspection.code === "size" ? "invoice-too-large" : "invoice-invalid");
   }
 
   const { supabase, userId, workspaceId } = await requireWorkspaceContext();
@@ -52,7 +66,7 @@ export async function uploadFiscalDocument(formData: FormData) {
     .eq("workspace_id", workspaceId)
     .single();
   if (parentError || parent?.status !== "paid") {
-    statusRedirect(request.data.entityType, "invoice-unavailable");
+    statusRedirect(back, "invoice-unavailable");
   }
 
   const documentId = randomUUID();
@@ -66,7 +80,7 @@ export async function uploadFiscalDocument(formData: FormData) {
     contentType: file.type,
     upsert: false,
   });
-  if (uploadError) statusRedirect(request.data.entityType, "invoice-error");
+  if (uploadError) statusRedirect(back, "invoice-error");
 
   const { error: metadataError } = await supabase.from("fiscal_documents").insert({
     bucket: "workspace-documents",
@@ -84,17 +98,18 @@ export async function uploadFiscalDocument(formData: FormData) {
 
   if (metadataError) {
     await bucket.remove([objectPath]);
-    statusRedirect(request.data.entityType, "invoice-error");
+    statusRedirect(back, "invoice-error");
   }
 
-  revalidatePath(pageFor(request.data.entityType));
-  statusRedirect(request.data.entityType, "invoice-uploaded");
+  revalidateDocumentSurfaces(request.data.entityType, back);
+  statusRedirect(back, "invoice-uploaded");
 }
 
 export async function downloadFiscalDocument(formData: FormData) {
   const id = documentIdSchema.safeParse(formData.get("id"));
   const entityType = z.enum(["charge", "expense"]).safeParse(formData.get("entityType"));
   if (!id.success || !entityType.success) redirect("/dashboard?status=error");
+  const back = backTo(formData, entityType.data);
 
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data: document, error } = await supabase
@@ -103,12 +118,12 @@ export async function downloadFiscalDocument(formData: FormData) {
     .eq("id", id.data)
     .eq("workspace_id", workspaceId)
     .single();
-  if (error || !document) statusRedirect(entityType.data, "invoice-error");
+  if (error || !document) statusRedirect(back, "invoice-error");
 
   const { data, error: signedUrlError } = await supabase.storage
     .from(document.bucket)
     .createSignedUrl(document.object_path, 300, { download: true });
-  if (signedUrlError || !data?.signedUrl) statusRedirect(entityType.data, "invoice-error");
+  if (signedUrlError || !data?.signedUrl) statusRedirect(back, "invoice-error");
   redirect(data.signedUrl as Route);
 }
 
@@ -116,6 +131,7 @@ export async function deleteFiscalDocument(formData: FormData) {
   const id = documentIdSchema.safeParse(formData.get("id"));
   const entityType = z.enum(["charge", "expense"]).safeParse(formData.get("entityType"));
   if (!id.success || !entityType.success) redirect("/dashboard?status=error");
+  const back = backTo(formData, entityType.data);
 
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data: document, error } = await supabase
@@ -124,20 +140,20 @@ export async function deleteFiscalDocument(formData: FormData) {
     .eq("id", id.data)
     .eq("workspace_id", workspaceId)
     .single();
-  if (error || !document) statusRedirect(entityType.data, "invoice-error");
+  if (error || !document) statusRedirect(back, "invoice-error");
 
   const { error: storageError } = await supabase.storage
     .from(document.bucket)
     .remove([document.object_path]);
-  if (storageError) statusRedirect(entityType.data, "invoice-error");
+  if (storageError) statusRedirect(back, "invoice-error");
 
   const { error: metadataError } = await supabase
     .from("fiscal_documents")
     .delete()
     .eq("id", id.data)
     .eq("workspace_id", workspaceId);
-  if (metadataError) statusRedirect(entityType.data, "invoice-error");
+  if (metadataError) statusRedirect(back, "invoice-error");
 
-  revalidatePath(pageFor(entityType.data));
-  statusRedirect(entityType.data, "invoice-deleted");
+  revalidateDocumentSurfaces(entityType.data, back);
+  statusRedirect(back, "invoice-deleted");
 }
