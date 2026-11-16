@@ -36,6 +36,10 @@ export const serverEnvironmentSchema = z
   .strictObject({
     ...publicEnvironmentShape,
     SUPABASE_SECRET_KEY: optionalSecretKey,
+    // Lembretes pelo WhatsApp (ADR-0024). Sem eles, as rotas respondem 503 e nada é enviado.
+    CRON_SECRET: optionalSecretKey,
+    WHATSAPP_APP_SECRET: optionalSecretKey,
+    WHATSAPP_WEBHOOK_VERIFY_TOKEN: optionalSecretKey,
   })
   .superRefine(requireProductionTurnstile);
 
