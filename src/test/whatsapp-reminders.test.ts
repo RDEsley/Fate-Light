@@ -201,27 +201,75 @@ describe("execução do agendador", () => {
 
   it("envia cada lembrete e registra sucesso, falha e telefone inválido", async () => {
     const record = vi.fn(async () => {});
+    const wait = vi.fn(async () => {});
     const send = vi
       .fn()
       .mockResolvedValueOnce({ messageId: "wamid.ok", ok: true })
       .mockResolvedValueOnce({ error: "Meta 131026: sem WhatsApp", ok: false });
-
-    const summary = await runReminders({
-      claim: async () => [
+    const claim = vi
+      .fn()
+      .mockResolvedValueOnce([
         claimed({ delivery_id: "d1" }),
         claimed({ delivery_id: "d2" }),
         claimed({ delivery_id: "d3", recipient_phone: "123" }),
-      ],
-      record,
-      send,
-    });
+      ])
+      .mockResolvedValueOnce([]);
+
+    const summary = await runReminders({ claim, record, send, wait });
 
     expect(summary).toEqual({ claimed: 3, failed: 2, sent: 1 });
     expect(send).toHaveBeenCalledTimes(2);
+    expect(claim).toHaveBeenCalledTimes(2);
+    expect(wait).toHaveBeenCalledWith(1_000);
     expect(send.mock.calls[0]?.[0].message.recipientPhone).toBe("5561999991234");
     expect(record).toHaveBeenCalledWith("d1", "wamid.ok", null);
     expect(record).toHaveBeenCalledWith("d2", null, "Meta 131026: sem WhatsApp");
     expect(record).toHaveBeenCalledWith("d3", null, "Telefone do cliente inválido.");
+  });
+
+  it("repete uma falha persistida até a terceira tentativa na mesma execução", async () => {
+    const reminder = claimed({ delivery_id: "retry-1" });
+    const claim = vi
+      .fn()
+      .mockResolvedValueOnce([reminder])
+      .mockResolvedValueOnce([reminder])
+      .mockResolvedValueOnce([reminder]);
+    const record = vi.fn(async () => {});
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ error: "Meta respondeu 503.", ok: false })
+      .mockResolvedValueOnce({ error: "Meta respondeu 503.", ok: false })
+      .mockResolvedValueOnce({ messageId: "wamid.recovered", ok: true });
+    const wait = vi.fn(async () => {});
+
+    const summary = await runReminders({ claim, record, send, wait });
+
+    expect(summary).toEqual({ claimed: 1, failed: 0, sent: 1 });
+    expect(claim).toHaveBeenCalledTimes(3);
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(record).toHaveBeenNthCalledWith(1, "retry-1", null, "Meta respondeu 503.");
+    expect(record).toHaveBeenNthCalledWith(2, "retry-1", null, "Meta respondeu 503.");
+    expect(record).toHaveBeenNthCalledWith(3, "retry-1", "wamid.recovered", null);
+    expect(wait.mock.calls).toEqual([[1_000], [2_000]]);
+  });
+
+  it("não ultrapassa três tentativas quando o envio continua falhando", async () => {
+    const reminder = claimed({ delivery_id: "retry-2" });
+    const claim = vi
+      .fn()
+      .mockResolvedValueOnce([reminder])
+      .mockResolvedValueOnce([reminder])
+      .mockResolvedValueOnce([reminder]);
+    const record = vi.fn(async () => {});
+    const send = vi.fn().mockResolvedValue({ error: "Meta respondeu 503.", ok: false });
+    const wait = vi.fn(async () => {});
+
+    const summary = await runReminders({ claim, record, send, wait });
+
+    expect(summary).toEqual({ claimed: 1, failed: 1, sent: 0 });
+    expect(claim).toHaveBeenCalledTimes(3);
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(record).toHaveBeenCalledTimes(3);
   });
 });
 
