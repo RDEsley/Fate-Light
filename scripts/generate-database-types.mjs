@@ -22,10 +22,13 @@ if (generation.status !== 0) {
 }
 
 function normalizeGeneratedTypes(output) {
+  const compactJsonType =
+    "export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]";
+
   return output
     // CLI v3 compacta o alias Json em uma linha; mantém o formato estável versionado.
     .replace(
-      /export type Json = string \\| number \\| boolean \\| null \\| \\{ \\[key: string\\]: Json \\| undefined \\} \\| Json\\[\\]/,
+      compactJsonType,
       [
         "export type Json =",
         "  | string",
@@ -34,7 +37,7 @@ function normalizeGeneratedTypes(output) {
         "  | null",
         "  | { [key: string]: Json | undefined }",
         "  | Json[]",
-      ].join("\\n"),
+      ].join("\n"),
     )
     .replace(
       /  \/\/ Allows to automatically instantiate createClient[\s\S]*?  __InternalSupabase: \{\r?\n    PostgrestVersion: "[^"]+"\r?\n  \}\r?\n/,
