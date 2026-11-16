@@ -35,7 +35,11 @@ export async function CurrentLegalDocument({ type }: { type: LegalDocumentType }
           <h1 className="mt-2 text-3xl font-black tracking-tight">{title}</h1>
           {data.effective_at ? (
             <p className="text-muted mt-2 text-sm">
-              Vigente desde {new Date(data.effective_at).toLocaleDateString("pt-BR")}.
+              Vigente desde{" "}
+              {new Date(data.effective_at).toLocaleDateString("pt-BR", {
+                timeZone: "America/Sao_Paulo",
+              })}
+              .
             </p>
           ) : null}
           <pre className="text-foreground mt-7 overflow-x-auto font-sans text-sm leading-7 whitespace-pre-wrap">

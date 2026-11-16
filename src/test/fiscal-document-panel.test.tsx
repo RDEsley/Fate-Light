@@ -26,7 +26,7 @@ describe("fiscal document panel", () => {
       <FiscalDocumentPanel
         documents={[
           {
-            createdAt: "2026-08-19T12:00:00.000Z",
+            createdAt: "2026-08-19",
             id: "document-id",
             mimeType: "application/pdf",
             sizeBytes: 2048,
@@ -39,7 +39,7 @@ describe("fiscal document panel", () => {
 
     expect(screen.getByText("1 anexo")).toBeInTheDocument();
     expect(container.querySelector(".fiscal-documents__list small")).toHaveTextContent(
-      "PDF · 2 KB",
+      "PDF · 2 KB · 19/08/2026",
     );
     expect(screen.getByRole("button", { name: "Baixar nota fiscal" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Excluir" })).toBeInTheDocument();

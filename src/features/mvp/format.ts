@@ -15,13 +15,18 @@ export function formatDatePtBr(value: string | null | undefined) {
   return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
 }
 
-export function formatDateTimePtBr(value: string) {
+/**
+ * Data e hora de um instante no fuso informado. Sem o fuso, o servidor formatava em UTC
+ * e um evento das 22h em Brasília aparecia com a hora (e às vezes o dia) seguinte.
+ */
+export function formatDateTimePtBr(value: string, timeZone?: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? value
     : new Intl.DateTimeFormat("pt-BR", {
         dateStyle: "short",
         timeStyle: "short",
+        timeZone,
       }).format(date);
 }
 
@@ -53,6 +58,21 @@ export function isoDateInTimeZone(timeZone: string, reference = new Date()) {
   }).formatToParts(reference);
   const value = new Map(parts.map((part) => [part.type, part.value]));
   return [value.get("year"), value.get("month"), value.get("day")].join("-");
+}
+
+/**
+ * Dia (YYYY-MM-DD) em que um instante caiu no fuso informado. `paid_at` e afins são
+ * instantes UTC: cortar a string ISO mostrava o pagamento das 22h de Brasília no dia
+ * seguinte.
+ */
+export function isoDateOfInstant(instant: string, timeZone: string) {
+  const date = new Date(instant);
+  return Number.isNaN(date.getTime()) ? instant : isoDateInTimeZone(timeZone, date);
+}
+
+/** Hoje no fuso do navegador; só para código que roda no cliente. */
+export function localIsoToday() {
+  return isoDateInTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
 }
 
 export function monthBounds(reference = new Date()) {

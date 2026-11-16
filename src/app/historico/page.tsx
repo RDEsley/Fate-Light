@@ -177,7 +177,7 @@ export default async function HistoryPage({
                           <h2>{event.summary}</h2>
                         </div>
                         <time dateTime={event.occurred_at}>
-                          {formatDateTimePtBr(event.occurred_at)}
+                          {formatDateTimePtBr(event.occurred_at, context.workspaceTimezone)}
                         </time>
                       </div>
                       {event.clients?.name && event.client_id ? (

@@ -3,12 +3,7 @@
 import { useState } from "react";
 
 import { DateField } from "@/components/ui/form-controls";
-import { isoDateInTimeZone } from "@/features/mvp/format";
-
-/** Hoje no fuso do navegador de quem está registrando o pagamento. */
-function localToday() {
-  return isoDateInTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-}
+import { localIsoToday } from "@/features/mvp/format";
 
 /**
  * Data em que o dinheiro entrou ou saiu. Começa em hoje — o caso comum continua a um
@@ -16,7 +11,7 @@ function localToday() {
  * Montado só dentro do diálogo aberto, então "hoje" é calculado no navegador.
  */
 export function PaymentDateField() {
-  const [today] = useState(localToday);
+  const [today] = useState(localIsoToday);
 
   return (
     <DateField

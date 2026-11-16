@@ -10,7 +10,7 @@ import { RecordGroup, RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { newestResolvedFirst } from "@/features/charges/resolution-order";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
-import { isoDateInTimeZone } from "@/features/mvp/format";
+import { isoDateInTimeZone, isoDateOfInstant } from "@/features/mvp/format";
 import {
   appendIdInFilter,
   escapeIlikePattern,
@@ -269,7 +269,7 @@ export default async function ChargesPage({
                     delayReason: charge.delay_reason,
                     description: charge.description,
                     documents: (charge.fiscal_documents ?? []).map((document) => ({
-                      createdAt: document.created_at,
+                      createdAt: isoDateOfInstant(document.created_at, context.workspaceTimezone),
                       id: document.id,
                       mimeType: document.mime_type,
                       sizeBytes: document.size_bytes,
@@ -281,7 +281,9 @@ export default async function ChargesPage({
                     id: charge.id,
                     mediaBudget: charge.media_budget,
                     notes: charge.notes,
-                    paidAt: charge.paid_at,
+                    paidAt: charge.paid_at
+                      ? isoDateOfInstant(charge.paid_at, context.workspaceTimezone)
+                      : null,
                     paymentMethod: charge.payment_method,
                     status: charge.status,
                   }}
