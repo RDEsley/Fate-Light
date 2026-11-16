@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AccountShell } from "@/app/_components/account-shell";
 import { Icon } from "@/components/ui/icon";
 import { SearchClearField } from "@/components/ui/search-clear-field";
+import { partnershipFrom } from "@/features/clients/partnership";
 import { clientListHref, parseClientQuery } from "@/features/clients/query";
 import { textSearchOrFilter } from "@/features/search/list-query";
 import { requireWorkspaceContext } from "@/lib/auth/workspace-context";
@@ -38,7 +39,7 @@ type ClientsPageProps = {
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const parameters = await searchParams;
   const query = parseClientQuery(parameters);
-  const { supabase, workspaceId } = await requireWorkspaceContext();
+  const { supabase, workspaceId, workspaceTimezone } = await requireWorkspaceContext();
   const firstRow = (query.page - 1) * pageSize;
   const showingArchived = query.state === "archived";
   // Uma consulta só para as empresas/marcas ativas do workspace: ela serve tanto ao
@@ -160,7 +161,6 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
             // id e nome vêm de colunas NOT NULL da tabela base.
             const clientId = client.id ?? "";
             const clientName = client.name ?? "";
-            const firstStart = client.first_service_start;
             return (
               <ClientSummaryCard
                 activeServices={client.active_services ?? 0}
@@ -169,16 +169,15 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
                 email={client.email}
                 entityCount={entityCounts.get(clientId) ?? 0}
                 expiringDomains={client.expiring_domains ?? 0}
-                firstStart={firstStart}
                 key={clientId}
                 links={client.links}
                 name={clientName}
                 notes={client.notes}
                 overdueCharges={client.overdue_charges ?? 0}
+                partnership={partnershipFrom(client.first_paid_at, workspaceTimezone)}
                 phone={client.phone}
                 showingArchived={showingArchived}
                 status={client.commercial_status ?? "inactive"}
-                tenureLabel={firstStart ? activeTimeLabel(firstStart) : null}
                 tradeName={client.trade_name}
                 website={client.website}
               />
@@ -224,18 +223,4 @@ function filterHref(search: string, state: string, view: string) {
   if (view !== "all") parameters.set("view", view);
   const suffix = parameters.toString();
   return (suffix ? `/clientes?${suffix}` : "/clientes") as Route;
-}
-
-function activeTimeLabel(startDate: string) {
-  const start = new Date(`${startDate}T00:00:00`);
-  const months = Math.max(
-    0,
-    (new Date().getFullYear() - start.getFullYear()) * 12 +
-      new Date().getMonth() -
-      start.getMonth(),
-  );
-  if (months < 1) return "< 1 mês";
-  if (months < 12) return `${months} ${months === 1 ? "mês" : "meses"}`;
-  const years = Math.floor(months / 12);
-  return `${years} ${years === 1 ? "ano" : "anos"}`;
 }

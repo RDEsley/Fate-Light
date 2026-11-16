@@ -5,6 +5,13 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+### Added
+
+- Comprovante de pagamento opcional ao receber uma cobrança; fica no painel da cobrança paga, com
+  acesso privado (ADR-0025).
+- Cartões de cliente mostram o tempo de parceria desde o primeiro pagamento, ou "Aguardando 1º
+  pagamento".
+
 ## [0.21.1] - 2026-11-15
 
 ### Fixed
@@ -389,7 +396,6 @@ projeto. O versionamento segue SemVer.
 ### Security
 
 - Gates de qualidade, isolamento de banco e fluxo autenticado verdes na publicação.
-
 
 ## [0.6.1] - 2026-08-24
 
