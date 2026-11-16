@@ -10,6 +10,7 @@ import { RecordGroup, RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { newestResolvedFirst } from "@/features/charges/resolution-order";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
+import { toFiscalDocumentKind } from "@/features/documents/fiscal-document";
 import { isoDateInTimeZone, isoDateOfInstant } from "@/features/mvp/format";
 import {
   appendIdInFilter,
@@ -56,7 +57,7 @@ export default async function ChargesPage({
   const page = Math.max(1, Number.parseInt(parameters.page ?? "1", 10) || 1);
   const firstRow = (page - 1) * pageSize;
   const chargeColumns =
-    "id, client_id, client_entity_id, client_service_id, description, notes, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)";
+    "id, client_id, client_entity_id, client_service_id, description, notes, due_date, company_revenue, media_budget, additional_fee, additional_fee_is_revenue, gross_total, status, paid_at, cancelled_at, payment_method, delay_reason, delay_reason_code, delay_recorded_at, cancel_reason, cancel_reason_code, clients(name), client_entities(display_name), fiscal_documents(id, kind, created_at, mime_type, size_bytes)";
 
   const relatedSearch =
     query.length === 0
@@ -271,6 +272,7 @@ export default async function ChargesPage({
                     documents: (charge.fiscal_documents ?? []).map((document) => ({
                       createdAt: isoDateOfInstant(document.created_at, context.workspaceTimezone),
                       id: document.id,
+                      kind: toFiscalDocumentKind(document.kind),
                       mimeType: document.mime_type,
                       sizeBytes: document.size_bytes,
                     })),

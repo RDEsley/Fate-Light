@@ -1,5 +1,7 @@
 import { vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const documentMocks = vi.hoisted(() => {
   const chain = {
     delete: vi.fn(),

@@ -5,8 +5,10 @@ import { useState } from "react";
 import { markChargePaid } from "@/app/_actions/mvp";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { ChoiceChips } from "@/components/ui/choice-chips";
+import { FileField } from "@/components/ui/file-field";
 import { Form } from "@/components/ui/form";
 import { Modal } from "@/components/ui/modal";
+import { maxFiscalDocumentBytes } from "@/features/documents/fiscal-document";
 
 import { PaymentDateField } from "./payment-date-field";
 
@@ -16,7 +18,7 @@ const paymentOptions = paymentMethods.map((method) => ({ label: method, value: m
 /**
  * Baixa de uma cobrança a partir da linha da lista. A forma de pagamento é confirmada em
  * um diálogo curto: a linha fica compacta e nenhum pagamento é registrado com um palpite
- * que o usuário não viu.
+ * que o usuário não viu. O comprovante é opcional e segue junto com a baixa.
  */
 export function SettleChargeButton({
   amountLabel,
@@ -59,6 +61,15 @@ export function SettleChargeButton({
             options={paymentOptions}
           />
           <PaymentDateField />
+          <FileField
+            accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+            help="PDF ou imagem de até 4 MB · acesso privado"
+            label="Comprovante de pagamento"
+            maxBytes={maxFiscalDocumentBytes}
+            name="proof"
+            optional
+            tooLargeMessage="O comprovante ultrapassa o limite de 4 MB."
+          />
           <div className="modal-panel__actions -mx-[1.15rem] mt-1 -mb-[0.35rem]">
             <button className="modal-cancel" onClick={close} type="button">
               Voltar
