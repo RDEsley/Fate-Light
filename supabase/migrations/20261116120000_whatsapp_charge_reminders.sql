@@ -338,6 +338,30 @@ begin
   where candidate.recipient_phone <> ''
   on conflict on constraint whatsapp_deliveries_once do nothing;
 
+  -- Uma execução interrompida não pode deixar entregas presas em "sending". Expira os itens
+  -- de dias anteriores e encerra tentativas esgotadas no próprio dia.
+  update public.whatsapp_reminder_deliveries as delivery
+  set
+    status = 'failed',
+    error_message = coalesce(delivery.error_message, 'Agendamento expirado antes da confirmação do envio.'),
+    status_at = v_now
+  from public.workspaces as workspace
+  where workspace.id = delivery.workspace_id
+    and delivery.status = 'sending'
+    and delivery.scheduled_on < (v_now at time zone workspace.timezone)::date;
+
+  update public.whatsapp_reminder_deliveries as delivery
+  set
+    status = 'failed',
+    error_message = coalesce(delivery.error_message, 'Limite de tentativas atingido após uma interrupção.'),
+    status_at = v_now
+  from public.workspaces as workspace
+  where workspace.id = delivery.workspace_id
+    and delivery.status = 'sending'
+    and delivery.attempts >= 3
+    and delivery.scheduled_on = (v_now at time zone workspace.timezone)::date
+    and delivery.status_at < v_now - interval '15 minutes';
+
   return query
   with claimed as (
   update public.whatsapp_reminder_deliveries as delivery
@@ -349,17 +373,37 @@ begin
   from public.charges as charge,
     public.whatsapp_reminder_settings as settings,
     private.whatsapp_credentials as credential,
-    public.workspaces as workspace
+    public.workspaces as workspace,
+    public.client_whatsapp_preferences as preference,
+    public.clients as client
   where charge.id = delivery.charge_id
     and settings.workspace_id = delivery.workspace_id
     and credential.workspace_id = delivery.workspace_id
     and workspace.id = delivery.workspace_id
+    and preference.workspace_id = delivery.workspace_id
+    and preference.client_id = delivery.client_id
+    and preference.enabled
+    and client.workspace_id = delivery.workspace_id
+    and client.id = delivery.client_id
+    and client.commercial_status <> 'archived'
+    and workspace.status = 'active'
     and charge.status = 'pending'
+    and charge.due_date = delivery.due_date
     and settings.enabled
+    and case delivery.kind
+      when 'before' then settings.template_before is not null
+      when 'due' then settings.template_due is not null
+      when 'overdue' then settings.template_overdue is not null
+    end
     and delivery.scheduled_on = (v_now at time zone workspace.timezone)::date
     and (
       (delivery.status = 'sending' and delivery.attempts = 0)
       or (delivery.status = 'failed' and delivery.attempts < 3)
+      or (
+        delivery.status = 'sending'
+        and delivery.attempts < 3
+        and delivery.status_at < v_now - interval '15 minutes'
+      )
     )
   returning
     delivery.id,
