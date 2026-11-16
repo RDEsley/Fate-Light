@@ -330,13 +330,6 @@ export const cancellationSchema = z
 
 export const serviceStateSchema = z.enum(["active", "paused", "ended"]);
 
-export const serviceScheduleSchema = z.object({
-  billingType: z.enum(billingFrequencyValues),
-  clientId: identifierSchema,
-  id: identifierSchema,
-  nextDueDate: z.string().date(),
-});
-
 export const operationalDeletionSchema = z.object({
   clientId: z.union([z.literal(""), identifierSchema]),
   id: identifierSchema,

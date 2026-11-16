@@ -35,7 +35,6 @@ import {
   deleteOperationalRecord,
   reactivateDomain,
   setClientServiceState,
-  updateClientServiceSchedule,
 } from "@/app/_actions/mvp";
 import { initialActionState } from "@/lib/forms/action-state";
 
@@ -166,28 +165,6 @@ describe("operational lifecycle actions", () => {
 
     await expect(deleteClientService(formData)).rejects.toThrow(
       `REDIRECT:/clientes/${clientId}?status=service-documents-attached`,
-    );
-  });
-
-  it("atualiza somente a agenda futura do serviço", async () => {
-    const formData = new FormData();
-    formData.set("billingType", "annual");
-    formData.set("clientId", clientId);
-    formData.set("id", recordId);
-    formData.set("nextDueDate", "2027-08-03");
-
-    await expect(updateClientServiceSchedule(formData)).rejects.toThrow(
-      `REDIRECT:/clientes/${clientId}?status=service-schedule-updated`,
-    );
-    expect(lifecycleMocks.chain.update).toHaveBeenCalledWith({
-      billing_type: "annual",
-      next_due_date: "2027-08-03",
-    });
-    // Mudar a agenda muda o que cobranças e painel mostram; revalidar só a página do
-    // cliente deixava as duas telas exibindo a data antiga.
-    const revalidated = lifecycleMocks.revalidatePath.mock.calls.map(([path]) => path);
-    expect(revalidated).toEqual(
-      expect.arrayContaining([`/clientes/${clientId}`, "/cobrancas", "/dashboard"]),
     );
   });
 
