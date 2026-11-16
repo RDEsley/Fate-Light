@@ -133,9 +133,9 @@ select results_eq(
   'Agendador separa antes, no dia e atraso com nome e telefone do cliente'
 );
 select results_eq(
-  $$select count(*) from public.claim_whatsapp_reminders('2026-12-10 18:00+00')$$,
+  $$select count(*) from public.claim_whatsapp_reminders('2026-12-10 12:00:30+00')$$,
   array[0::bigint],
-  'Rodar de novo no mesmo dia não duplica envios'
+  'Executar novamente 30 segundos depois não duplica entregas em andamento'
 );
 select lives_ok(
   $$select public.record_whatsapp_send_result(id, 'wamid.due', null)
