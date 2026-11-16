@@ -25,6 +25,8 @@ export type AttentionItem = {
   recurrence?: string;
   severity: "danger" | "warning";
   source: "adjustment" | "charge" | "domain" | "expense" | "manual";
+  /** Despesa de série mensal ativa: pagar já cria a próxima ocorrência. */
+  monthly?: boolean;
   /** Id da cobrança ou despesa, para dar baixa sem abrir a lista de origem. */
   recordId?: string;
   /** O registro em si, sem o prefixo de situação que `title` carrega. */
@@ -83,9 +85,12 @@ export const getAttentionItems = cache(async function getAttentionItems(
       .limit(50),
     context.supabase
       .from("expenses")
-      .select("id, description, due_date, amount, clients(name), client_entities(display_name)", {
-        count: "exact",
-      })
+      .select(
+        "id, description, due_date, amount, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name)",
+        {
+          count: "exact",
+        },
+      )
       .eq("workspace_id", context.workspaceId)
       .eq("status", "pending")
       .lte("due_date", limit)
@@ -161,6 +166,10 @@ export const getAttentionItems = cache(async function getAttentionItems(
       date: expense.due_date,
       href: `/despesas?focus=${expense.id}` as Route,
       id: `expense-${expense.id}`,
+      monthly:
+        expense.expense_type === "fixed" &&
+        Boolean(expense.recurrence_active && expense.recurrence_group_id) &&
+        expense.recurrence_frequency === "monthly",
       recordId: expense.id,
       meta: expense.client_entities?.display_name
         ? `${expense.client_entities.display_name} · vencimento ${formatDatePtBr(expense.due_date)}`

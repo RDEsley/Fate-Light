@@ -54,6 +54,8 @@ export type AlertRow = {
   manualId?: string;
   notes: string | null;
   owner: string | null;
+  /** Despesa de série mensal ativa. */
+  monthly: boolean;
   /** Cobrança ou despesa por trás do alerta, que pode ser quitada direto da central. */
   recordId: string | null;
   recurrence: AlertRecurrence;
@@ -131,6 +133,7 @@ export function toAlertRows(items: AttentionItem[], today: string): AlertRow[] {
       manualId: item.source === "manual" ? item.id.replace("manual-", "") : undefined,
       notes: item.notes ?? null,
       owner: item.owner ?? null,
+      monthly: item.monthly ?? false,
       recordId: item.recordId ?? null,
       recurrence: parseAlertRecurrence(item.recurrence),
       source: item.source,

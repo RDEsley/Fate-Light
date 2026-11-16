@@ -15,6 +15,7 @@ const row = (id: string, date: string, bucket: AlertRow["bucket"]): AlertRow => 
   deadline: { label: "Hoje", tone: "danger" },
   href: "/cobrancas",
   id,
+  monthly: false,
   notes: null,
   owner: "Padaria",
   recordId: null,
