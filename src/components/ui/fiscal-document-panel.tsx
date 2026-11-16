@@ -21,11 +21,15 @@ export function FiscalDocumentPanel({
   documents,
   entityId,
   entityType,
+  returnTo,
 }: {
   documents: FiscalDocumentItem[];
   entityId: string;
   entityType: "charge" | "expense";
+  /** Tela para onde a ação volta; sem ela, a lista de cobranças ou de despesas. */
+  returnTo?: string;
 }) {
+  const back = returnTo ? <input name="returnTo" type="hidden" value={returnTo} /> : null;
   return (
     <details className="fiscal-documents">
       <summary>
@@ -58,6 +62,7 @@ export function FiscalDocumentPanel({
                   </small>
                 </span>
                 <form action={downloadFiscalDocument}>
+                  {back}
                   <input name="entityType" type="hidden" value={entityType} />
                   <input name="id" type="hidden" value={document.id} />
                   <button
@@ -69,6 +74,7 @@ export function FiscalDocumentPanel({
                   </button>
                 </form>
                 <form action={deleteFiscalDocument}>
+                  {back}
                   <input name="entityType" type="hidden" value={entityType} />
                   <input name="id" type="hidden" value={document.id} />
                   <ConfirmDialog
@@ -87,6 +93,7 @@ export function FiscalDocumentPanel({
           <p className="fiscal-documents__empty">Nenhuma nota fiscal anexada a este pagamento.</p>
         )}
         <form action={uploadFiscalDocument} className="fiscal-documents__upload">
+          {back}
           <input name="entityId" type="hidden" value={entityId} />
           <input name="entityType" type="hidden" value={entityType} />
           <label>

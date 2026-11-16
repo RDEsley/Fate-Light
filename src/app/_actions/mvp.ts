@@ -510,9 +510,9 @@ export async function recordChargeDelayReason(formData: FormData) {
     .eq("status", "pending")
     .select("id")
     .single();
-  if (error || !data) statusRedirect("/cobrancas", "error");
+  if (error || !data) statusRedirect(returnTo, "error");
   revalidateFinancialSurfaces({ includeCharges: true });
-  statusRedirect("/cobrancas", "delay-recorded");
+  statusRedirect(returnTo, "delay-recorded");
 }
 
 export async function cancelCharge(formData: FormData) {

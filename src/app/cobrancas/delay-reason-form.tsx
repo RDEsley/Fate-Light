@@ -20,7 +20,13 @@ const reasons = [
 
 const reasonOptions = reasons.map(([value, label]) => ({ label, value }));
 
-export function DelayReasonForm({ chargeId }: { chargeId: string }) {
+export function DelayReasonForm({
+  chargeId,
+  returnTo = "/cobrancas",
+}: {
+  chargeId: string;
+  returnTo?: string;
+}) {
   const [code, setCode] = useState<(typeof reasons)[number][0]>("client_requested");
   const standardReason = reasons.find(([value]) => value === code)?.[1] ?? "";
 
@@ -33,6 +39,7 @@ export function DelayReasonForm({ chargeId }: { chargeId: string }) {
       </summary>
       <Form action={recordChargeDelayReason} className="mt-3 grid gap-4">
         <input name="id" type="hidden" value={chargeId} />
+        <input name="returnTo" type="hidden" value={returnTo} />
         <SelectField
           label="Motivo"
           name="code"
