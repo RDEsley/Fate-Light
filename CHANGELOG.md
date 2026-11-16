@@ -5,6 +5,14 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+### Added
+
+- Lembretes de cobrança pelo WhatsApp (API oficial da Meta): todo dia às 9h o sistema avisa as
+  cobranças pendentes dos clientes ativados, com o nome do contato, valor, vencimento e chave PIX.
+  Antes, no dia e depois do vencimento, com histórico de entrega e leitura (ADR-0024).
+- Configurações → WhatsApp para conta, templates e dias de antecedência/atraso; ficha do cliente
+  com opt-in, nome na mensagem e WhatsApp de cobrança.
+
 ## [0.21.1] - 2026-11-15
 
 ### Fixed

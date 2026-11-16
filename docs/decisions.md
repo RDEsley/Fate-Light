@@ -194,6 +194,7 @@ Consolidada em 2026-09-08:
 | ADR-0021 | Modo visitante somente leitura, com dados fictícios em memória | Aceita | [ADR](adr/0021-read-only-guest-mode.md) |
 | ADR-0022 | Cobrança pendente editável e agenda do serviço sincronizada com o vencimento | Aceita | [ADR](adr/0022-editable-pending-charges-and-service-cycle-sync.md) |
 | ADR-0023 | Data do pagamento informada na baixa | Aceita | [ADR](adr/0023-payment-date-on-settlement.md) |
+| ADR-0024 | Lembretes de cobrança pelo WhatsApp | Aceita | [ADR](adr/0024-whatsapp-charge-reminders.md) |
 
 ## Outras decisões consolidadas
 
@@ -245,7 +246,7 @@ Esses pontos devem ser decididos antes da fase que os implementa, sem bloquear a
 - Diário, razão, balancete, DRE contábil e balanço patrimonial.
 - Períodos contábeis, postagem, estorno contábil e saldos de abertura.
 - Papéis funcionais `admin` e `member` no workspace.
-- Notificações por e-mail/push.
+- Notificações por e-mail/push (lembretes de cobrança pelo WhatsApp entram pelo ADR-0024).
 - Conciliação bancária e OFX.
 - Exportações XLSX/PDF e relatórios contábeis.
 

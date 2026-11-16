@@ -537,6 +537,64 @@ export type Database = {
           },
         ]
       }
+      client_whatsapp_preferences: {
+        Row: {
+          client_id: string
+          contact_name: string | null
+          created_at: string
+          created_by: string
+          enabled: boolean
+          phone: string | null
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          client_id: string
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          client_id?: string
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          phone?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_whatsapp_preferences_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_whatsapp_preferences_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "client_whatsapp_preferences_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address_json: Json | null
@@ -1282,6 +1340,161 @@ export type Database = {
           },
         ]
       }
+      whatsapp_reminder_deliveries: {
+        Row: {
+          attempts: number
+          charge_id: string
+          client_id: string
+          contact_name: string
+          created_at: string
+          due_date: string
+          error_message: string | null
+          id: string
+          kind: string
+          recipient_phone: string
+          scheduled_on: string
+          sent_at: string | null
+          status: string
+          status_at: string
+          wa_message_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          attempts?: number
+          charge_id: string
+          client_id: string
+          contact_name: string
+          created_at?: string
+          due_date: string
+          error_message?: string | null
+          id?: string
+          kind: string
+          recipient_phone: string
+          scheduled_on: string
+          sent_at?: string | null
+          status?: string
+          status_at?: string
+          wa_message_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          attempts?: number
+          charge_id?: string
+          client_id?: string
+          contact_name?: string
+          created_at?: string
+          due_date?: string
+          error_message?: string | null
+          id?: string
+          kind?: string
+          recipient_phone?: string
+          scheduled_on?: string
+          sent_at?: string | null
+          status?: string
+          status_at?: string
+          wa_message_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_deliveries_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_deliveries_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges_overview"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_deliveries_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "client_directory"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_deliveries_client_fk"
+            columns: ["workspace_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "whatsapp_reminder_deliveries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_reminder_settings: {
+        Row: {
+          created_at: string
+          created_by: string
+          days_after: number
+          days_before: number
+          enabled: boolean
+          header_image_url: string | null
+          phone_number_id: string | null
+          pix_key: string | null
+          template_before: string | null
+          template_due: string | null
+          template_language: string
+          template_overdue: string | null
+          updated_at: string
+          updated_by: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          days_after?: number
+          days_before?: number
+          enabled?: boolean
+          header_image_url?: string | null
+          phone_number_id?: string | null
+          pix_key?: string | null
+          template_before?: string | null
+          template_due?: string | null
+          template_language?: string
+          template_overdue?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          days_after?: number
+          days_before?: number
+          enabled?: boolean
+          header_image_url?: string | null
+          phone_number_id?: string | null
+          pix_key?: string | null
+          template_before?: string | null
+          template_due?: string | null
+          template_language?: string
+          template_overdue?: string | null
+          updated_at?: string
+          updated_by?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_reminder_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
           created_at: string
@@ -1625,6 +1838,25 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      claim_whatsapp_reminders: {
+        Args: { p_now?: string }
+        Returns: {
+          access_token: string
+          amount: number
+          contact_name: string
+          delivery_id: string
+          description: string
+          due_date: string
+          header_image_url: string
+          kind: string
+          phone_number_id: string
+          pix_key: string
+          recipient_phone: string
+          template_language: string
+          template_name: string
+          workspace_id: string
+        }[]
+      }
       consolidate_client_into_entity: {
         Args: {
           p_confirmation?: string
@@ -1724,6 +1956,7 @@ export type Database = {
           verified_at: string
         }[]
       }
+      has_whatsapp_access_token: { Args: never; Returns: boolean }
       import_workspace_spreadsheet: {
         Args: {
           p_payload: Json
@@ -1759,6 +1992,22 @@ export type Database = {
         Args: { p_source_client_id: string; p_target_client_id: string }
         Returns: Json
       }
+      record_whatsapp_send_result: {
+        Args: {
+          p_delivery_id: string
+          p_error_message?: string
+          p_wa_message_id?: string
+        }
+        Returns: undefined
+      }
+      record_whatsapp_status: {
+        Args: {
+          p_error_message?: string
+          p_status: string
+          p_wa_message_id: string
+        }
+        Returns: boolean
+      }
       request_current_account_lifecycle: {
         Args: { p_request_type: string }
         Returns: {
@@ -1781,6 +2030,7 @@ export type Database = {
         Args: { p_installment_count: number; p_service_id: string }
         Returns: string
       }
+      set_whatsapp_access_token: { Args: { p_token: string }; Returns: boolean }
       settle_charge_and_schedule_next: {
         Args: {
           p_charge_id: string
