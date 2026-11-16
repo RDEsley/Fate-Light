@@ -96,8 +96,8 @@ describe("template da mensagem", () => {
   });
 
   it("gera a prévia mostrada na configuração", () => {
-    expect(previewReminderText(message)).toContain("Olá, Marina!");
-    expect(previewReminderText(message)).toContain("PIX: financeiro@example.test");
+    expect(previewReminderText("due", message)).toContain("Olá, Marina!");
+    expect(previewReminderText("due", message)).toContain("PIX: financeiro@example.test");
   });
 });
 
@@ -210,7 +210,7 @@ describe("execução do agendador", () => {
       .fn()
       .mockResolvedValueOnce([
         claimed({ delivery_id: "d1" }),
-        claimed({ delivery_id: "d2" }),
+        claimed({ delivery_id: "d2", due_date: "2026-12-11" }),
         claimed({ delivery_id: "d3", recipient_phone: "123" }),
       ])
       .mockResolvedValueOnce([]);
@@ -225,6 +225,30 @@ describe("execução do agendador", () => {
     expect(record).toHaveBeenCalledWith("d1", "wamid.ok", null);
     expect(record).toHaveBeenCalledWith("d2", null, "Meta 131026: sem WhatsApp");
     expect(record).toHaveBeenCalledWith("d3", null, "Telefone do cliente inválido.");
+  });
+
+  it("junta no mesmo envio as cobranças do cliente que vencem no mesmo dia", async () => {
+    const record = vi.fn(async () => {});
+    const send = vi.fn().mockResolvedValue({ messageId: "wamid.junto", ok: true });
+    const claim = vi
+      .fn()
+      .mockResolvedValueOnce([
+        claimed({ amount: 1000.1, delivery_id: "a", description: "Site" }),
+        claimed({ amount: 500.2, delivery_id: "b", description: "Gestão" }),
+        claimed({ amount: 300, delivery_id: "c", description: "Criativo" }),
+        claimed({ delivery_id: "z", due_date: "2026-12-20", description: "Hospedagem" }),
+      ]);
+
+    const summary = await runReminders({ claim, record, send, wait: async () => {} });
+
+    expect(summary).toEqual({ claimed: 4, failed: 0, sent: 4 });
+    expect(send).toHaveBeenCalledTimes(2);
+    const grouped = send.mock.calls[0]?.[0].message;
+    expect(grouped.description).toBe("Site, Gestão e Criativo");
+    expect(grouped.amount).toBe(1800.3);
+    expect(record).toHaveBeenCalledWith("a", "wamid.junto", null);
+    expect(record).toHaveBeenCalledWith("b", "wamid.junto#2", null);
+    expect(record).toHaveBeenCalledWith("c", "wamid.junto#3", null);
   });
 
   it("repete uma falha persistida até a terceira tentativa na mesma execução", async () => {
