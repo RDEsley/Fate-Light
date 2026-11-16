@@ -22,6 +22,10 @@ contato e os dados da cobrança, configurada por cliente.
 - **Idempotência:** `whatsapp_reminder_deliveries` é única por `(charge_id, kind, due_date)`. Rodar
   o agendador duas vezes no mesmo dia não duplica envios; mudar o vencimento rearma os lembretes.
   Falhas são tentadas de novo no mesmo dia até três vezes.
+- **Agrupamento:** cobranças do mesmo cliente, no mesmo dia, para o mesmo modelo e telefone saem
+  em uma única mensagem, com os serviços listados e o valor (total a pagar) somado. Cada cobrança
+  mantém sua linha de entrega; só a primeira guarda o id da Meta e recebe os status do webhook, as
+  demais guardam `<id>#n`. Vencimentos diferentes geram mensagens diferentes.
 - **Cobrança paga ou cancelada não recebe lembrete.** A automação só lê cobranças; nunca baixa,
   cancela ou altera valores.
 - **Agendamento:** Vercel Cron diário às 12:00 UTC (09:00 em Brasília) chama

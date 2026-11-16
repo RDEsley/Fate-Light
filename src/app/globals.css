@@ -2677,6 +2677,19 @@ summary::-webkit-details-marker {
   gap: 0.15rem;
 }
 
+.settings-tabs__group {
+  margin: 0.45rem 0.6rem 0.15rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-tabs__group:first-child {
+  margin-top: 0.15rem;
+}
+
 .settings-tabs__item {
   display: flex;
   align-items: center;
@@ -2729,6 +2742,10 @@ summary::-webkit-details-marker {
 }
 
 @media (max-width: 1023px) {
+  .settings-tabs__group {
+    display: none;
+  }
+
   .settings-tabs {
     display: flex;
     overflow-x: auto;
@@ -4122,6 +4139,47 @@ summary.action-row__head {
   font-size: 0.86rem;
   line-height: 1.5;
   white-space: pre-line;
+}
+
+.whatsapp-note {
+  display: grid;
+  gap: 0.25rem;
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--brand-soft);
+  color: var(--foreground);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.whatsapp-guide {
+  border: 1.5px solid var(--line);
+  border-radius: 1rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface-raised);
+}
+
+.whatsapp-guide summary {
+  cursor: pointer;
+  color: var(--brand-strong);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.whatsapp-guide__body {
+  display: grid;
+  justify-items: start;
+  margin-top: 0.7rem;
+  gap: 0.45rem;
+}
+
+.whatsapp-guide__code {
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--canvas);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  user-select: all;
 }
 
 .empty-state {
