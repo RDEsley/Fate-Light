@@ -20,7 +20,6 @@ import {
   operationalDeletionSchema,
   paidFinancialDeletionSchema,
   paymentSchema,
-  serviceScheduleSchema,
   serviceStateSchema,
 } from "@/features/mvp/schemas";
 import { isoDateInTimeZone } from "@/features/mvp/format";
@@ -161,28 +160,6 @@ export async function deleteClientService(formData: FormData) {
   if (data === "blocked") statusRedirect(path, "service-delete-blocked");
   revalidateFinancialSurfaces({ clientId: clientId.data, includeCharges: true });
   statusRedirect(path, "deleted");
-}
-
-export async function updateClientServiceSchedule(formData: FormData) {
-  const values = serviceScheduleSchema.safeParse({
-    billingType: formData.get("billingType"),
-    clientId: formData.get("clientId"),
-    id: formData.get("id"),
-    nextDueDate: formData.get("nextDueDate"),
-  });
-  if (!values.success) statusRedirect("/clientes", "service-invalid");
-  const { supabase, workspaceId } = await requireWorkspaceContext();
-  const { data, error } = await supabase
-    .from("client_services")
-    .update({ billing_type: values.data.billingType, next_due_date: values.data.nextDueDate })
-    .eq("id", values.data.id)
-    .eq("client_id", values.data.clientId)
-    .eq("workspace_id", workspaceId)
-    .select("id")
-    .single();
-  if (error || !data) statusRedirect(`/clientes/${values.data.clientId}`, "service-error");
-  revalidateFinancialSurfaces({ clientId: values.data.clientId, includeCharges: true });
-  statusRedirect(`/clientes/${values.data.clientId}`, "service-schedule-updated");
 }
 
 export async function deleteOperationalRecord(formData: FormData) {
@@ -496,7 +473,8 @@ export async function recordChargeDelayReason(formData: FormData) {
     id: formData.get("id"),
     reason: formData.get("reason"),
   });
-  if (!values.success) statusRedirect("/cobrancas", "invalid");
+  const returnTo = resolveFinancialReturnTo(formData.get("returnTo"), "/cobrancas");
+  if (!values.success) statusRedirect(returnTo, "invalid");
   const { supabase, workspaceId } = await requireWorkspaceContext();
   const { data, error } = await supabase
     .from("charges")

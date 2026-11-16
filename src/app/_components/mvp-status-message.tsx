@@ -13,7 +13,7 @@ const messages: Record<string, string> = {
   error: "Não foi possível concluir a operação.",
   invalid: "Revise os campos informados.",
   "delay-recorded": "Motivo do atraso registrado no histórico.",
-  paid: "Pagamento registrado. A cobrança foi para o bloco das resolvidas e o próximo ciclo já está agendado.",
+  paid: "Pagamento registrado. Se era um ciclo de serviço recorrente, o próximo já está agendado.",
   "payment-date-invalid": "A data do pagamento não pode estar no futuro.",
   "paid-deleted":
     "Registro pago excluído. A receita ou o custo saiu do dashboard e as notas fiscais anexadas foram removidas.",
@@ -40,7 +40,6 @@ const messages: Record<string, string> = {
   "service-paused": "Serviço pausado. Ele não gera cobranças nem alertas até você retomar.",
   "service-resumed": "Serviço retomado de onde parou.",
   "service-settled": "Pendências do serviço marcadas como pagas.",
-  "service-schedule-updated": "Agenda do serviço atualizada.",
   "service-updated": "Serviço atualizado.",
   "service-error": "Não foi possível salvar o serviço.",
   "service-invalid": "Revise os dados do serviço.",
