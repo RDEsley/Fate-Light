@@ -7,6 +7,10 @@ projeto. O versionamento segue SemVer.
 
 ### Added
 
+- Comprovante de pagamento opcional ao receber uma cobrança; fica no painel da cobrança paga, com
+  acesso privado (ADR-0025).
+- Cartões de cliente mostram o tempo de parceria desde o primeiro pagamento, ou "Aguardando 1º
+  pagamento".
 - Lembretes de cobrança pelo WhatsApp (API oficial da Meta): todo dia às 9h o sistema avisa as
   cobranças pendentes dos clientes ativados, com o nome do contato, valor, vencimento e chave PIX.
   Antes, no dia e depois do vencimento, com histórico de entrega e leitura (ADR-0024).

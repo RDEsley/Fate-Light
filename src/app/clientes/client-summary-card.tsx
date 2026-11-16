@@ -6,6 +6,7 @@ import Link from "next/link";
 import { restoreClient } from "@/app/clientes/actions";
 import { ClientCardStatusMenu } from "@/app/clientes/client-card-status-menu";
 import { Icon } from "@/components/ui/icon";
+import type { Partnership } from "@/features/clients/partnership";
 import { readClientLinks, type ClientLink } from "@/features/clients/schemas";
 import { clientStatusInfo } from "@/features/clients/status";
 import { formatCurrency } from "@/features/mvp/format";
@@ -17,15 +18,15 @@ export type ClientSummaryCardProps = {
   entityCount: number;
   earned: number;
   expiringDomains: number;
-  firstStart: string | null;
   links: unknown;
   name: string;
   notes: string | null;
   overdueCharges: number;
+  /** Tempo desde o primeiro pagamento; `null` enquanto o cliente não pagou nada. */
+  partnership: Partnership | null;
   phone: string | null;
   showingArchived: boolean;
   status: string;
-  tenureLabel: string | null;
   tradeName: string | null;
   website: string | null;
 };
@@ -41,15 +42,14 @@ export function ClientSummaryCard({
   entityCount,
   earned,
   expiringDomains,
-  firstStart,
   links,
   name,
   notes,
   overdueCharges,
+  partnership,
   phone,
   showingArchived,
   status,
-  tenureLabel,
   tradeName,
   website,
 }: ClientSummaryCardProps) {
@@ -132,16 +132,20 @@ export function ClientSummaryCard({
               <Icon name="globe" /> {expiringDomains}
             </Link>
           ) : null}
-          {firstStart && tenureLabel ? (
+          {partnership ? (
             <Link
-              aria-label={`Cliente há ${tenureLabel}. Abrir serviços`}
+              aria-label={`${partnership.text}. Abrir histórico de cobranças`}
               className="client-card-signal"
-              href={`/clientes/${clientId}#servicos`}
-              title="Tempo desde o primeiro serviço"
+              href={`/clientes/${clientId}#historico-cobrancas`}
+              title={partnership.title}
             >
-              <Icon name="history" /> {tenureLabel}
+              <Icon name="history" /> {partnership.text}
             </Link>
-          ) : null}
+          ) : (
+            <span title="A parceria começa no primeiro pagamento recebido deste cliente">
+              <Icon name="history" /> Aguardando 1º pagamento
+            </span>
+          )}
           {earned > 0 ? (
             <Link
               aria-label={`Já recebido ${formatCurrency(earned)}. Abrir cobranças pagas`}

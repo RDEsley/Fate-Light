@@ -915,6 +915,7 @@ export type Database = {
           created_by: string
           expense_id: string | null
           id: string
+          kind: string
           mime_type: string
           object_path: string
           safe_filename: string
@@ -929,6 +930,7 @@ export type Database = {
           created_by?: string
           expense_id?: string | null
           id?: string
+          kind?: string
           mime_type: string
           object_path: string
           safe_filename: string
@@ -943,6 +945,7 @@ export type Database = {
           created_by?: string
           expense_id?: string | null
           id?: string
+          kind?: string
           mime_type?: string
           object_path?: string
           safe_filename?: string
@@ -1765,6 +1768,7 @@ export type Database = {
           commercial_status: string | null
           email: string | null
           expiring_domains: number | null
+          first_paid_at: string | null
           first_service_start: string | null
           id: string | null
           lifetime_revenue: number | null

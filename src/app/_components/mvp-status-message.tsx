@@ -53,19 +53,31 @@ const messages: Record<string, string> = {
   "invoice-too-large": "A nota fiscal ultrapassa o limite de 4 MB.",
   "invoice-unavailable": "Anexe a nota fiscal somente depois de marcar a conta como paga.",
   "invoice-uploaded": "Nota fiscal anexada e protegida no armazenamento privado.",
+  "paid-proof": "Cobrança recebida e comprovante anexado.",
+  "paid-proof-error":
+    "Cobrança recebida, mas o comprovante não foi anexado. Anexe de novo na própria cobrança.",
+  "proof-deleted": "Comprovante removido com segurança.",
+  "proof-error": "Não foi possível concluir a operação com o comprovante.",
+  "proof-invalid": "Escolha um comprovante válido em PDF, JPEG, PNG ou WebP.",
+  "proof-too-large": "O comprovante ultrapassa o limite de 4 MB.",
+  "proof-unavailable": "Anexe o comprovante somente depois de marcar a cobrança como paga.",
+  "proof-uploaded": "Comprovante anexado e protegido no armazenamento privado.",
 };
 
 export function MvpStatusMessage({ status }: { status?: string }) {
   const message = status ? messages[status] : undefined;
   if (!message) return null;
+  // A cobrança foi recebida; só o anexo falhou. Não é um erro da operação principal.
   const tone =
-    status?.includes("error") ||
-    status?.includes("invalid") ||
-    status?.includes("too-large") ||
-    status?.includes("unavailable")
-      ? "error"
-      : status?.includes("blocked") || status?.includes("storage-pending")
-        ? "warning"
-        : "success";
+    status === "paid-proof-error"
+      ? "warning"
+      : status?.includes("error") ||
+          status?.includes("invalid") ||
+          status?.includes("too-large") ||
+          status?.includes("unavailable")
+        ? "error"
+        : status?.includes("blocked") || status?.includes("storage-pending")
+          ? "warning"
+          : "success";
   return <StatusToast message={message} tone={tone} />;
 }

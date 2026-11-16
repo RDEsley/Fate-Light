@@ -739,6 +739,14 @@ export function buildDemoDataset(today: string) {
         (item) =>
           item.client_id === entry.id && item.status === "active" && item.expires_on <= day(30),
       ).length,
+      first_paid_at:
+        charges
+          .flatMap((item) =>
+            item.client_id === entry.id && item.status === "paid" && item.paid_at
+              ? [item.paid_at]
+              : [],
+          )
+          .sort()[0] ?? null,
       first_service_start: own.map((item) => item.start_date).sort()[0] ?? null,
       id: entry.id,
       lifetime_revenue: charges

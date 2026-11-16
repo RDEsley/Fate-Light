@@ -10,7 +10,13 @@ import { Icon } from "@/components/ui/icon";
 import { RecordGroup, RecordList } from "@/components/ui/record-row";
 import { SearchClearField } from "@/components/ui/search-clear-field";
 import { clientEntityTypeLabel } from "@/features/clients/entity-schemas";
-import { addDays, formatDatePtBr, isoDateInTimeZone, isoDateOfInstant } from "@/features/mvp/format";
+import { toFiscalDocumentKind } from "@/features/documents/fiscal-document";
+import {
+  addDays,
+  formatDatePtBr,
+  isoDateInTimeZone,
+  isoDateOfInstant,
+} from "@/features/mvp/format";
 import {
   appendIdInFilter,
   idsMatchingText,
@@ -112,7 +118,7 @@ export default async function ExpensesPage({
     let request = context.supabase
       .from("expenses")
       .select(
-        "id, description, notes, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name), fiscal_documents(id, created_at, mime_type, size_bytes)",
+        "id, description, notes, category, amount, due_date, status, paid_at, expense_type, recurrence_active, recurrence_frequency, recurrence_group_id, clients(name), client_entities(display_name), fiscal_documents(id, kind, created_at, mime_type, size_bytes)",
         { count: "exact" },
       )
       .eq("workspace_id", context.workspaceId)
@@ -282,6 +288,7 @@ export default async function ExpensesPage({
                   documents: (expense.fiscal_documents ?? []).map((document) => ({
                     createdAt: isoDateOfInstant(document.created_at, context.workspaceTimezone),
                     id: document.id,
+                    kind: toFiscalDocumentKind(document.kind),
                     mimeType: document.mime_type,
                     sizeBytes: document.size_bytes,
                   })),
