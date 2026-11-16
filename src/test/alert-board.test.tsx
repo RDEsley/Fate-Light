@@ -223,6 +223,7 @@ describe("AlertBoard", () => {
               amount: 89.9,
               date: "2026-10-09",
               id: `expense-${expenseId}`,
+              monthly: true,
               recordId: expenseId,
               source: "expense",
               subject: "Hospedagem",
@@ -248,6 +249,7 @@ describe("AlertBoard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Pagar Hospedagem" }));
     const expenseDialog = within(screen.getByRole("dialog"));
+    expect(screen.getByRole("dialog")).toHaveTextContent(/próxima ocorrência mensal/i);
     expect(expenseDialog.getByLabelText(/data do pagamento/i)).not.toHaveValue("");
     const expenseForm = expenseDialog
       .getByRole("button", { name: "Marcar como paga" })

@@ -206,7 +206,7 @@ function AlertQuickAction({ row }: { row: AlertRow }) {
         amountLabel={amountLabel}
         description={row.subject}
         expenseId={row.recordId}
-        monthly={false}
+        monthly={row.monthly}
         returnTo="/alertas"
       />
     );
