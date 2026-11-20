@@ -76,6 +76,11 @@ desenvolvido pela Fate Eight Tech e atende também outras empresas. A marca usa 
 ## Supabase, RLS e Storage
 
 - Toda alteração de schema é uma migration criada pela CLI, revisada e coberta por pgTAP.
+- Migration vai para produção só por `npx supabase db push` (a CLI é devDependency; não há binário
+  global), e antes de publicar o app que depende dela: código novo contra schema antigo derruba a
+  tela (a coluna `kind` ausente quebrou Cobranças). Nunca aplique SQL direto no painel do Supabase,
+  nem pelo MCP: o histórico diverge e o `db push` seguinte falha. Se divergir, `migration repair`
+  só depois de conferir no banco que o objeto já existe.
 - Toda tabela em schema exposto usa RLS forçada e grants mínimos. Policies combinam autenticação com
   autorização de workspace; `to authenticated` sozinho não é autorização.
 - Views expostas usam `security_invoker = true`. Funções `security definer` ficam no schema
