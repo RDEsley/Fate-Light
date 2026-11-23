@@ -49,6 +49,15 @@ test.describe("modo visitante", () => {
     }
   });
 
+  test("as ações do topo de Alertas não estouram a largura do celular", async ({ page }) => {
+    await page.setViewportSize({ height: 900, width: 360 });
+    await page.goto("/alertas");
+    await expect(page.getByRole("link", { name: "Config. alertas" })).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+      .toBe(true);
+  });
+
   test("barra envio, confirmação e ação direta, mas deixa buscar e filtrar", async ({ page }) => {
     await page.goto("/cobrancas");
     const charge = "Banner para campanha de inverno";
