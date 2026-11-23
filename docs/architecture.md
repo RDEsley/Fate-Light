@@ -101,7 +101,7 @@ docs/
   workflows/
 ```
 
-Pastas só serão criadas quando tiverem conteúdo. Migrations, lockfile, seed fictício, `AGENTS.md` e documentação serão versionados.
+Pastas só serão criadas quando tiverem conteúdo. Migrations, lockfile, seed fictício e documentação serão versionados.
 
 ## 5. Fluxo de requisição
 

@@ -9,7 +9,7 @@ Status: superada para produção; pendente de ativação manual no ambiente remo
 
 ## Contexto
 
-O ADR-0009 e o `PLAN.md` definem confirmação de e-mail como parte do cadastro público aprovado
+O ADR-0009 e o plano inicial definem confirmação de e-mail como parte do cadastro público aprovado
 para o MVP. Durante esta fase de testes internos, ainda sem usuários reais, exigir clique em
 e-mail de confirmação a cada cadastro atrapalha a validação manual do fluxo e não há necessidade
 de comprovar a posse de uma caixa de entrada real. O projeto Supabase hospedado usado pelo

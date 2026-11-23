@@ -18,7 +18,7 @@ Decisões consolidadas e revisadas em 2026-08-24:
   corrigidas e dentro dos contratos declarados.
 - Os overrides de Sharp, PostCSS, minimatch e brace-expansion foram removidos quando deixaram de ser
   necessários ou excediam os intervalos declarados pelos pacotes pais. Advisories sem correção compatível ficam
-  registrados como riscos conhecidos em [repository-audit.md](repository-audit.md).
+  registrados como riscos conhecidos.
 - Tailwind CSS `4.3.3` concentra tokens semânticos em `globals.css`, com temas claro/escuro,
   contraste, foco visível e redução de movimento.
 - Zod `4.4.3` valida contratos separados de ambiente público e servidor. A chave secret é opcional
@@ -29,8 +29,7 @@ Decisões consolidadas e revisadas em 2026-08-24:
   uso aprovado.
 - Vitest, Testing Library, Playwright e axe formam o baseline de testes. Os limites mínimos são 80%
   para statements, lines e functions, e 75% para branches.
-- `AGENTS.md` é a fonte operacional canônica. Nenhuma credencial ou configuração local privada deve
-  ser versionada.
+- Nenhuma credencial ou configuração local privada deve ser versionada.
 
 ## Identidade e isolamento da Fase 3A
 
