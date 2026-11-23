@@ -4,6 +4,38 @@ import { expect, test, type Page } from "@playwright/test";
 const question = "Quem está me devendo há mais de 30 dias? Cria um lembrete pra cada um";
 
 // Usa o modelo roteirizado (AGENT_SCRIPTED_MODEL): nenhuma chamada sai para um provedor de IA.
+// Contas reais ficam desligadas até a revisão da privacidade: o painel explica com simpatia.
+test.describe("assistente em fase de testes para contas", () => {
+  test.describe.configure({ timeout: 120_000 });
+
+  test("mostra o aviso amigável e nenhum campo de pergunta", async ({ page }) => {
+    await page.addInitScript(() => window.localStorage.setItem("fate-light:tour-complete", "yes"));
+    await page.route("**/api/agent", (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({ json: { guest: false, status: "real_data_disabled" } })
+        : route.continue(),
+    );
+    await page.goto("/login");
+    await page.getByRole("button", { name: "Explorar como visitante" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30_000 });
+    await page.getByRole("button", { name: "Abrir assistente" }).click();
+
+    const panel = page.getByRole("dialog", { name: "Assistente" });
+    await expect(panel.getByText("Em desenvolvimento · fase de testes")).toBeVisible();
+    await expect(panel.getByRole("heading", { name: "Indisponível por enquanto" })).toBeVisible();
+    await expect(panel.getByText("Explorar como visitante")).toBeVisible();
+    await expect(panel.getByLabel("Sua pergunta")).toHaveCount(0);
+    await page.screenshot({
+      path: process.env.ASSISTANT_SHOT ?? "test-results/assistant-notice.png",
+    });
+
+    const critical = (
+      await new AxeBuilder({ page }).include("[role=dialog]").analyze()
+    ).violations.filter(({ impact }) => impact === "critical");
+    expect(critical).toEqual([]);
+  });
+});
+
 test.describe("assistente no modo visitante", () => {
   test.describe.configure({ timeout: 120_000 });
 
