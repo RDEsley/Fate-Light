@@ -44,9 +44,7 @@ select
 grant select on agent_ws to authenticated;
 
 insert into public.clients (id, workspace_id, kind, name, commercial_status)
-select 'c1c1c1c1-0001-4c1c-8c1c-c1c1c1c1c1c1'::uuid, a, 'company', 'Cliente A', 'active' from agent_ws
-union all
-select 'd2d2d2d2-0001-4d2d-8d2d-d2d2d2d2d2d2'::uuid, b, 'company', 'Cliente B', 'active' from agent_ws;
+select 'c1c1c1c1-0001-4c1c-8c1c-c1c1c1c1c1c1'::uuid, a, 'company', 'Cliente A', 'active' from agent_ws;
 
 insert into public.charges (
   id, workspace_id, client_id, description, due_date, company_revenue, media_budget,
@@ -61,10 +59,15 @@ from agent_ws,
     ('c1c1c1c1-0c03-4c1c-8c1c-c1c1c1c1c1c1', 'Paga', '2026-11-05', 300.00, 0.00, 0.00, true, 'paid', '2026-11-06T12:00:00Z')
   ) as v (id, description, due_date, revenue, media, fee, fee_revenue, status, paid_at);
 
+-- Os gatilhos operacionais exigem o dono do workspace: os dados de B entram com a sessão de B.
+select set_config('request.jwt.claim.sub', 'd2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2', true);
+insert into public.clients (id, workspace_id, kind, name, commercial_status)
+select 'd2d2d2d2-0001-4d2d-8d2d-d2d2d2d2d2d2'::uuid, b, 'company', 'Cliente B', 'active' from agent_ws;
 insert into public.charges (id, workspace_id, client_id, description, due_date, company_revenue, status)
 select 'd2d2d2d2-0c01-4d2d-8d2d-d2d2d2d2d2d2', b, 'd2d2d2d2-0001-4d2d-8d2d-d2d2d2d2d2d2',
   'Outro workspace', '2026-10-01', 500, 'pending'
 from agent_ws;
+select set_config('request.jwt.claim.sub', 'c1c1c1c1-c1c1-4c1c-8c1c-c1c1c1c1c1c1', true);
 
 set local role authenticated;
 
