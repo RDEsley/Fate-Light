@@ -30,11 +30,13 @@
     "db:advisors:performance": "supabase db advisors --local --type performance --level info --fail-on error",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
-    "supabase:status": "supabase status"
+    "supabase:status": "supabase status",
+    "evals": "vitest run --config evals/vitest.config.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.124",
     "@ai-sdk/groq": "4.0.86",
+    "@ai-sdk/provider": "4.0.39",
     "@ai-sdk/react": "4.0.184",
     "@marsidev/react-turnstile": "1.6.3",
     "@supabase/ssr": "0.12.7",
