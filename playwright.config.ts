@@ -25,6 +25,8 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run dev -- --port " + port,
+    // O assistente responde por um roteiro local: E2E nunca chama um provedor de IA.
+    env: { AGENT_SCRIPTED_MODEL: "true" },
     reuseExistingServer: !process.env.CI && process.env.PLAYWRIGHT_REUSE_SERVER !== "false",
     timeout: 120_000,
     url: baseURL,

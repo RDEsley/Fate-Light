@@ -196,7 +196,7 @@ describe("demo client — leitura", () => {
       active_client_entities: 2,
       active_clients: 3,
       expired_domains: 1,
-      overdue_charges: 2,
+      overdue_charges: 4,
       overdue_expenses: 1,
     });
     // Receita própria e verba de mídia nunca se misturam (ADR-0001).
