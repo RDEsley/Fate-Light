@@ -103,7 +103,8 @@ export function AssistantConversation({
 
   useEffect(() => {
     const thread = threadRef.current;
-    if (thread) thread.scrollTo({ behavior: "smooth", top: thread.scrollHeight });
+    // A rolagem suave vem do CSS (`scroll-behavior`), que também respeita o movimento reduzido.
+    if (thread) thread.scrollTop = thread.scrollHeight;
   }, [messages, status]);
 
   useEffect(() => {

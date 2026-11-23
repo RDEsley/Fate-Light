@@ -6815,6 +6815,7 @@ html[data-mouse-motion="off"] .landing-water-cursor {
   gap: 0.9rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scroll-behavior: smooth;
   background: color-mix(in srgb, var(--canvas) 62%, #fff);
   padding: 1rem;
 }
@@ -7515,6 +7516,58 @@ html[data-mouse-motion="off"] .landing-water-cursor {
   border-radius: 50%;
   background: var(--brand-soft);
   color: var(--brand-strong);
+}
+
+.assistant-badge {
+  border: 1.25px solid color-mix(in srgb, #d98a1f 40%, var(--line));
+  border-radius: 999px;
+  background: var(--warning-soft);
+  padding: 0.22rem 0.75rem;
+  color: var(--warning);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.assistant-notice__list {
+  display: grid;
+  width: 100%;
+  max-width: 21rem;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.assistant-notice__list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1.25px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface-raised);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.assistant-notice__list li svg {
+  flex-shrink: 0;
+  color: var(--brand-strong);
+}
+
+.assistant-notice p.assistant-notice__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 21rem;
+  margin-top: 0.35rem;
+  border-radius: 0.8rem;
+  background: var(--brand-soft);
+  padding: 0.6rem 0.75rem;
+  color: var(--brand-strong);
+  font-size: 0.78rem;
+  text-align: left;
 }
 
 .assistant-loading {

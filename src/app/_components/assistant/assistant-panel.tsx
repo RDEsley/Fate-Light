@@ -323,7 +323,11 @@ export function AssistantPanel({
     [activeId],
   );
   const canClear = Boolean(active) || (chat?.messages.length ?? 0) > 0;
-  const subtitle = guest ? "Demonstração · dados fictícios" : "Lê seus dados e pede confirmação";
+  const subtitle = guest
+    ? "Demonstração · dados fictícios"
+    : status === "ready"
+      ? "Lê seus dados e pede confirmação"
+      : "Em fase de testes";
 
   return (
     <>
@@ -455,22 +459,42 @@ export function AssistantPanel({
                     <span className="assistant-notice__icon">
                       <Icon className="size-6" name="alert-circle" />
                     </span>
-                    <h3>Assistente indisponível</h3>
+                    <h3>Indisponível no momento</h3>
                     <p>
-                      O assistente ainda não foi configurado neste ambiente. O resto do sistema
-                      segue normal.
+                      O assistente não está disponível agora. Tente de novo mais tarde; o resto do
+                      sistema segue normal.
                     </p>
                   </div>
                 ) : null}
                 {status === "real_data_disabled" ? (
                   <div className="assistant-notice">
-                    <span className="assistant-notice__icon">
-                      <Icon className="size-6" name="eye" />
-                    </span>
-                    <h3>Disponível no modo visitante</h3>
+                    <AssistantMark live size="lg" />
+                    <span className="assistant-badge">Em desenvolvimento · fase de testes</span>
+                    <h3>Indisponível por enquanto</h3>
                     <p>
-                      Por enquanto o assistente funciona só no modo visitante, com dados fictícios.
-                      Seus dados não são enviados a nenhum provedor de IA.
+                      Estamos aperfeiçoando o assistente com cuidado. Por enquanto ele funciona só
+                      no modo visitante, com dados fictícios, e logo chega para a sua conta.
+                    </p>
+                    <ul className="assistant-notice__list">
+                      <li>
+                        <Icon className="size-4" name="users" /> Mostra quem está em atraso
+                      </li>
+                      <li>
+                        <Icon className="size-4" name="wallet" /> Resume recebidos e pendentes do
+                        mês
+                      </li>
+                      <li>
+                        <Icon className="size-4" name="bell" /> Cria lembretes só depois da sua
+                        aprovação
+                      </li>
+                    </ul>
+                    <p className="assistant-notice__hint">
+                      <Icon className="size-4 shrink-0" name="info" />
+                      <span>
+                        Quer experimentar? Saia da conta e escolha{" "}
+                        <strong>Explorar como visitante</strong> na tela de entrada. Seus dados
+                        reais não são enviados a nenhum provedor de IA.
+                      </span>
                     </p>
                   </div>
                 ) : null}
