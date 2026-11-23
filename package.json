@@ -33,9 +33,13 @@
     "supabase:status": "supabase status"
   },
   "dependencies": {
+    "@ai-sdk/google": "4.0.124",
+    "@ai-sdk/groq": "4.0.86",
+    "@ai-sdk/react": "4.0.184",
     "@marsidev/react-turnstile": "1.6.3",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.0",
+    "ai": "7.0.179",
     "lottie-web": "5.13.0",
     "next": "16.4.6",
     "qrcode-generator": "2.0.4",
