@@ -1,0 +1,12 @@
+[
+  { "question": "Quem está me devendo?", "tool": "listarClientesEmAtraso" },
+  { "question": "Quem está me devendo há mais de 30 dias?", "tool": "listarClientesEmAtraso", "args": { "maisDeDias": 30 } },
+  { "question": "Tem cliente com pagamento atrasado faz mais de duas semanas?", "tool": "listarClientesEmAtraso", "args": { "maisDeDias": 14 } },
+  { "question": "Liste as cobranças vencidas há mais de 60 dias", "tool": "listarClientesEmAtraso", "args": { "maisDeDias": 60 } },
+  { "question": "Qual cliente está em atraso agora?", "tool": "listarClientesEmAtraso" },
+  { "question": "Como está o resumo deste mês?", "tool": "resumirMes" },
+  { "question": "Quanto recebi em outubro de 2026?", "tool": "resumirMes", "args": { "mes": "2026-10" } },
+  { "question": "Qual o total pendente e vencido de novembro de 2026?", "tool": "resumirMes", "args": { "mes": "2026-11" } },
+  { "question": "Me dá os totais de setembro de 2026", "tool": "resumirMes", "args": { "mes": "2026-09" } },
+  { "question": "Quem me deve há mais de 30 dias? Cria um lembrete pra cada um", "tool": "listarClientesEmAtraso", "then": "criarLembreteCobranca", "args": { "maisDeDias": 30 } }
+]

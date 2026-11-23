@@ -101,7 +101,7 @@ docs/
   workflows/
 ```
 
-Pastas só serão criadas quando tiverem conteúdo. Migrations, lockfile, seed fictício, `AGENTS.md` e documentação serão versionados.
+Pastas só serão criadas quando tiverem conteúdo. Migrations, lockfile, seed fictício e documentação serão versionados.
 
 ## 5. Fluxo de requisição
 
@@ -243,6 +243,12 @@ Detalhes: [ADR 0007](adr/0007-recurrence-and-idempotency.md).
 - Falhas esperadas de regra de negócio não são exceções genéricas.
 - Operações idempotentes retornam o recurso já criado quando a repetição é válida.
 - Ações críticas registram auditoria independente do log técnico.
+
+### Assistente com IA
+
+`/api/agent` autentica por conta ou visitante sem redirecionar, confere origem e limite e roda um
+loop de até 5 passos em `src/features/assistant/`. Leitura passa por consultas fixas e escrita por
+aprovação assinada (ADR-0026).
 
 ## 15. Segurança de entrega
 

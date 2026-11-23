@@ -476,6 +476,19 @@ export function buildDemoDataset(today: string) {
       due_date: day(-20),
       status: "cancelled",
     }),
+    // Dívidas antigas: dão ao assistente um caso real de "mais de 30 dias".
+    charge(17, {
+      client_id: client(4),
+      company_revenue: 1350,
+      description: "Campanha de matrículas",
+      due_date: day(-47),
+    }),
+    charge(18, {
+      client_id: client(5),
+      company_revenue: 780,
+      description: "Manutenção do site da oficina",
+      due_date: day(-36),
+    }),
   ];
 
   const expense = (
@@ -632,6 +645,7 @@ export function buildDemoDataset(today: string) {
   const manualAlerts: Row<"manual_alerts">[] = [
     {
       ...audit,
+      charge_id: null,
       client_id: client(2),
       due_on: day(-1),
       id: id(10, 1),
@@ -644,6 +658,7 @@ export function buildDemoDataset(today: string) {
     },
     {
       ...audit,
+      charge_id: null,
       client_id: client(1),
       due_on: day(4),
       id: id(10, 2),

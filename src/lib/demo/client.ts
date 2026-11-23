@@ -414,7 +414,43 @@ function domainSummary(data: DemoDataset, parameters: Row) {
   };
 }
 
+/** Mesmas regras de `assistant_month_summary`, em centavos para não acumular erro decimal. */
+function assistantMonthSummary(data: DemoDataset, parameters: Row) {
+  const [start, end, today] = [
+    text(parameters.p_start),
+    text(parameters.p_end),
+    text(parameters.p_today),
+  ];
+  const cents = (charge: DemoDataset["charges"][number]) =>
+    Math.round(
+      (charge.company_revenue + (charge.additional_fee_is_revenue ? charge.additional_fee : 0)) *
+        100,
+    );
+  const total = (rows: DemoDataset["charges"]) =>
+    rows.reduce((sum, charge) => sum + cents(charge), 0) / 100;
+  const received = data.charges.filter(
+    (charge) => charge.status === "paid" && between(paidDay(charge.paid_at), start, end),
+  );
+  const pendingCharges = data.charges.filter((charge) => charge.status === "pending");
+  const pending = pendingCharges.filter(
+    (charge) => charge.due_date >= today && between(charge.due_date, start, end),
+  );
+  const overdue = pendingCharges.filter(
+    (charge) => charge.due_date < today && charge.due_date <= end,
+  );
+
+  return {
+    overdue: total(overdue),
+    overdue_count: overdue.length,
+    pending: total(pending),
+    pending_count: pending.length,
+    received: total(received),
+    received_count: received.length,
+  };
+}
+
 const readFunctions: Record<string, (data: DemoDataset, parameters: Row) => Row[]> = {
+  assistant_month_summary: (data, parameters) => [assistantMonthSummary(data, parameters)],
   dashboard_financial_summary: (data, parameters) => [financialSummary(data, parameters)],
   domain_operational_summary: (data, parameters) => [domainSummary(data, parameters)],
   get_current_account_lifecycle_requests: () => [],

@@ -13,9 +13,12 @@ dist/
 build/
 .vercel/
 
-# Local planning files
+# Personal working notes
 .PLAN.md
-PLAN.md
+/PLAN.md
+/NOTES.md
+/TODO.md
+docs/private/
 
 # Duplicate source assets (the served copies live in public/favicons)
 /favicons/
@@ -97,7 +100,6 @@ Desktop.ini
 
 # Keep these project artifacts versioned:
 # - .env.example
-# - AGENTS.md
-# - documentation
+# - public documentation
 # - lockfiles
 # - Supabase migrations and fictitious seeds

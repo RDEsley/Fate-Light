@@ -15,6 +15,16 @@ const optionalSecretKey = z.preprocess(
   z.string().min(16).optional(),
 );
 
+const optionalText = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).max(80).optional(),
+);
+
+const optionalFlag = z.preprocess(
+  (value) => (value === "" || value === undefined ? undefined : value === "true"),
+  z.boolean().optional(),
+);
+
 function requireProductionTurnstile<T extends { NEXT_PUBLIC_TURNSTILE_SITE_KEY?: string }>(
   value: T,
   context: z.RefinementCtx,
@@ -40,6 +50,23 @@ export const serverEnvironmentSchema = z
     CRON_SECRET: optionalSecretKey,
     WHATSAPP_APP_SECRET: optionalSecretKey,
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: optionalSecretKey,
+    // Assistente com IA (ADR-0026). Sem chave, o painel explica que está indisponível.
+    GOOGLE_GENERATIVE_AI_API_KEY: optionalSecretKey,
+    GROQ_API_KEY: optionalSecretKey,
+    AGENT_MODEL: optionalText,
+    AGENT_FALLBACK_MODEL: optionalText,
+    AGENT_APPROVAL_SECRET: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(32).optional(),
+    ),
+    AGENT_IP_HASH_SALT: optionalSecretKey,
+    AGENT_GUEST_DAILY_CAP: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.coerce.number().int().min(1).max(10_000).optional(),
+    ),
+    AGENT_REAL_DATA_ENABLED: optionalFlag,
+    // Modelo roteirizado dos testes E2E; o código o recusa em produção.
+    AGENT_SCRIPTED_MODEL: optionalFlag,
   })
   .superRefine(requireProductionTurnstile);
 
