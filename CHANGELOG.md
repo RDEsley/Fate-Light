@@ -5,6 +5,15 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-23
+
+### Changed
+
+- Assistente: em telas largas o painel abre ao lado e empurra a página, como o painel lateral de
+  uma extensão, sem cobrir o conteúdo. Ele não fecha ao clicar fora, só pelo X ou pelo botão do
+  topo, e continua aberto, com a conversa, ao trocar de tela. Em telas menores, flutua sobre a
+  página. O modo expandido divide melhor a tela.
+
 ## [0.22.0] - 2026-11-23
 
 ### Added
