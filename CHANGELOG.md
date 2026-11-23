@@ -5,6 +5,19 @@ projeto. O versionamento segue SemVer.
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-23
+
+### Added
+
+- Assistente com IA no topo do sistema: chat em streaming que consulta cobranças e o resumo do mês
+  por ferramentas e só cria lembretes depois de aprovação na tela. Funciona no modo visitante, com
+  dados fictícios (ADR-0026).
+- Histórico de conversas guardado só no navegador, com nova conversa, limpar conversa, apagar
+  histórico e painel expansível. Sair da conta apaga o histórico.
+- Feedback simples em cada resposta (copiar, gostei, não gostei com motivo) e indicador de
+  carregamento que acompanha a etapa em andamento.
+- Cartão de aprovação com a lista de clientes, valores, dias de atraso e total.
+
 ### Changed
 
 - WhatsApp: a tela deixa claro que o campo pede o nome do modelo aprovado na Meta, mostra o texto
