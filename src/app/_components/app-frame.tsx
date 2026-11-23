@@ -401,7 +401,7 @@ export function AppFrame({
                 {description}
               </p>
             </div>
-            {actions ? <div className="shrink-0">{actions}</div> : null}
+            {actions ? <div className="max-w-full shrink-0">{actions}</div> : null}
           </div>
           <div data-animate="enter">{children}</div>
         </section>
