@@ -244,6 +244,12 @@ Detalhes: [ADR 0007](adr/0007-recurrence-and-idempotency.md).
 - Operações idempotentes retornam o recurso já criado quando a repetição é válida.
 - Ações críticas registram auditoria independente do log técnico.
 
+### Assistente com IA
+
+`/api/agent` autentica por conta ou visitante sem redirecionar, confere origem e limite e roda um
+loop de até 5 passos em `src/features/assistant/`. Leitura passa por consultas fixas e escrita por
+aprovação assinada (ADR-0026).
+
 ## 15. Segurança de entrega
 
 - `.env.example` possui somente placeholders.

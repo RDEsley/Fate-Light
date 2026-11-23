@@ -346,6 +346,52 @@ Mailpit: http://127.0.0.1:54324
 
 ---
 
+## 🤖 Assistente com IA
+
+Um agente com tool calling em vários passos, que consulta as cobranças e propõe lembretes. Ele só
+escreve depois que a pessoa aprova na tela. Experimente em **Explorar como visitante**, com dados
+fictícios: _"Quem está me devendo há mais de 30 dias? Cria um lembrete pra cada um"_.
+
+<!-- GIF da demo: salve em docs/assets/assistente-demo.gif e troque este comentário pela imagem. -->
+
+```mermaid
+flowchart LR
+    Q[Pergunta] --> L{Limite diário}
+    L -- esgotado --> M[Mensagem amigável]
+    L -- ok --> G[Modelo Gemini]
+    G -. erro de cota .-> F[Fallback Groq]
+    G --> R[Tools de leitura]
+    F --> R
+    R -- dados delimitados --> G
+    G --> W[Proposta de escrita]
+    W --> C{Cartão de confirmação}
+    C -- Cancelar --> A[Resposta]
+    C -- Aprovar --> V[Assinatura e revalidação]
+    V --> B[(Lembrete salvo)]
+    B --> A
+```
+
+**Decisões técnicas** ([ADR-0026](docs/adr/0026-ai-assistant.md))
+
+- **Leitura restrita:** as tools só chamam consultas fixas sobre a sessão do usuário, com RLS. O
+  modelo não recebe documento, telefone, e-mail, endereço nem observações.
+- **Aprovação para escrita:** a aprovação é assinada com HMAC no servidor, e a RPC revalida
+  workspace, status e atraso. Repetir a aprovação não duplica o lembrete.
+- **Injeção de prompt:** retornos de tools são tratados como dados, e a confirmação humana é a
+  barreira final.
+- **Fallback:** erro de cota na Gemini repete a chamada no Groq, se houver chave.
+- **Limite de uso:** 10 mensagens por dia por usuário ou hash de IP, com teto global para visitantes.
+- **Dados reais:** ficam desligados por padrão e exigem `AGENT_REAL_DATA_ENABLED=true` e aceite do
+  workspace.
+
+**Como rodar localmente**
+
+1. Preencha `GOOGLE_GENERATIVE_AI_API_KEY` e `AGENT_APPROVAL_SECRET` no `.env.local`.
+2. Rode `npm run dev`, entre como visitante e abra o ícone de brilho no topo.
+3. Opcional: `npm run evals` mede a taxa de acerto contra o modelo real. Gasta cota e não roda no CI.
+
+---
+
 ## 🧪 Qualidade e testes
 
 Principais verificações:
