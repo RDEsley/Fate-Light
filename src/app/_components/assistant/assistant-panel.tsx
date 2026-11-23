@@ -34,6 +34,25 @@ type Armed = "clear" | "wipe" | null;
 // O AppFrame remonta a cada página: as conversas ativas ficam fora dele para não sumirem ao navegar.
 const chats = new Map<string, Chat<UIMessage>>();
 
+/** O que sobrevive à troca de página: qual conversa estava ativa e se o painel estava aberto. */
+const session: { activeIds: Map<string, string>; dockOpen: boolean; status: string | null } = {
+  activeIds: new Map(),
+  dockOpen: false,
+  status: null,
+};
+const wideKey = "fate-light:assistant-wide";
+
+/**
+ * Em telas largas o painel fica ao lado e empurra a página: o CSS lê estes atributos do <html>.
+ * Só mexe neles quem abre, fecha ou redimensiona, para o conteúdo não pular ao trocar de página.
+ */
+function syncDock(open: boolean, wide: boolean) {
+  const root = document.documentElement;
+  root.toggleAttribute("data-assistant-dock", open);
+  root.toggleAttribute("data-assistant-wide", wide);
+  session.dockOpen = open;
+}
+
 function chatFor(id: string, initial: UIMessage[]) {
   const existing = chats.get(id);
   if (existing) return existing;
@@ -189,32 +208,62 @@ export function AssistantPanel({
   const [armed, setArmed] = useState<Armed>(null);
   const [busy, setBusy] = useState(false);
   const [conversations, setConversations] = useState<StoredConversation[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveIdState] = useState<string | null>(null);
+  const [instant, setInstant] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const hydrated = useRef(false);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setConversations(readConversations(safeStorage(), scope));
-      hydrated.current = true;
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [scope]);
-
-  useEffect(() => {
-    if (hydrated.current) writeConversations(safeStorage(), scope, conversations);
-  }, [conversations, scope]);
+  const setActiveId = useCallback(
+    (id: string) => {
+      session.activeIds.set(scope, id);
+      setActiveIdState(id);
+    },
+    [scope],
+  );
 
   const loadStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/agent", { cache: "no-store" });
       const body: { status?: Status } = await response.json();
-      setStatus(response.ok && body.status ? body.status : "unavailable");
+      const next = response.ok && body.status ? body.status : "unavailable";
+      session.status = next;
+      setStatus(next);
     } catch {
+      session.status = "unavailable";
       setStatus("unavailable");
     }
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const storage = safeStorage();
+      setConversations(readConversations(storage, scope));
+      hydrated.current = true;
+      const isWide = storage?.getItem(wideKey) === "on";
+      setWide(isWide);
+
+      const remembered = session.activeIds.get(scope);
+      if (remembered) setActiveIdState(remembered);
+      if (session.dockOpen) {
+        // Painel aberto na página anterior: reaparece no lugar, sem animar de novo.
+        setInstant(true);
+        setOpen(true);
+        setEverOpened(true);
+        syncDock(true, isWide);
+        if (!remembered) setActiveId(crypto.randomUUID());
+        setStatus((session.status as Status | null) ?? "loading");
+        if (session.status !== "ready") void loadStatus();
+      } else {
+        document.documentElement.removeAttribute("data-assistant-dock");
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadStatus, scope, setActiveId]);
+
+  useEffect(() => {
+    if (hydrated.current) writeConversations(safeStorage(), scope, conversations);
+  }, [conversations, scope]);
 
   const newChat = useCallback(() => {
     setActiveId(crypto.randomUUID());
@@ -222,11 +271,13 @@ export function AssistantPanel({
     setMenuOpen(false);
     setArmed(null);
     window.requestAnimationFrame(() => document.getElementById("assistant-question")?.focus());
-  }, []);
+  }, [setActiveId]);
 
   const openPanel = () => {
+    setInstant(false);
     setOpen(true);
     setEverOpened(true);
+    syncDock(true, wide);
     if (!activeId) setActiveId(crypto.randomUUID());
     if (status !== "ready") void loadStatus();
     window.requestAnimationFrame(() => document.getElementById("assistant-question")?.focus());
@@ -235,15 +286,33 @@ export function AssistantPanel({
   const close = useCallback(() => {
     setOpen(false);
     setMenuOpen(false);
+    syncDock(false, wide);
     triggerRef.current?.focus();
-  }, []);
+  }, [wide]);
+
+  const toggleWide = () => {
+    const next = !wide;
+    setWide(next);
+    setMenuOpen(false);
+    if (open) syncDock(true, next);
+    try {
+      safeStorage()?.setItem(wideKey, next ? "on" : "off");
+    } catch {
+      // Sem armazenamento, a escolha vale só até recarregar.
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (menuOpen) setMenuOpen(false);
-      else close();
+      if (menuOpen) {
+        setMenuOpen(false);
+        return;
+      }
+      // Ao lado da página (telas largas) o painel fica aberto enquanto se trabalha; sobreposto,
+      // no celular e no tablet, Esc o fecha.
+      if (!window.matchMedia?.("(min-width: 1280px)").matches) close();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -293,7 +362,7 @@ export function AssistantPanel({
       // Excluir pelo histórico não tira a pessoa de lá: só a conversa ativa é trocada por uma nova.
       if (activeId === id) setActiveId(crypto.randomUUID());
     },
-    [activeId],
+    [activeId, setActiveId],
   );
 
   const clearCurrent = () => {
@@ -331,7 +400,7 @@ export function AssistantPanel({
 
   return (
     <>
-      <AssistantLauncher expanded={open} onClick={openPanel} ref={triggerRef} />
+      <AssistantLauncher expanded={open} onClick={open ? close : openPanel} ref={triggerRef} />
       {everOpened
         ? createPortal(
             <>
@@ -346,7 +415,7 @@ export function AssistantPanel({
               ) : null}
               <section
                 aria-labelledby="assistant-title"
-                className={`assistant-panel ${wide ? "assistant-panel--wide" : ""}`}
+                className={`assistant-panel ${wide ? "assistant-panel--wide" : ""} ${instant ? "assistant-panel--instant" : ""}`}
                 hidden={!open}
                 role="dialog"
               >
@@ -411,10 +480,7 @@ export function AssistantPanel({
                           </button>
                           <button
                             className="assistant-menu__wide"
-                            onClick={() => {
-                              setWide((current) => !current);
-                              setMenuOpen(false);
-                            }}
+                            onClick={toggleWide}
                             role="menuitem"
                             type="button"
                           >
