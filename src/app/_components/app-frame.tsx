@@ -14,6 +14,7 @@ import { restoreCard } from "@/features/support/invite";
 import { DisclosureAutoScroll } from "@/components/ui/disclosure-auto-scroll";
 import { Icon, type IconName } from "@/components/ui/icon";
 import type { AttentionItem } from "@/features/alerts/attention";
+import { clearAssistantStorage } from "@/features/assistant/history";
 import { getInitials } from "@/lib/profile/initials";
 
 import { AssistantPanel } from "./assistant/assistant-panel";
@@ -255,7 +256,9 @@ export function AppFrame({
           <div className="relative ml-auto flex items-center gap-2">
             <div className="contents" id="financial-privacy-control" />
             <FullscreenToggle />
-            {loading ? null : <AssistantPanel guest={guest} workspaceName={workspaceName} />}
+            {loading ? null : (
+              <AssistantPanel fullName={fullName} guest={guest} workspaceName={workspaceName} />
+            )}
             <details className="group" data-tour="notifications">
               <summary
                 aria-label={`Notificações: ${unreadCount} novas, ${attentionTotal} abertas`}
@@ -349,7 +352,15 @@ export function AppFrame({
                   action={guest ? leaveGuestMode : signOut}
                   className="border-t pt-1"
                   data-guest-allowed=""
-                  onSubmit={guest ? undefined : restoreCard}
+                  onSubmit={() => {
+                    if (!guest) restoreCard();
+                    // As conversas do assistente ficam só neste navegador: sair as apaga.
+                    try {
+                      clearAssistantStorage(window.localStorage);
+                    } catch {
+                      // Sem armazenamento, não há histórico a apagar.
+                    }
+                  }}
                 >
                   <button
                     className="text-negative hover:bg-negative-soft flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold"

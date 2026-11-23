@@ -1,273 +1,58 @@
 "use client";
 
-import { Chat, useChat } from "@ai-sdk/react";
+import { Chat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithApprovalResponses,
   type UIMessage,
 } from "ai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Icon } from "@/components/ui/icon";
-import { assistantToolLabels, type AssistantToolName } from "@/features/assistant/config";
 import {
-  describeToolArgs,
-  friendlyChatError,
-  maskMoney,
-  simulatedReminders,
-} from "@/features/assistant/view";
+  deriveTitle,
+  formatRelative,
+  groupByDay,
+  previewOf,
+  readConversations,
+  removeConversation,
+  sanitizeForStorage,
+  upsertConversation,
+  writeConversations,
+  type FeedbackMap,
+  type StoredConversation,
+} from "@/features/assistant/history";
+
+import { AssistantConversation } from "./assistant-conversation";
+import { AssistantLauncher, AssistantMark } from "./assistant-mark";
 
 type Status = "consent_required" | "loading" | "ready" | "real_data_disabled" | "unavailable";
-type MessagePart = UIMessage["parts"][number];
-type ToolPart = Extract<MessagePart, { toolCallId: string }> & {
-  approval?: {
-    approved?: boolean;
-    id: string;
-    isAutomatic?: boolean;
-    reason?: string;
-    requestReason?: string;
-  };
-  errorText?: string;
-  input?: unknown;
-  state: string;
-};
-type ApprovalResponse = (response: { approved: boolean; id: string }) => void;
+type View = "chat" | "history";
+type Armed = "clear" | "wipe" | null;
 
-const suggestions = [
-  "Quem está me devendo há mais de 30 dias? Cria um lembrete pra cada um",
-  "Como está o resumo deste mês?",
-];
-const demoRemindersKey = "fate-light:assistant-demo-reminders";
-const privacyKey = "fate-light:hide-financial-values";
-
-// O AppFrame remonta a cada página: a conversa fica fora dele para não sumir ao navegar.
+// O AppFrame remonta a cada página: as conversas ativas ficam fora dele para não sumirem ao navegar.
 const chats = new Map<string, Chat<UIMessage>>();
 
-function chatFor(key: string) {
-  const existing = chats.get(key);
+function chatFor(id: string, initial: UIMessage[]) {
+  const existing = chats.get(id);
   if (existing) return existing;
   const chat = new Chat<UIMessage>({
+    id,
+    messages: initial,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     transport: new DefaultChatTransport({ api: "/api/agent" }),
   });
-  chats.set(key, chat);
+  chats.set(id, chat);
   return chat;
 }
 
-function isToolPart(part: MessagePart): part is ToolPart {
-  return part.type.startsWith("tool-") && "toolCallId" in part;
-}
-
-function toolName(part: ToolPart) {
-  return part.type.slice("tool-".length) as AssistantToolName;
-}
-
-function stepStatus(state: string) {
-  if (state === "output-available") return { label: "Concluído", tone: "text-positive" };
-  if (state === "output-error") return { label: "Falhou", tone: "text-negative" };
-  if (state === "output-denied") return { label: "Cancelado", tone: "text-muted" };
-  if (state === "approval-requested") return { label: "Aguardando você", tone: "text-warning" };
-  return { label: "Executando", tone: "text-muted" };
-}
-
-function ToolStep({
-  hideMoney,
-  onRespond,
-  part,
-}: {
-  hideMoney: boolean;
-  onRespond: ApprovalResponse;
-  part: ToolPart;
-}) {
-  const name = toolName(part);
-  const status = stepStatus(part.state);
-  const approval = part.approval;
-  const awaiting = part.state === "approval-requested" && approval && !approval.isAutomatic;
-
-  return (
-    <div className="border-line rounded-xl border-2 bg-white p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-2 font-black">
-          <Icon className="text-brand-strong size-4 shrink-0" name="sparkles" />
-          {assistantToolLabels[name] ?? name}
-        </span>
-        <span className={`shrink-0 text-xs font-bold ${status.tone}`}>{status.label}</span>
-      </div>
-      <p className="text-muted mt-1 text-xs">{describeToolArgs(name, part.input)}</p>
-
-      {awaiting ? (
-        <div className="bg-warning-soft mt-3 rounded-lg p-3">
-          <p className="font-black">Confirma a criação destes lembretes?</p>
-          <p className="mt-1 text-xs leading-5 whitespace-pre-line">
-            {hideMoney ? maskMoney(approval.requestReason ?? "") : approval.requestReason}
-          </p>
-          <p className="text-muted mt-2 text-xs">
-            Fica só no Fate Light. Nada é enviado ao cliente.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <button
-              className="button button--primary button--small"
-              onClick={() => onRespond({ approved: true, id: approval.id })}
-              type="button"
-            >
-              Aprovar
-            </button>
-            <button
-              className="button button--ghost button--small"
-              onClick={() => onRespond({ approved: false, id: approval.id })}
-              type="button"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      ) : null}
-      {part.state === "output-error" ? (
-        <p className="text-negative mt-2 text-xs">{part.errorText}</p>
-      ) : null}
-    </div>
-  );
-}
-
-function AssistantChat({ chatKey, guest }: { chatKey: string; guest: boolean }) {
-  const { addToolApprovalResponse, error, messages, sendMessage, status } = useChat({
-    chat: chatFor(chatKey),
-  });
-  const [draft, setDraft] = useState("");
-  const [hideMoney, setHideMoney] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
-  const busy = status === "submitted" || status === "streaming";
-
-  useEffect(() => {
-    inputRef.current?.focus();
-    const timeout = window.setTimeout(() => {
-      try {
-        setHideMoney(window.localStorage.getItem(privacyKey) === "on");
-      } catch {
-        setHideMoney(false);
-      }
-    }, 0);
-    return () => window.clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: "end" });
-  }, [messages, status]);
-
-  useEffect(() => {
-    if (!guest) return;
-    const names = simulatedReminders(messages);
-    if (!names.length) return;
-    try {
-      window.sessionStorage.setItem(demoRemindersKey, JSON.stringify(names));
-    } catch {
-      // Sem armazenamento, a simulação continua visível na conversa.
-    }
-  }, [guest, messages]);
-
-  const send = (text: string) => {
-    const question = text.trim();
-    if (!question || busy) return;
-    setDraft("");
-    void sendMessage({ text: question });
-  };
-
-  return (
-    <>
-      <div aria-live="polite" className="flex-1 space-y-3 overflow-y-auto p-4">
-        {!messages.length ? (
-          <div className="space-y-2">
-            <p className="text-muted text-sm">
-              Pergunte sobre cobranças e o mês. Antes de criar algo, eu peço sua confirmação.
-            </p>
-            {suggestions.map((suggestion) => (
-              <button
-                className="border-line hover:bg-brand-soft w-full rounded-xl border-2 bg-white p-3 text-left text-sm font-bold"
-                key={suggestion}
-                onClick={() => send(suggestion)}
-                type="button"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {messages.map((message) => (
-          <div className="space-y-2" key={message.id}>
-            {message.parts.map((part, index) => {
-              if (part.type === "text") {
-                const text = hideMoney ? maskMoney(part.text) : part.text;
-                return (
-                  <p
-                    className={`rounded-xl p-3 text-sm leading-6 whitespace-pre-wrap ${message.role === "user" ? "bg-brand-soft ml-8" : "mr-4 bg-white"}`}
-                    key={`${message.id}-${index}`}
-                  >
-                    {text}
-                  </p>
-                );
-              }
-              if (!isToolPart(part)) return null;
-              return (
-                <ToolStep
-                  hideMoney={hideMoney}
-                  key={part.toolCallId}
-                  onRespond={addToolApprovalResponse}
-                  part={part}
-                />
-              );
-            })}
-          </div>
-        ))}
-        {guest && simulatedReminders(messages).length ? (
-          <p className="bg-brand-soft rounded-xl p-3 text-xs font-bold">
-            Demonstração: {simulatedReminders(messages).length} lembrete(s) simulado(s) nesta
-            sessão. Nada foi gravado.
-          </p>
-        ) : null}
-        {busy ? <p className="text-muted text-xs">Pensando...</p> : null}
-        {error ? (
-          <p className="bg-negative-soft text-negative rounded-xl p-3 text-sm" role="alert">
-            {friendlyChatError(error.message)}
-          </p>
-        ) : null}
-        <div ref={endRef} />
-      </div>
-
-      <div className="border-line border-t p-3">
-        <label className="text-xs font-black" htmlFor="assistant-question">
-          Sua pergunta
-        </label>
-        <div className="mt-1 flex items-end gap-2">
-          <textarea
-            className="max-h-28 min-h-11 flex-1 resize-none rounded-xl p-2.5 text-sm"
-            id="assistant-question"
-            maxLength={1000}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                send(draft);
-              }
-            }}
-            ref={inputRef}
-            rows={1}
-            value={draft}
-          />
-          <button
-            className="button button--primary button--small"
-            disabled={busy || !draft.trim()}
-            onClick={() => send(draft)}
-            type="button"
-          >
-            Enviar
-          </button>
-        </div>
-      </div>
-    </>
-  );
+function safeStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 function ConsentNotice({ onAccepted }: { onAccepted: () => void }) {
@@ -289,8 +74,9 @@ function ConsentNotice({ onAccepted }: { onAccepted: () => void }) {
   };
 
   return (
-    <div className="space-y-3 p-4 text-sm leading-6">
-      <p className="font-black">Antes de usar com seus dados</p>
+    <div className="assistant-notice">
+      <AssistantMark size="lg" />
+      <h3>Antes de usar com seus dados</h3>
       <p>
         Para responder, o assistente envia ao Google (Gemini) e, se ele falhar, à Groq o nome do
         cliente, a descrição, o valor e o vencimento das cobranças consultadas.
@@ -300,12 +86,12 @@ function ConsentNotice({ onAccepted }: { onAccepted: () => void }) {
         CNPJ, telefone, e-mail, endereço, observações e arquivos nunca são enviados.
       </p>
       {failed ? (
-        <p className="text-negative" role="alert">
+        <p className="assistant-notice__error" role="alert">
           Não consegui registrar o aceite. Tente de novo.
         </p>
       ) : null}
       <button
-        className="button button--primary button--small"
+        className="button button--primary"
         disabled={saving}
         onClick={() => void accept()}
         type="button"
@@ -316,16 +102,109 @@ function ConsentNotice({ onAccepted }: { onAccepted: () => void }) {
   );
 }
 
+function HistoryView({
+  activeId,
+  conversations,
+  onDelete,
+  onNew,
+  onOpen,
+}: {
+  activeId: string | null;
+  conversations: StoredConversation[];
+  onDelete: (id: string) => void;
+  onNew: () => void;
+  onOpen: (id: string) => void;
+}) {
+  const groups = useMemo(() => groupByDay(conversations), [conversations]);
+
+  if (!conversations.length) {
+    return (
+      <div className="assistant-notice">
+        <span className="assistant-notice__icon">
+          <Icon className="size-6" name="history" />
+        </span>
+        <h3>Nenhuma conversa ainda</h3>
+        <p>Suas conversas ficam guardadas aqui, só neste navegador, para você retomar depois.</p>
+        <button className="button button--primary" onClick={onNew} type="button">
+          <Icon className="size-4" name="plus" /> Nova conversa
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="assistant-history">
+      {groups.map((group) => (
+        <section key={group.label}>
+          <h3>{group.label}</h3>
+          <ul>
+            {group.items.map((item) => (
+              <li className={item.id === activeId ? "is-active" : ""} key={item.id}>
+                <button
+                  className="assistant-history__open"
+                  onClick={() => onOpen(item.id)}
+                  type="button"
+                >
+                  <strong>{item.title}</strong>
+                  <small>{previewOf(item.messages) || "Sem resposta ainda"}</small>
+                  <span>
+                    {formatRelative(item.updatedAt)} · {item.messages.length}{" "}
+                    {item.messages.length === 1 ? "mensagem" : "mensagens"}
+                  </span>
+                </button>
+                <button
+                  aria-label={`Excluir a conversa: ${item.title}`}
+                  className="assistant-history__delete"
+                  onClick={() => onDelete(item.id)}
+                  type="button"
+                >
+                  <Icon className="size-4" name="trash" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export function AssistantPanel({
+  fullName,
   guest,
   workspaceName,
 }: {
+  fullName: string;
   guest: boolean;
   workspaceName: string;
 }) {
+  const scope = `${guest ? "guest" : "account"}:${workspaceName}:${fullName}`;
+  const firstName = fullName.trim().split(/\s+/)[0] || "você";
   const [open, setOpen] = useState(false);
+  const [everOpened, setEverOpened] = useState(false);
   const [status, setStatus] = useState<Status>("loading");
+  const [view, setView] = useState<View>("chat");
+  const [wide, setWide] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [armed, setArmed] = useState<Armed>(null);
+  const [busy, setBusy] = useState(false);
+  const [conversations, setConversations] = useState<StoredConversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setConversations(readConversations(safeStorage(), scope));
+      hydrated.current = true;
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [scope]);
+
+  useEffect(() => {
+    if (hydrated.current) writeConversations(safeStorage(), scope, conversations);
+  }, [conversations, scope]);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -337,87 +216,318 @@ export function AssistantPanel({
     }
   }, []);
 
+  const newChat = useCallback(() => {
+    setActiveId(crypto.randomUUID());
+    setView("chat");
+    setMenuOpen(false);
+    setArmed(null);
+    window.requestAnimationFrame(() => document.getElementById("assistant-question")?.focus());
+  }, []);
+
+  const openPanel = () => {
+    setOpen(true);
+    setEverOpened(true);
+    if (!activeId) setActiveId(crypto.randomUUID());
+    if (status !== "ready") void loadStatus();
+    window.requestAnimationFrame(() => document.getElementById("assistant-question")?.focus());
+  };
+
   const close = useCallback(() => {
     setOpen(false);
+    setMenuOpen(false);
     triggerRef.current?.focus();
   }, []);
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key !== "Escape") return;
+      if (menuOpen) setMenuOpen(false);
+      else close();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [close, open]);
+  }, [close, menuOpen, open]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!armed) return;
+    const timer = window.setTimeout(() => setArmed(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [armed]);
+
+  const persist = useCallback((id: string, messages: UIMessage[], feedback: FeedbackMap) => {
+    const saved = sanitizeForStorage(messages);
+    if (!saved.length) return;
+    setConversations((current) => {
+      const existing = current.find((item) => item.id === id);
+      if (
+        existing &&
+        JSON.stringify(existing.messages) === JSON.stringify(saved) &&
+        JSON.stringify(existing.feedback) === JSON.stringify(feedback)
+      ) {
+        return current;
+      }
+      return upsertConversation(current, {
+        feedback,
+        id,
+        messages: saved,
+        title: existing?.title ?? deriveTitle(saved),
+        updatedAt: Date.now(),
+      });
+    });
+  }, []);
+
+  const deleteConversation = useCallback(
+    (id: string) => {
+      chats.delete(id);
+      setConversations((current) => removeConversation(current, id));
+      // Excluir pelo histórico não tira a pessoa de lá: só a conversa ativa é trocada por uma nova.
+      if (activeId === id) setActiveId(crypto.randomUUID());
+    },
+    [activeId],
+  );
+
+  const clearCurrent = () => {
+    if (armed !== "clear") {
+      setArmed("clear");
+      return;
+    }
+    if (activeId) deleteConversation(activeId);
+    newChat();
+  };
+
+  const wipeAll = () => {
+    if (armed !== "wipe") {
+      setArmed("wipe");
+      return;
+    }
+    chats.clear();
+    setConversations([]);
+    newChat();
+  };
+
+  const active = conversations.find((item) => item.id === activeId);
+  const chat = useMemo(
+    () => (activeId ? chatFor(activeId, sanitizeForStorage(active?.messages ?? [])) : null),
+    // O Chat vivo guarda as mensagens: só o id decide qual instância usar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeId],
+  );
+  const canClear = Boolean(active) || (chat?.messages.length ?? 0) > 0;
+  const subtitle = guest
+    ? "Demonstração · dados fictícios"
+    : status === "ready"
+      ? "Lê seus dados e pede confirmação"
+      : "Em fase de testes";
 
   return (
     <>
-      <button
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label="Abrir assistente"
-        className="cartoon-card grid size-10 place-items-center"
-        onClick={() => {
-          setOpen(true);
-          void loadStatus();
-        }}
-        ref={triggerRef}
-        title="Assistente"
-        type="button"
-      >
-        <Icon name="sparkles" />
-      </button>
-      {open
+      <AssistantLauncher expanded={open} onClick={openPanel} ref={triggerRef} />
+      {everOpened
         ? createPortal(
-            <section
-              aria-label="Assistente"
-              className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col border-l-2 border-slate-700/15 bg-[#fdfcf7] shadow-2xl"
-              role="dialog"
-            >
-              <header className="border-line flex items-center justify-between gap-2 border-b p-4">
-                <div>
-                  <h2 className="font-black">Assistente</h2>
-                  <p className="text-muted text-xs">
-                    {guest
-                      ? "Modo demonstração, dados fictícios"
-                      : "Só lê seus dados e pede confirmação"}
-                  </p>
-                </div>
+            <>
+              {open ? (
                 <button
                   aria-label="Fechar assistente"
-                  className="hover:bg-brand-soft grid size-10 place-items-center rounded-xl"
+                  className="assistant-backdrop"
                   onClick={close}
+                  tabIndex={-1}
                   type="button"
-                >
-                  <Icon name="x" />
-                </button>
-              </header>
-              {status === "loading" ? (
-                <p className="text-muted p-4 text-sm">Carregando...</p>
-              ) : null}
-              {status === "unavailable" ? (
-                <p className="p-4 text-sm leading-6">
-                  O assistente ainda não foi configurado neste ambiente. O resto do sistema segue
-                  normal.
-                </p>
-              ) : null}
-              {status === "real_data_disabled" ? (
-                <p className="p-4 text-sm leading-6">
-                  Por enquanto o assistente funciona só no modo visitante, com dados fictícios. Seus
-                  dados não são enviados a nenhum provedor de IA.
-                </p>
-              ) : null}
-              {status === "consent_required" ? (
-                <ConsentNotice onAccepted={() => setStatus("ready")} />
-              ) : null}
-              {status === "ready" ? (
-                <AssistantChat
-                  chatKey={`${guest ? "guest" : "account"}:${workspaceName}`}
-                  guest={guest}
                 />
               ) : null}
-            </section>,
+              <section
+                aria-labelledby="assistant-title"
+                className={`assistant-panel ${wide ? "assistant-panel--wide" : ""}`}
+                hidden={!open}
+                role="dialog"
+              >
+                <header className="assistant-header">
+                  <AssistantMark live size="md" />
+                  <div className="assistant-header__title">
+                    <h2 id="assistant-title">Assistente</h2>
+                    <p>
+                      <span aria-hidden="true" className="assistant-status-dot" />
+                      {subtitle}
+                    </p>
+                  </div>
+                  <div className="assistant-header__actions">
+                    <button
+                      aria-label="Nova conversa"
+                      className="assistant-icon-button"
+                      disabled={busy}
+                      onClick={newChat}
+                      title={busy ? "Aguarde a resposta terminar" : "Nova conversa"}
+                      type="button"
+                    >
+                      <Icon className="size-[1.15rem]" name="plus" />
+                    </button>
+                    <button
+                      aria-label="Histórico de conversas"
+                      aria-pressed={view === "history"}
+                      className="assistant-icon-button"
+                      disabled={busy}
+                      onClick={() =>
+                        setView((current) => (current === "history" ? "chat" : "history"))
+                      }
+                      title={busy ? "Aguarde a resposta terminar" : "Histórico"}
+                      type="button"
+                    >
+                      <Icon className="size-[1.15rem]" name="history" />
+                    </button>
+                    <div className="assistant-menu" ref={menuRef}>
+                      <button
+                        aria-expanded={menuOpen}
+                        aria-haspopup="menu"
+                        aria-label="Mais opções"
+                        className="assistant-icon-button"
+                        onClick={() => setMenuOpen((current) => !current)}
+                        title="Mais opções"
+                        type="button"
+                      >
+                        <Icon className="size-[1.15rem]" name="settings" />
+                      </button>
+                      {menuOpen ? (
+                        <div className="assistant-menu__list" role="menu">
+                          <button
+                            className={armed === "clear" ? "is-armed" : ""}
+                            disabled={busy || !canClear}
+                            onClick={clearCurrent}
+                            role="menuitem"
+                            type="button"
+                          >
+                            <Icon className="size-4" name="trash" />
+                            {armed === "clear"
+                              ? "Confirmar: limpar conversa"
+                              : "Limpar esta conversa"}
+                          </button>
+                          <button
+                            className="assistant-menu__wide"
+                            onClick={() => {
+                              setWide((current) => !current);
+                              setMenuOpen(false);
+                            }}
+                            role="menuitem"
+                            type="button"
+                          >
+                            <Icon className="size-4" name={wide ? "minimize" : "maximize"} />
+                            {wide ? "Reduzir painel" : "Expandir painel"}
+                          </button>
+                          <button
+                            className={armed === "wipe" ? "is-armed" : ""}
+                            disabled={busy || !conversations.length}
+                            onClick={wipeAll}
+                            role="menuitem"
+                            type="button"
+                          >
+                            <Icon className="size-4" name="archive" />
+                            {armed === "wipe"
+                              ? "Confirmar: apagar tudo"
+                              : "Apagar todo o histórico"}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                    <button
+                      aria-label="Fechar assistente"
+                      className="assistant-icon-button"
+                      onClick={close}
+                      title="Fechar"
+                      type="button"
+                    >
+                      <Icon className="size-[1.15rem]" name="x" />
+                    </button>
+                  </div>
+                </header>
+
+                {status === "loading" ? (
+                  <div className="assistant-loading" role="status">
+                    <AssistantMark live size="lg" />
+                    <span className="sr-only">Carregando o assistente</span>
+                  </div>
+                ) : null}
+                {status === "unavailable" ? (
+                  <div className="assistant-notice">
+                    <span className="assistant-notice__icon">
+                      <Icon className="size-6" name="alert-circle" />
+                    </span>
+                    <h3>Indisponível no momento</h3>
+                    <p>
+                      O assistente não está disponível agora. Tente de novo mais tarde; o resto do
+                      sistema segue normal.
+                    </p>
+                  </div>
+                ) : null}
+                {status === "real_data_disabled" ? (
+                  <div className="assistant-notice">
+                    <AssistantMark live size="lg" />
+                    <span className="assistant-badge">Em desenvolvimento · fase de testes</span>
+                    <h3>Indisponível por enquanto</h3>
+                    <p>
+                      Estamos aperfeiçoando o assistente com cuidado. Por enquanto ele funciona só
+                      no modo visitante, com dados fictícios, e logo chega para a sua conta.
+                    </p>
+                    <ul className="assistant-notice__list">
+                      <li>
+                        <Icon className="size-4" name="users" /> Mostra quem está em atraso
+                      </li>
+                      <li>
+                        <Icon className="size-4" name="wallet" /> Resume recebidos e pendentes do
+                        mês
+                      </li>
+                      <li>
+                        <Icon className="size-4" name="bell" /> Cria lembretes só depois da sua
+                        aprovação
+                      </li>
+                    </ul>
+                    <p className="assistant-notice__hint">
+                      <Icon className="size-4 shrink-0" name="info" />
+                      <span>
+                        Quer experimentar? Saia da conta e escolha{" "}
+                        <strong>Explorar como visitante</strong> na tela de entrada. Seus dados
+                        reais não são enviados a nenhum provedor de IA.
+                      </span>
+                    </p>
+                  </div>
+                ) : null}
+                {status === "consent_required" ? (
+                  <ConsentNotice onAccepted={() => setStatus("ready")} />
+                ) : null}
+                {status === "ready" && view === "history" ? (
+                  <HistoryView
+                    activeId={activeId}
+                    conversations={conversations}
+                    onDelete={deleteConversation}
+                    onNew={newChat}
+                    onOpen={(id) => {
+                      setActiveId(id);
+                      setView("chat");
+                    }}
+                  />
+                ) : null}
+                {status === "ready" && view === "chat" && chat && activeId ? (
+                  <AssistantConversation
+                    chat={chat}
+                    conversationId={activeId}
+                    firstName={firstName}
+                    guest={guest}
+                    initialFeedback={active?.feedback ?? {}}
+                    key={activeId}
+                    onBusyChange={setBusy}
+                    onNewChat={newChat}
+                    onPersist={persist}
+                  />
+                ) : null}
+              </section>
+            </>,
             document.body,
           )
         : null}

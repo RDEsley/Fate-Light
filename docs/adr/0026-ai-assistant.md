@@ -43,6 +43,10 @@ guarda dados de clientes de outras empresas.
 
 ## Consequências
 
+- O histórico das conversas e as avaliações das respostas ficam só no `localStorage` do navegador,
+  nunca no servidor, e são apagados ao sair da conta. Só se guardam conversas em estado final, sem
+  aprovação pendente.
+
 - Nova dependência externa opcional; sem chave, o painel explica que está indisponível.
 - Ligar contas reais exige revisar a política de privacidade e aceitar o risco do plano gratuito.
 - O hash de IP é um dado pseudonimizado e fica somente no contador diário.
