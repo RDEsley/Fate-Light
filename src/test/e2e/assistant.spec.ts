@@ -149,8 +149,8 @@ test.describe("assistente no modo visitante", () => {
 
     await panel.getByRole("button", { name: "Mais opções" }).click();
     await panel.getByRole("menuitem", { name: "Expandir painel" }).click();
-    const wide = (await panel.boundingBox())?.width ?? 0;
-    expect(wide).toBeGreaterThan(560);
+    // A largura anima em 220 ms: espera assentar em vez de medir no meio da transição.
+    await expect.poll(async () => (await panel.boundingBox())?.width ?? 0).toBeGreaterThan(560);
 
     await panel.getByRole("button", { name: "Mais opções" }).click();
     await panel.getByRole("menuitem", { name: "Limpar esta conversa" }).click();
