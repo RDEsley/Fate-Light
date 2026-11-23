@@ -71,6 +71,85 @@ export type Database = {
           },
         ]
       }
+      agent_consents: {
+        Row: {
+          accepted_at: string
+          accepted_by: string
+          version: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_by?: string
+          version: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string
+          accepted_by?: string
+          version?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_consents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          error_code: string | null
+          id: string
+          is_guest: boolean
+          model: string
+          outcome: string
+          question: string
+          tools: Json
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms: number
+          error_code?: string | null
+          id?: string
+          is_guest?: boolean
+          model: string
+          outcome: string
+          question: string
+          tools?: Json
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          error_code?: string | null
+          id?: string
+          is_guest?: boolean
+          model?: string
+          outcome?: string
+          question?: string
+          tools?: Json
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -1118,6 +1197,7 @@ export type Database = {
       }
       manual_alerts: {
         Row: {
+          charge_id: string | null
           client_id: string | null
           created_at: string
           created_by: string
@@ -1134,6 +1214,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          charge_id?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string
@@ -1150,6 +1231,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          charge_id?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string
@@ -1166,6 +1248,20 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "manual_alerts_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "manual_alerts_charge_fk"
+            columns: ["workspace_id", "charge_id"]
+            isOneToOne: false
+            referencedRelation: "charges_overview"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "manual_alerts_client_fk"
             columns: ["workspace_id", "client_id"]
@@ -1794,6 +1890,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_agent_consent: {
+        Args: { p_version: string; p_workspace_id: string }
+        Returns: undefined
+      }
       apply_service_to_client: {
         Args: {
           p_additional_fee: number
@@ -1818,6 +1918,22 @@ export type Database = {
           p_start_date: string
         }
         Returns: string
+      }
+      assistant_month_summary: {
+        Args: {
+          p_end: string
+          p_start: string
+          p_today: string
+          p_workspace_id: string
+        }
+        Returns: {
+          overdue: number
+          overdue_count: number
+          pending: number
+          pending_count: number
+          received: number
+          received_count: number
+        }[]
       }
       bootstrap_identity_workspace: {
         Args: {
@@ -1870,6 +1986,28 @@ export type Database = {
           p_target_client_id: string
         }
         Returns: Json
+      }
+      consume_agent_quota: {
+        Args: { p_kind: string }
+        Returns: {
+          allowed: boolean
+          remaining: number
+        }[]
+      }
+      consume_guest_agent_quota: {
+        Args: { p_global_cap: number; p_ip_hash: string; p_kind: string }
+        Returns: {
+          allowed: boolean
+          remaining: number
+        }[]
+      }
+      create_assistant_reminders: {
+        Args: { p_charge_ids: string[]; p_today: string; p_workspace_id: string }
+        Returns: {
+          charge_id: string
+          client_name: string
+          created: boolean
+        }[]
       }
       create_expense_with_recurrence: {
         Args: {
@@ -1995,6 +2133,17 @@ export type Database = {
       preview_transfer_client_data: {
         Args: { p_source_client_id: string; p_target_client_id: string }
         Returns: Json
+      }
+      record_guest_agent_run: {
+        Args: {
+          p_duration_ms: number
+          p_error_code: string
+          p_model: string
+          p_outcome: string
+          p_question: string
+          p_tools: Json
+        }
+        Returns: undefined
       }
       record_whatsapp_send_result: {
         Args: {
