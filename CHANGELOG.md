@@ -17,6 +17,8 @@ projeto. O versionamento segue SemVer.
 - Feedback simples em cada resposta (copiar, gostei, não gostei com motivo) e indicador de
   carregamento que acompanha a etapa em andamento.
 - Cartão de aprovação com a lista de clientes, valores, dias de atraso e total.
+- Contas reais ficam com um aviso amigável de "em desenvolvimento · fase de testes" e o convite para
+  experimentar no modo visitante; nenhum dado real é enviado a provedores de IA.
 
 ### Changed
 
