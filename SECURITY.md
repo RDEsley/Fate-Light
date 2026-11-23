@@ -43,7 +43,7 @@ vulnerabilidade antes de uma correção ou orientação de mitigação.
 ## Riscos residuais conhecidos (linha `0.8.2`)
 
 - Confirmação de e-mail, SMTP e Turnstile de produção ainda dependem de configuração manual antes
-  do release 1.0 (ver [release-v1.md](docs/release-v1.md)).
+  do release 1.0.
 - O envio de e-mail de produção depende da configuração de SMTP enquanto o projeto não possui
   domínio próprio; autenticação por senha permanece disponível.
 - `braces` <= 3.0.3 (GHSA-vfj7-8cjw-p6xm, negação de serviço) não tem versão corrigida. Chega

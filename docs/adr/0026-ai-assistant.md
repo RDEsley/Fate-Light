@@ -1,7 +1,7 @@
 # ADR-0026 — Assistente com IA e aprovação para escrita
 
 Status: aceita em 2026-11-23.
-Abre exceção controlada à regra de não enviar dados de clientes a terceiros (`AGENTS.md`).
+Abre exceção controlada à regra de não enviar dados de clientes a terceiros.
 
 ## Contexto
 
