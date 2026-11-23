@@ -44,9 +44,9 @@ select
 grant select on agent_ws to authenticated;
 
 insert into public.clients (id, workspace_id, kind, name, commercial_status)
-select 'c1c1c1c1-0001-4c1c-8c1c-c1c1c1c1c1c1', a, 'company', 'Cliente A', 'active' from agent_ws
+select 'c1c1c1c1-0001-4c1c-8c1c-c1c1c1c1c1c1'::uuid, a, 'company', 'Cliente A', 'active' from agent_ws
 union all
-select 'd2d2d2d2-0001-4d2d-8d2d-d2d2d2d2d2d2', b, 'company', 'Cliente B', 'active' from agent_ws;
+select 'd2d2d2d2-0001-4d2d-8d2d-d2d2d2d2d2d2'::uuid, b, 'company', 'Cliente B', 'active' from agent_ws;
 
 insert into public.charges (
   id, workspace_id, client_id, description, due_date, company_revenue, media_budget,
