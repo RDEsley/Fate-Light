@@ -2002,7 +2002,11 @@ export type Database = {
         }[]
       }
       create_assistant_reminders: {
-        Args: { p_charge_ids: string[]; p_today: string; p_workspace_id: string }
+        Args: {
+          p_charge_ids: string[]
+          p_today: string
+          p_workspace_id: string
+        }
         Returns: {
           charge_id: string
           client_name: string
