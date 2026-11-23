@@ -196,6 +196,7 @@ Consolidada em 2026-09-08:
 | ADR-0023 | Data do pagamento informada na baixa | Aceita | [ADR](adr/0023-payment-date-on-settlement.md) |
 | ADR-0024 | Lembretes de cobrança pelo WhatsApp | Aceita | [ADR](adr/0024-whatsapp-charge-reminders.md) |
 | ADR-0025 | Comprovante de pagamento e início da parceria | Aceita | [ADR](adr/0025-payment-proof-and-partnership-start.md) |
+| ADR-0026 | Assistente com IA e aprovação para escrita | Aceita | [ADR](adr/0026-ai-assistant.md) |
 
 ## Outras decisões consolidadas
 

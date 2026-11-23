@@ -635,6 +635,13 @@ Então:
 
 O rateio é apenas sugestão editável antes da confirmação. Em qualquer distribuição, a soma das alocações precisa ser exatamente igual ao pagamento.
 
+## Assistente com IA (ADR-0026)
+
+- `manual_alerts.charge_id`: vínculo opcional com a cobrança, único enquanto o lembrete está aberto.
+- `agent_consents`: aceite versionado por workspace.
+- `agent_runs`: pergunta mascarada, tools, resultado, duração e modelo, por 30 dias.
+- `private.agent_usage_daily`: contador diário, inacessível pela API.
+
 ## 14. Dados que não terão tabela
 
 - Dashboard e relatórios: read models/queries.
