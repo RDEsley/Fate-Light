@@ -220,7 +220,7 @@ export function AppFrame({
       </aside>
 
       <div
-        className={`min-h-screen transition-[padding] duration-200 ${collapsed ? "lg:pl-[5.5rem]" : "lg:pl-[17.5rem]"}`}
+        className={`assistant-push min-h-screen transition-[padding] duration-200 ${collapsed ? "lg:pl-[5.5rem]" : "lg:pl-[17.5rem]"}`}
       >
         <header className="border-line/90 sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b bg-[#f3f2ec]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <button
