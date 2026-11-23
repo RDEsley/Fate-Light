@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 import { AssistantPanel } from "@/app/_components/assistant/assistant-panel";
@@ -55,6 +55,27 @@ describe("painel do assistente", () => {
     expect(screen.getByText("Demonstração · dados fictícios")).toBeTruthy();
     await waitFor(() => expect(screen.getByLabelText("Sua pergunta")).toBeTruthy());
     expect(screen.getByRole("button", { name: /Cobranças em atraso/ })).toBeTruthy();
+  });
+
+  it("abre ao lado, não fecha ao clicar fora e fecha pelo X ou pelo botão do topo", async () => {
+    mockStatus("ready");
+    const panel = await openPanel(true);
+    const root = document.documentElement;
+    expect(root.hasAttribute("data-assistant-dock")).toBe(true);
+
+    // Clicar na página não fecha: o painel é um acompanhante, não uma janela.
+    fireEvent.pointerDown(document.body);
+    fireEvent.mouseDown(document.body);
+    expect(panel.hasAttribute("hidden")).toBe(false);
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Fechar assistente" }));
+    expect(panel.hasAttribute("hidden")).toBe(true);
+    expect(root.hasAttribute("data-assistant-dock")).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir assistente" }));
+    expect(root.hasAttribute("data-assistant-dock")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Abrir assistente" }));
+    expect(panel.hasAttribute("hidden")).toBe(true);
   });
 
   it("pede o aceite antes de usar com dados reais", async () => {

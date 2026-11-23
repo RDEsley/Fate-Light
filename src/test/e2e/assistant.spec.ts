@@ -141,16 +141,72 @@ test.describe("assistente no modo visitante", () => {
     await expect(panel.getByText("Nenhuma conversa ainda")).toBeVisible();
   });
 
+  const pushOf = (page: Page) =>
+    page
+      .locator(".assistant-push")
+      .evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingRight));
+
+  test("abre ao lado e empurra a página, sem fechar ao clicar fora", async ({ page }) => {
+    await page.setViewportSize({ height: 800, width: 1366 });
+    const panel = panelOf(page);
+    await expect.poll(() => pushOf(page)).toBeGreaterThan(300);
+
+    // O conteúdo da página termina onde o painel começa: nada fica coberto.
+    // As duas animações levam ~300 ms: espera assentar antes de comparar as bordas.
+    await expect
+      .poll(async () => {
+        const panelBox = await panel.boundingBox();
+        const contentBox = await page.locator("#conteudo").boundingBox();
+        return (contentBox?.x ?? 0) + (contentBox?.width ?? 0) - (panelBox?.x ?? 0);
+      })
+      .toBeLessThanOrEqual(1);
+
+    // Trabalhar na página não fecha o assistente.
+    await page.getByRole("heading", { level: 1 }).click();
+    await expect(panel).toBeVisible();
+
+    // Só o X, ou o botão do topo, fecham; a página volta ao tamanho cheio.
+    await panel.getByRole("button", { name: "Fechar assistente" }).click();
+    await expect(panel).toBeHidden();
+    await expect.poll(() => pushOf(page)).toBe(0);
+
+    await page.getByRole("button", { name: "Abrir assistente" }).click();
+    await expect(panel).toBeVisible();
+    await page.getByRole("button", { name: "Abrir assistente" }).click();
+    await expect(panel).toBeHidden();
+  });
+
+  test("continua aberto e com a conversa ao trocar de tela", async ({ page }) => {
+    await page.setViewportSize({ height: 800, width: 1366 });
+    const panel = await ask(page, "Quem está devendo?");
+    await expect(panel.getByText(/Encontrei \d+ cobranças em atraso/)).toBeVisible({
+      timeout: 30_000,
+    });
+
+    await page
+      .getByRole("navigation", { name: "Navegação principal" })
+      .getByRole("link", { name: "Clientes" })
+      .click();
+    await expect(page).toHaveURL(/\/clientes/);
+
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText(/Encontrei \d+ cobranças em atraso/)).toBeVisible();
+    await expect.poll(() => pushOf(page)).toBeGreaterThan(300);
+  });
+
   test("limpa a conversa com confirmação e expande o painel", async ({ page }) => {
     const panel = await ask(page, "Quem está devendo?");
     await expect(panel.getByText(/Encontrei \d+ cobranças em atraso/)).toBeVisible({
       timeout: 30_000,
     });
 
+    const before = (await panel.boundingBox())?.width ?? 0;
     await panel.getByRole("button", { name: "Mais opções" }).click();
     await panel.getByRole("menuitem", { name: "Expandir painel" }).click();
     // A largura anima em 220 ms: espera assentar em vez de medir no meio da transição.
-    await expect.poll(async () => (await panel.boundingBox())?.width ?? 0).toBeGreaterThan(560);
+    await expect
+      .poll(async () => (await panel.boundingBox())?.width ?? 0)
+      .toBeGreaterThan(before + 80);
 
     await panel.getByRole("button", { name: "Mais opções" }).click();
     await panel.getByRole("menuitem", { name: "Limpar esta conversa" }).click();
