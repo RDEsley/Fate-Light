@@ -74,6 +74,13 @@ npx vercel@latest env ls production
 Repita para `preview` se esse ambiente também for usado. Os comandos solicitam os valores de forma
 interativa para evitar que segredos apareçam no histórico do terminal.
 
+## Assistente com IA (opcional)
+
+Aplique as migrations com `npx supabase db push` antes de publicar. Em produção, a demo exige
+`GOOGLE_GENERATIVE_AI_API_KEY`, `AGENT_APPROVAL_SECRET`, `AGENT_IP_HASH_SALT` e
+`SUPABASE_SECRET_KEY`. `GROQ_API_KEY` é opcional. Mantenha `AGENT_REAL_DATA_ENABLED=false` até
+revisar a política de privacidade (ADR-0026). `AGENT_SCRIPTED_MODEL` nunca vai para a Vercel.
+
 ## Lembretes de cobrança pelo WhatsApp (opcional)
 
 O cron diário (`vercel.json`, 12:00 UTC = 09:00 em Brasília) chama `/api/cron/whatsapp-reminders`.

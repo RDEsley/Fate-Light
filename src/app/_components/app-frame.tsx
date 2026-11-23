@@ -16,6 +16,7 @@ import { Icon, type IconName } from "@/components/ui/icon";
 import type { AttentionItem } from "@/features/alerts/attention";
 import { getInitials } from "@/lib/profile/initials";
 
+import { AssistantPanel } from "./assistant/assistant-panel";
 import { ProductTour } from "./product-tour";
 import { FullscreenToggle } from "./fullscreen-toggle";
 
@@ -254,6 +255,7 @@ export function AppFrame({
           <div className="relative ml-auto flex items-center gap-2">
             <div className="contents" id="financial-privacy-control" />
             <FullscreenToggle />
+            {loading ? null : <AssistantPanel guest={guest} workspaceName={workspaceName} />}
             <details className="group" data-tour="notifications">
               <summary
                 aria-label={`Notificações: ${unreadCount} novas, ${attentionTotal} abertas`}
@@ -399,7 +401,7 @@ export function AppFrame({
                 {description}
               </p>
             </div>
-            {actions ? <div className="shrink-0">{actions}</div> : null}
+            {actions ? <div className="max-w-full shrink-0">{actions}</div> : null}
           </div>
           <div data-animate="enter">{children}</div>
         </section>
