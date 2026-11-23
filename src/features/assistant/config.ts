@@ -15,4 +15,10 @@ export const assistantToolLabels = {
   resumirMes: "Resumir o mês",
 } as const;
 
+export const assistantToolIcons = {
+  criarLembreteCobranca: "bell",
+  listarClientesEmAtraso: "users",
+  resumirMes: "wallet",
+} as const;
+
 export type AssistantToolName = keyof typeof assistantToolLabels;

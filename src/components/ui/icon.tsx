@@ -17,6 +17,7 @@ export type IconName =
   | "chevron-down"
   | "chevron-right"
   | "chevron-up"
+  | "copy"
   | "dashboard"
   | "download"
   | "edit"
@@ -44,10 +45,14 @@ export type IconName =
   | "receipt"
   | "refresh"
   | "search"
+  | "send"
   | "settings"
   | "sparkles"
+  | "stop"
   | "swap"
   | "tag"
+  | "thumbs-down"
+  | "thumbs-up"
   | "user"
   | "users"
   | "upload"
@@ -84,6 +89,7 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     "chevron-down": <path d="m7 10 5 5 5-5" />,
     "chevron-right": <path d="m10 7 5 5-5 5" />,
     "chevron-up": <path d="m7 14 5-5 5 5" />,
+    copy: <path d="M9 9h11v11H9V9Zm-5 6V4h11" />,
     dashboard: <path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z" />,
     download: <path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14" />,
     edit: <path d="M12 20h8M4 20h3l10-10a2.1 2.1 0 0 0-3-3L4 17v3Z" />,
@@ -137,6 +143,7 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
       <path d="M20 6v5h-5M4 18v-5h5m9.6-3A8 8 0 0 0 5.3 6.7L4 11m16 2-1.3 4.3A8 8 0 0 1 5.4 14" />
     ),
     search: <path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />,
+    send: <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" />,
     settings: (
       <>
         <circle cx="12" cy="12" r="3" />
@@ -146,7 +153,14 @@ export function Icon({ className = "size-5", name, ...properties }: IconProps) {
     sparkles: (
       <path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Zm6 10 .8 2.2L21 16l-2.2.8L18 19l-.8-2.2L15 16l2.2-.8L18 13ZM5 15l.7 2.3L8 18l-2.3.7L5 21l-.7-2.3L2 18l2.3-.7L5 15Z" />
     ),
+    stop: <path d="M8 8h8v8H8Z" />,
     swap: <path d="M4 8h14m0 0-4-4m4 4-4 4M20 16H6m0 0 4-4m-4 4 4 4" />,
+    "thumbs-down": (
+      <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.7a2 2 0 0 0-2 1.7l-1.4 9a2 2 0 0 0 2 2.3H10ZM17 2h2.7A2.3 2.3 0 0 1 22 4v7a2.3 2.3 0 0 1-2.3 2H17" />
+    ),
+    "thumbs-up": (
+      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.3a2 2 0 0 0 2-1.7l1.4-9a2 2 0 0 0-2-2.3H14ZM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+    ),
     tag: (
       <path d="M3 12.6V4h8.6l9 9a1.4 1.4 0 0 1 0 2l-6.6 6.6a1.4 1.4 0 0 1-2 0l-9-9ZM7.5 8.5h.01" />
     ),

@@ -371,6 +371,10 @@ flowchart LR
     B --> A
 ```
 
+**Experiência do chat:** histórico de conversas e nova conversa, resposta com carregamento que
+acompanha cada etapa, cartão de aprovação com total, copiar e avaliar cada resposta, e painel
+expansível. O histórico e as avaliações ficam só no navegador e somem ao sair da conta.
+
 **Decisões técnicas** ([ADR-0026](docs/adr/0026-ai-assistant.md))
 
 - **Leitura restrita:** as tools só chamam consultas fixas sobre a sessão do usuário, com RLS. O
@@ -458,7 +462,7 @@ As instruções completas estão em:
 
 ## 📍 Status do projeto
 
-**Versão atual:** `0.21.1`
+**Versão atual:** `0.22.0`
 
 O Fate Light está em fase de preparação para a **V1**.
 
